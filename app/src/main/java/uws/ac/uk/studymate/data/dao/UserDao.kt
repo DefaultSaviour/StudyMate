@@ -8,7 +8,7 @@ interface UserDao {
     suspend fun getAll(): List<User>
     ///////////////////// for testing only /////////////////////
 
-    @Insert suspend fun insert(user: User)
+    @Insert suspend fun insert(user: User): Long
     @Update suspend fun update(user: User)
     @Delete suspend fun delete(user: User)
 

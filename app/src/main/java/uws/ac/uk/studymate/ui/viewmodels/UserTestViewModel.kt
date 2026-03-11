@@ -22,7 +22,7 @@ class UserTestViewModel(application: Application) : AndroidViewModel(application
 
     fun addUser(name: String, email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            repo.addUser(name, email, password)
+            repo.createUserWithDefaults(name, email, password)
             loadUsers()
         }
     }
