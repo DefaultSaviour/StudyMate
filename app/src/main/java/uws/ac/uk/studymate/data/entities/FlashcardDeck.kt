@@ -23,3 +23,7 @@ data class FlashcardDeck(
     @ColumnInfo(name = "subject_id", index = true) val subjectId: Int,
     val name: String
 )
+
+
+
+
