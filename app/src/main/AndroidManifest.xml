@@ -27,6 +27,7 @@
 
         <activity
             android:name=".RegisterActivity"
+<<<<<<< HEAD
             android:exported="false" />
 
         <activity
@@ -43,6 +44,8 @@
 
         <activity
             android:name=".ui.MainActivity"
+=======
+>>>>>>> fd81ee9 (Login + Register navigation fix, back button added)
             android:exported="false" />
 
     </application>
