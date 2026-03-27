@@ -15,4 +15,4 @@ data class UserWithSettingsAndStats(
 )
 
 
-// comment in exactly how this works!!
+// this joins the user with their settings and stats
