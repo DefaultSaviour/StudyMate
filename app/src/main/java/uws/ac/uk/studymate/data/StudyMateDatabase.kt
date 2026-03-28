@@ -16,7 +16,7 @@ import uws.ac.uk.studymate.data.entities.*
         FlashcardDeck::class,
         FlashCard::class
     ],
-    exportSchema = false, // change this when we want to export the schema
+    exportSchema = true,
     version = 1
 
 )
@@ -45,5 +45,3 @@ abstract class StudyMateDatabase : RoomDatabase() {
     }
 }
 
-// migration in the next version (appreciate the irony)
-// keeping a record of our database structure is the next version
