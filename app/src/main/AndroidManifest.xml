@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:allowBackup="true"
@@ -27,7 +26,18 @@
 
         <activity
             android:name=".RegisterActivity"
-<<<<<<< HEAD
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.DashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.AddAssignmentActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.SettingsActivity"
             android:exported="false" />
 
         <activity
@@ -44,8 +54,6 @@
 
         <activity
             android:name=".ui.MainActivity"
-=======
->>>>>>> fd81ee9 (Login + Register navigation fix, back button added)
             android:exported="false" />
 
     </application>
