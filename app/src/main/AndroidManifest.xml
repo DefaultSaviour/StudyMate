@@ -29,9 +29,7 @@
             android:name=".RegisterActivity"
             android:exported="false" />
 
-        <activity
-            android:name=".ui.DashboardActivity"
-            android:exported="false" />
+
 
         <activity
             android:name=".ui.AddAssignmentActivity"
