@@ -4,13 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.repositories.UserRepo
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
-
 
 class UserTestViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -20,6 +19,7 @@ class UserTestViewModel(application: Application) : AndroidViewModel(application
     private val _users = MutableLiveData<List<User>>()
     val users: LiveData<List<User>> = _users
 
+    // Now calls createUserWithDefaults which handles hashing and salting
     fun addUser(name: String, email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
             repo.createUserWithDefaults(name, email, password)

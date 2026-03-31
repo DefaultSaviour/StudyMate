@@ -37,6 +37,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"/>
 
+        <!-- Error or success message shown after tapping Add User -->
+        <TextView
+            android:id="@+id/registerMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp"
+            android:visibility="gone"/>
+
         <Button
             android:id="@+id/loadUsersBtn"
             android:text="Show All Users"
@@ -44,14 +53,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"/>
 
+        <!-- Displays all users with their name, hash, and salt -->
         <TextView
             android:id="@+id/usersOutput"
             android:text="Users will appear here..."
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="12dp"
-            android:textSize="16sp"/>
-
+            android:textSize="14sp"/>
 
         <!-- Delete User -->
         <EditText
