@@ -8,3 +8,10 @@ https://developer.android.com/build/migrate-to-ksp#add-ksp
 There is a folder just for strings, im not using it for this but if you get
 the warning String Literal  XXX can not be translated  Use R.string instead
 thats whats it is
+
+
+
+HOW LIVEDATA WORKS:
+- It follows the Observer pattern: when we call .postValue(), all active observers are notified.
+- It is Lifecycle-aware: it only sends updates to observers (like Activities) that are in an
+"active" state (STARTED or RESUMED). This prevents crashes if the UI is destroyed.

@@ -1,6 +1,6 @@
 package uws.ac.uk.studymate.ui
 
-import android.graphics.Color
+
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -22,12 +22,12 @@ class UserTestActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_test)
 
-        // Two ViewModels - RegisterViewModel handles adding users (with validation),
-        // UserTestViewModel handles loading and deleting users
+        // Set up the ViewModels used by this screen.
+        // One handles registration, and the other handles user list actions.
         registerVm = ViewModelProvider(this)[RegisterViewModel::class.java]
         testVm = ViewModelProvider(this)[UserTestViewModel::class.java]
 
-        // Get references to all the UI elements
+        // Get the views used on this screen.
         val nameInput = findViewById<EditText>(R.id.nameInput)
         val emailInput = findViewById<EditText>(R.id.emailInput)
         val passwordInput = findViewById<EditText>(R.id.passwordInput)
@@ -38,7 +38,7 @@ class UserTestActivity : AppCompatActivity() {
         val deleteIdInput = findViewById<EditText>(R.id.deleteIdInput)
         val deleteBtn = findViewById<Button>(R.id.deleteUserBtn)
 
-        // Add user button - passes inputs to RegisterViewModel which validates first
+        // Send the entered details to the registration ViewModel.
         addBtn.setOnClickListener {
             registerVm.register(
                 nameInput.text.toString(),
@@ -47,7 +47,7 @@ class UserTestActivity : AppCompatActivity() {
             )
         }
 
-        // If registration succeeded - show green message and reload the user list
+        // Show a success message and reload the list when registration works.
         registerVm.registrationSuccess.observe(this) { success ->
             if (success) {
                 registerMessage.text = "User added successfully"
@@ -57,7 +57,7 @@ class UserTestActivity : AppCompatActivity() {
             }
         }
 
-        // If there was an error - show it in red under the button
+        // Show the latest error message when registration fails.
         registerVm.errorMessage.observe(this) { message ->
             if (message != null) {
                 registerMessage.text = message
@@ -68,12 +68,12 @@ class UserTestActivity : AppCompatActivity() {
             }
         }
 
-        // Load button - fetches all users and displays them
+        // Load the current user list when the button is pressed.
         loadBtn.setOnClickListener {
             testVm.loadUsers()
         }
 
-        // Display each user with their ID, name, email, hash and salt
+        // Display the saved users, or show a message if there are none.
         testVm.users.observe(this) { users ->
             if (users.isEmpty()) {
                 usersOutput.text = "No users found"
@@ -88,13 +88,13 @@ class UserTestActivity : AppCompatActivity() {
             }
         }
 
-        // Delete button - only runs if the ID field is not empty
+        // Delete the selected user when an ID has been entered.
         deleteBtn.setOnClickListener {
             val idStr = deleteIdInput.text.toString()
             if (idStr.isNotEmpty()) {
                 testVm.deleteUser(idStr.toInt())
                 deleteIdInput.text.clear()
-                testVm.loadUsers() // refresh the list after deleting
+                testVm.loadUsers() // Refresh the list after deleting.
             }
         }
     }

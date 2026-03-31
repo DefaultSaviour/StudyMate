@@ -1,7 +1,10 @@
 package uws.ac.uk.studymate.data.entities
 
 import androidx.room.*
-        
+
+// Represents one assignment in the Assignments table.
+// Each assignment belongs to a user and a subject.
+// Deleting the user or the subject automatically removes the assignment.
 @Entity(
         tableName = "Assignments",
         foreignKeys = [
@@ -20,9 +23,9 @@ ForeignKey(
     ]
             )
 data class Assignment(
-        @PrimaryKey(autoGenerate = true) val id: Int = 0,
-        @ColumnInfo(name = "user_id", index = true) val userId: Int,
-        @ColumnInfo(name = "subject_id", index = true) val subjectId: Int,
-        val title: String,
-        @ColumnInfo(name = "due_date") val dueDate: String?
+        @PrimaryKey(autoGenerate = true) val id: Int = 0,        // Auto-generated unique ID.
+        @ColumnInfo(name = "user_id", index = true) val userId: Int,     // The user who owns this assignment.
+        @ColumnInfo(name = "subject_id", index = true) val subjectId: Int, // The subject this assignment belongs to.
+        val title: String,                                                // The name of the assignment.
+        @ColumnInfo(name = "due_date") val dueDate: String?               // Optional due date for the assignment.
 )
