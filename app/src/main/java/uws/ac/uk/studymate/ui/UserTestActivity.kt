@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.RegisterViewModel
@@ -50,7 +51,7 @@ class UserTestActivity : AppCompatActivity() {
         registerVm.registrationSuccess.observe(this) { success ->
             if (success) {
                 registerMessage.text = "User added successfully"
-                registerMessage.setTextColor(Color.parseColor("#2E7D32")) // dark green
+                registerMessage.setTextColor("#2E7D32".toColorInt()) // dark green
                 registerMessage.visibility = View.VISIBLE
                 testVm.loadUsers()
             }
@@ -60,7 +61,7 @@ class UserTestActivity : AppCompatActivity() {
         registerVm.errorMessage.observe(this) { message ->
             if (message != null) {
                 registerMessage.text = message
-                registerMessage.setTextColor(Color.parseColor("#C62828")) // dark red
+                registerMessage.setTextColor("#C62828".toColorInt()) // dark red
                 registerMessage.visibility = View.VISIBLE
             } else {
                 registerMessage.visibility = View.GONE
