@@ -5,4 +5,6 @@ https://developer.android.com/build/migrate-to-ksp#add-ksp
 
 
 
-fix the naming scheme, DO NOT LET THIS GET LIKE BLACKJACK!
+There is a folder just for strings, im not using it for this but if you get
+the warning String Literal  XXX can not be translated  Use R.string instead
+thats whats it is

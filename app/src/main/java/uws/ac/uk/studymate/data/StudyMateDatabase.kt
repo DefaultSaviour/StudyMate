@@ -2,6 +2,8 @@ package uws.ac.uk.studymate.data
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import uws.ac.uk.studymate.data.dao.*
 import uws.ac.uk.studymate.data.entities.*
 
@@ -16,9 +18,8 @@ import uws.ac.uk.studymate.data.entities.*
         FlashcardDeck::class,
         FlashCard::class
     ],
-    exportSchema = true,
-    version = 1
-
+    exportSchema = false, // Turn this on later if you want Room to save schema history files.
+    version = 2
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -32,7 +33,15 @@ abstract class StudyMateDatabase : RoomDatabase() {
     abstract fun cardDao(): FlashCardDao
 
     companion object {
-        @Volatile private var INSTANCE: StudyMateDatabase? = null
+        @Volatile
+        private var INSTANCE: StudyMateDatabase? = null
+
+        // This updates older version 1 databases by adding the new password_salt column.
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE User ADD COLUMN password_salt TEXT NOT NULL DEFAULT ''")
+            }
+        }
 
         fun getInstance(context: Context): StudyMateDatabase =
             INSTANCE ?: synchronized(this) {
@@ -40,7 +49,10 @@ abstract class StudyMateDatabase : RoomDatabase() {
                     context.applicationContext,
                     StudyMateDatabase::class.java,
                     "StudyMate.db"
-                ).build().also { INSTANCE = it }
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
+                    .also { INSTANCE = it }
             }
     }
 }

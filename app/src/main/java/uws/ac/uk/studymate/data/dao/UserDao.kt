@@ -23,6 +23,10 @@ interface UserDao {
     @Query("SELECT * FROM User WHERE id = :id")
     suspend fun getById(id: Int): User?
 
+    @Query("SELECT * FROM User WHERE email = :email")
+    suspend fun getByEmail(email: String): User?
+
+
     //////// JOIN ///////////////////////////////////////
     @Transaction
     @Query("SELECT * FROM User WHERE id = :id")
