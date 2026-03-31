@@ -57,4 +57,3 @@ abstract class StudyMateDatabase : RoomDatabase() {
     }
 }
 
-// Saving Room schema history files would make future migrations easier to track.
