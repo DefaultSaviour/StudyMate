@@ -11,7 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyMate">
         <activity
-            android:name=".DashboardActivity"
+            android:name=".ui.AddFlashcardActivity"
             android:exported="false" />
         <activity
             android:name=".SplashActivity"
@@ -28,18 +28,20 @@
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
-
-
-
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.FlashcardDeckActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.FlashcardViewerActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.AddAssignmentActivity"
             android:exported="false" />
-
         <activity
             android:name=".ui.SettingsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DashboardActivity"
             android:exported="false" />
         <activity
             android:name=".ui.AssignmentsActivity"
@@ -52,6 +54,9 @@
             android:exported="false" />
         <activity
             android:name=".ui.MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.AddFlashcardActivity"
             android:exported="false" />
     </application>
 
