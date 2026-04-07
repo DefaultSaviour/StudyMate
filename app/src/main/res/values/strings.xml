@@ -10,8 +10,8 @@
     <string name="subjects_button">Subjects</string>
     <string name="calendar_button">Calendar</string>
     <string name="statistics_button">Statistics</string>
-    <string name="calendar_title">Calendar</string>
-    <string name="calendar_items_placeholder">No calendar items yet</string>
+    <string name="assignments_title">Assignments</string>
+    <string name="assignments_items_placeholder">No assignments yet</string>
     <string name="statistics_title">Statistics</string>
     <string name="statistics_placeholder">Assignments: 0
 Flashcards: 0
@@ -19,4 +19,6 @@ Streak: 0 day(s)</string>
     <string name="user_settings_title">User settings</string>
     <string name="user_settings_placeholder">Loading user settings…</string>
     <string name="logout_button">Logout</string>
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_items_placeholder">No calendar items yet</string>
 </resources>

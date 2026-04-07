@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
+import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
 import java.time.LocalDate
@@ -15,21 +16,13 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-// Holds one assignment that should appear inside a calendar day cell.
-data class CalendarAssignmentEntry(
-    val subjectName: String,
-    val assignmentTitle: String,
-    val dueAt: LocalDateTime,
-    val subjectColorHex: String?
-)
-
-// Holds the data that the calendar screen needs to display.
-data class CalendarSummary(
+// Holds the text that the assignments screen needs to display.
+data class AssignmentsSummary(
     val titleText: String,
-    val entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>>
+    val itemsText: String
 )
 
-class CalendarViewModel(application: Application) : AndroidViewModel(application) {
+class AssignmentsViewModel(application: Application) : AndroidViewModel(application) {
 
     // Get the app database once so this ViewModel can load the current user's assignments.
     private val db = StudyMateDatabase.getInstance(application)
@@ -40,12 +33,12 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     // Use the session manager so this screen always reads data for the logged-in user.
     private val sessionManager = SessionManager(application)
 
-    // This private value stores the latest calendar data.
+    // This private value stores the latest assignments text.
     // It is mutable here so only the ViewModel can change it.
-    private val _calendarSummary = MutableLiveData<CalendarSummary>()
+    private val _assignmentsSummary = MutableLiveData<AssignmentsSummary>()
 
-    // This public version lets the UI observe the latest calendar data.
-    val calendarSummary: LiveData<CalendarSummary> = _calendarSummary
+    // This public version lets the UI observe the latest assignments data.
+    val assignmentsSummary: LiveData<AssignmentsSummary> = _assignmentsSummary
 
     // This private value stores whether the session is missing or no longer valid.
     // It is mutable here so only the ViewModel can change it.
@@ -54,7 +47,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     // This public version lets the UI react when it needs to send the user back to login.
     val sessionExpired: LiveData<Boolean> = _sessionExpired
 
-    fun loadCalendar() {
+    fun loadAssignments() {
         // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
@@ -73,40 +66,44 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                 return@launch
             }
 
-            // Load the assignments and the subject colors that the calendar needs.
+            // Load the user's assignments and turn them into assignments text.
             val assignments = db.assignmentDao().getAssignments(userId)
-            val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
-
-            val entriesByDate = assignments
-                .mapNotNull { assignment ->
-                    val dueAt = parseDueDate(assignment.dueDate) ?: return@mapNotNull null
-                    val subject = subjectsById[assignment.subjectId]
-                    CalendarAssignmentEntry(
-                        subjectName = subject?.name ?: "Unknown subject",
-                        assignmentTitle = assignment.title,
-                        dueAt = dueAt,
-                        subjectColorHex = subject?.color
-                    )
-                }
-                .sortedWith(
-                    compareBy<CalendarAssignmentEntry> { it.dueAt }
-                        .thenBy { it.subjectName.lowercase() }
-                        .thenBy { it.assignmentTitle.lowercase() }
-                )
-                .groupBy { it.dueAt.toLocalDate() }
-
-            // Send the finished calendar data back to the UI.
-            _calendarSummary.postValue(
-                CalendarSummary(
-                    titleText = "Calendar for ${user.name}",
-                    entriesByDate = entriesByDate
-                )
+            val summary = AssignmentsSummary(
+                titleText = "Assignments for ${user.name}",
+                itemsText = buildAssignmentsItemsText(assignments)
             )
+
+            // Send the finished assignments data back to the UI.
+            _assignmentsSummary.postValue(summary)
             _sessionExpired.postValue(false)
         }
     }
 
-    // Try a few simple date formats so the calendar screen can read saved assignment due dates.
+    // Turn the saved assignments into a simple readable list for the assignments screen.
+    private fun buildAssignmentsItemsText(assignments: List<Assignment>): String {
+        if (assignments.isEmpty()) {
+            return "No assignments yet"
+        }
+
+        val datedAssignments = assignments
+            .map { assignment -> assignment to parseDueDate(assignment.dueDate) }
+            .sortedWith(
+                compareBy<Pair<Assignment, LocalDateTime?>> { it.second == null }
+                    .thenBy { it.second ?: LocalDateTime.MAX }
+                    .thenBy { it.first.title.lowercase() }
+            )
+
+        return datedAssignments.joinToString("\n\n") { (assignment, dueAt) ->
+            val dueText = if (dueAt == null) {
+                assignment.dueDate?.takeIf { it.isNotBlank() } ?: "No due date saved"
+            } else {
+                formatDueDate(dueAt)
+            }
+            "${assignment.title}\nDue: $dueText"
+        }
+    }
+
+    // Try a few simple date formats so the assignments screen can read saved assignment due dates.
     private fun parseDueDate(value: String?): LocalDateTime? {
         if (value.isNullOrBlank()) {
             return null
@@ -136,4 +133,11 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
 
         return null
     }
+
+    // Format the due date in a simple readable way for the assignments screen.
+    private fun formatDueDate(dueAt: LocalDateTime): String {
+        return dueAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
+    }
 }
+
+

@@ -63,9 +63,9 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.UserSettingsActivity"))
         }
 
-        // Keep the placeholder buttons simple until the real screens are added.
+        // Open the assignments screen because assignment items now live there.
         assignmentsBtn.setOnClickListener {
-            Toast.makeText(this, "Assignments screen not built yet", Toast.LENGTH_SHORT).show()
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.AssignmentsActivity"))
         }
 
         flashcardsBtn.setOnClickListener {
@@ -77,10 +77,11 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.SubjectsActivity"))
         }
 
-        // Open the full calendar screen because calendar items no longer live on home.
+        // Open the calendar screen so the user can see assignment dates in a month view.
         calendarBtn.setOnClickListener {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.CalendarActivity"))
         }
+
 
         // Open the full statistics screen because stats no longer live on home.
         statisticsBtn.setOnClickListener {

@@ -31,6 +31,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.AssignmentsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.CalendarActivity"
             android:exported="false" />
 

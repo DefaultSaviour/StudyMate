@@ -1,6 +1,9 @@
 package uws.ac.uk.studymate.ui
 
+import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -10,36 +13,31 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import uws.ac.uk.studymate.data.StudyMateDatabase
-import uws.ac.uk.studymate.data.entities.Assignment
-import uws.ac.uk.studymate.data.repositories.UserRepo
-import uws.ac.uk.studymate.util.SessionManager
+import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
+import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
+import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 class CalendarActivity : AppCompatActivity() {
 
+    private lateinit var calendarVm: CalendarViewModel
     private lateinit var calendarTitleText: TextView
-    private lateinit var calendarItemsText: TextView
-    private lateinit var sessionManager: SessionManager
-    private lateinit var repo: UserRepo
-    private lateinit var db: StudyMateDatabase
+    private lateinit var monthLabelText: TextView
+    private lateinit var calendarRowsContainer: LinearLayout
+
+    private var currentMonth: YearMonth = YearMonth.now()
+    private var entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>> = emptyMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set up the helpers used by this screen.
-        sessionManager = SessionManager(this)
-        db = StudyMateDatabase.getInstance(application)
-        repo = UserRepo(db)
+        // Set up the ViewModel used by this screen.
+        calendarVm = ViewModelProvider(this)[CalendarViewModel::class.java]
 
-        // Build a simple screen in code so this page does not depend on extra XML files.
+        // Build a simple screen in code so each day can be colored by subject.
         val contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val padding = (20 * resources.displayMetrics.density).toInt()
@@ -62,22 +60,44 @@ class CalendarActivity : AppCompatActivity() {
             text = "Home"
         }
 
-        val addAssignmentBtn = Button(this).apply {
-            text = "Add assignment"
+        val monthNavRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            gravity = Gravity.CENTER_VERTICAL
         }
 
-        calendarItemsText = TextView(this).apply {
-            text = "No calendar items yet"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
+        val previousMonthBtn = Button(this).apply {
+            text = "<"
+        }
+
+        monthLabelText = TextView(this).apply {
+            textSize = 20f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+        }
+
+        val nextMonthBtn = Button(this).apply {
+            text = ">"
+        }
+
+        val weekdayHeaderRow = createWeekdayHeaderRow()
+
+        calendarRowsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
         }
 
         headerRow.addView(calendarTitleText)
         headerRow.addView(homeBtn)
 
+        monthNavRow.addView(previousMonthBtn)
+        monthNavRow.addView(monthLabelText)
+        monthNavRow.addView(nextMonthBtn)
+
         contentLayout.addView(headerRow)
-        contentLayout.addView(addAssignmentBtn)
-        contentLayout.addView(calendarItemsText)
+        contentLayout.addView(monthNavRow)
+        contentLayout.addView(weekdayHeaderRow)
+        contentLayout.addView(calendarRowsContainer)
 
         setContentView(
             ScrollView(this).apply {
@@ -85,22 +105,41 @@ class CalendarActivity : AppCompatActivity() {
             }
         )
 
+        // Show the latest calendar data when the ViewModel finishes loading it.
+        calendarVm.calendarSummary.observe(this) { summary ->
+            showCalendar(summary)
+        }
+
+        // Send the user back to login when there is no valid session.
+        calendarVm.sessionExpired.observe(this) { expired ->
+            if (expired) {
+                openLogin()
+            }
+        }
+
         // Return to the main home screen from the top-right button.
         homeBtn.setOnClickListener {
             openHome()
         }
 
-        // Open the add assignment screen from the calendar page.
-        addAssignmentBtn.setOnClickListener {
-            startActivity(Intent().setClassName(packageName, "$packageName.ui.AddAssignmentActivity"))
+        // Move to the previous month and redraw the calendar.
+        previousMonthBtn.setOnClickListener {
+            currentMonth = currentMonth.minusMonths(1)
+            renderMonth()
+        }
+
+        // Move to the next month and redraw the calendar.
+        nextMonthBtn.setOnClickListener {
+            currentMonth = currentMonth.plusMonths(1)
+            renderMonth()
         }
     }
 
     override fun onResume() {
         super.onResume()
 
-        // Reload the calendar details each time the user returns to this screen.
-        loadCalendar()
+        // Reload the calendar each time the user returns to this screen.
+        calendarVm.loadCalendar()
     }
 
     // Replace this screen with the login screen when the session ends.
@@ -116,92 +155,269 @@ class CalendarActivity : AppCompatActivity() {
         startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
     }
 
-    // Load the user's saved assignments and show them on this screen.
-    private fun loadCalendar() {
-        lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                val userId = sessionManager.getLoggedInUserId() ?: return@withContext null
-                val user = repo.getUser(userId) ?: return@withContext null
-                val assignments = db.assignmentDao().getAssignments(userId)
-                val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
-                user.name to buildCalendarItemsText(assignments, subjectsById.mapValues { it.value.name })
-            }
-
-            if (result == null) {
-                sessionManager.logout()
-                openLogin()
-                return@launch
-            }
-
-            calendarTitleText.text = "Calendar for ${result.first}"
-            calendarItemsText.text = result.second
-        }
+    // Store the latest calendar data and redraw the visible month.
+    private fun showCalendar(summary: CalendarSummary) {
+        calendarTitleText.text = summary.titleText
+        entriesByDate = summary.entriesByDate
+        renderMonth()
     }
 
-    // Turn the saved assignments into a simple readable list for the calendar screen.
-    private fun buildCalendarItemsText(assignments: List<Assignment>, subjectNamesById: Map<Int, String>): String {
-        if (assignments.isEmpty()) {
-            return "No calendar items yet"
-        }
+    // Draw the currently selected month as a simple 7-column grid.
+    private fun renderMonth() {
+        monthLabelText.text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+        calendarRowsContainer.removeAllViews()
 
-        val now = LocalDateTime.now()
-        val upcomingAssignments = assignments
-            .mapNotNull { assignment ->
-                val dueAt = parseDueDate(assignment.dueDate) ?: return@mapNotNull null
-                if (dueAt.isBefore(now)) {
-                    return@mapNotNull null
+        val firstDayOfMonth = currentMonth.atDay(1)
+        val leadingBlankCells = firstDayOfMonth.dayOfWeek.value - 1
+        val daysInMonth = currentMonth.lengthOfMonth()
+        var dayNumber = 1
+
+        while (dayNumber <= daysInMonth) {
+            val weekRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            }
+
+            for (columnIndex in 0 until 7) {
+                val cellIndex = (dayNumber - 1) + leadingBlankCells
+                if (cellIndex / 7 != (dayNumber - 1 + leadingBlankCells) / 7 && columnIndex == 0) {
+                    break
                 }
-                Triple(assignment, dueAt, subjectNamesById[assignment.subjectId] ?: "Unknown subject")
+
+                val shouldShowBlank = ((dayNumber == 1) && columnIndex < leadingBlankCells) || dayNumber > daysInMonth
+                if (shouldShowBlank) {
+                    weekRow.addView(createEmptyDayCell())
+                } else {
+                    val date = currentMonth.atDay(dayNumber)
+                    weekRow.addView(createDayCell(date, entriesByDate[date].orEmpty()))
+                    dayNumber += 1
+                }
             }
-            .sortedWith(
-                compareBy<Triple<Assignment, LocalDateTime, String>> { it.second }
-                    .thenBy { it.third.lowercase() }
-                    .thenBy { it.first.title.lowercase() }
+
+            while (weekRow.childCount < 7) {
+                weekRow.addView(createEmptyDayCell())
+            }
+
+            calendarRowsContainer.addView(weekRow)
+        }
+    }
+
+    // Build the weekday header shown above the calendar grid.
+    private fun createWeekdayHeaderRow(): LinearLayout {
+        val labels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                topMargin = (16 * resources.displayMetrics.density).toInt()
+            }
+
+            labels.forEach { label ->
+                addView(
+                    TextView(this@CalendarActivity).apply {
+                        text = label
+                        gravity = Gravity.CENTER
+                        layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+                    }
+                )
+            }
+        }
+    }
+
+    // Build one empty day cell so the month grid lines up correctly.
+    private fun createEmptyDayCell(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply {
+                topMargin = (8 * resources.displayMetrics.density).toInt()
+                marginStart = (4 * resources.displayMetrics.density).toInt()
+                marginEnd = (4 * resources.displayMetrics.density).toInt()
+            }
+            minimumHeight = (110 * resources.displayMetrics.density).toInt()
+        }
+    }
+
+    // Build one calendar day cell and color its date with the subject color when assignments exist.
+    private fun createDayCell(date: LocalDate, entries: List<CalendarAssignmentEntry>): LinearLayout {
+        val isPastDay = date.isBefore(LocalDate.now())
+        val cell = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (8 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply {
+                topMargin = (8 * resources.displayMetrics.density).toInt()
+                marginStart = (4 * resources.displayMetrics.density).toInt()
+                marginEnd = (4 * resources.displayMetrics.density).toInt()
+            }
+            minimumHeight = (110 * resources.displayMetrics.density).toInt()
+            background = buildDayCellBackground(hasAssignments = entries.isNotEmpty(), isPastDay = isPastDay)
+        }
+
+        val dayNumberText = TextView(this).apply {
+            text = date.dayOfMonth.toString()
+            textSize = 18f
+            setTextColor(if (isPastDay) pastDayGray() else Color.BLACK)
+        }
+
+        cell.addView(dayNumberText)
+
+        if (entries.isNotEmpty()) {
+            cell.addView(createAssignmentMarkers(entries, isPastDay))
+
+            // Open a popup with the day's assignments when the user taps a day that has entries.
+            cell.setOnClickListener {
+                showAssignmentsDialog(date, entries)
+            }
+        }
+
+        return cell
+    }
+
+    // Show one simple marker per assignment so the calendar stays neat inside each day cell.
+    private fun createAssignmentMarkers(entries: List<CalendarAssignmentEntry>, isPastDay: Boolean): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val topPadding = (8 * resources.displayMetrics.density).toInt()
+            setPadding(0, topPadding, 0, 0)
+
+            val visibleEntries = entries.sortedBy { it.dueAt }.take(5)
+            visibleEntries.chunked(2).forEachIndexed { rowIndex, rowEntries ->
+                addView(
+                    LinearLayout(this@CalendarActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        if (rowIndex > 0) {
+                            val rowTopPadding = (2 * resources.displayMetrics.density).toInt()
+                            setPadding(0, rowTopPadding, 0, 0)
+                        }
+
+                        rowEntries.forEach { entry ->
+                            addView(
+                                TextView(this@CalendarActivity).apply {
+                                    text = "★"
+                                    textSize = 12f
+                                    val endPadding = (2 * resources.displayMetrics.density).toInt()
+                                    setPadding(0, 0, endPadding, 0)
+                                    setTextColor(if (isPastDay) pastDayGray() else parseSubjectColor(entry.subjectColorHex))
+                                }
+                            )
+                        }
+                    }
+                )
+            }
+
+            if (entries.size > 5) {
+                addView(
+                    TextView(this@CalendarActivity).apply {
+                        text = "+${entries.size - 5}"
+                        textSize = 11f
+                        val extraTopPadding = (2 * resources.displayMetrics.density).toInt()
+                        setPadding(0, extraTopPadding, 0, 0)
+                        setTextColor(if (isPastDay) pastDayGray() else Color.BLACK)
+                    }
+                )
+            }
+        }
+    }
+
+
+    // Show the tapped day's assignments in a popup using softly colored subject boxes.
+    private fun showAssignmentsDialog(date: LocalDate, entries: List<CalendarAssignmentEntry>) {
+        val contentLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+
+        entries.sortedBy { it.dueAt }.forEach { entry ->
+            contentLayout.addView(createDialogAssignmentBlock(entry))
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(date.format(DateTimeFormatter.ofPattern("dd MMM yyyy")))
+            .setView(
+                ScrollView(this).apply {
+                    addView(contentLayout)
+                }
             )
+            .setPositiveButton("Close", null)
+            .show()
+    }
 
-        if (upcomingAssignments.isEmpty()) {
-            return "No upcoming calendar items yet"
+    // Build one colored assignment box for the popup shown after tapping a calendar day.
+    private fun createDialogAssignmentBlock(entry: CalendarAssignmentEntry): LinearLayout {
+        val subjectColor = parseSubjectColor(entry.subjectColorHex)
+        val padding = (12 * resources.displayMetrics.density).toInt()
+        val topMargin = (8 * resources.displayMetrics.density).toInt()
+
+        val block = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(withSubjectTint(subjectColor))
+            setPadding(padding, padding, padding, padding)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                this.topMargin = topMargin
+            }
         }
 
-        return upcomingAssignments.joinToString("\n\n") { (assignment, dueAt, subjectName) ->
-            "$subjectName\nAssignment: ${assignment.title}\nTime due: ${formatDueDate(dueAt)}"
+        block.addView(
+            TextView(this).apply {
+                text = entry.subjectName
+                textSize = 14f
+                setTextColor(Color.BLACK)
+            }
+        )
+
+        block.addView(
+            TextView(this).apply {
+                text = entry.assignmentTitle
+                textSize = 16f
+                setTextColor(Color.BLACK)
+            }
+        )
+
+        block.addView(
+            TextView(this).apply {
+                text = entry.dueAt.format(DateTimeFormatter.ofPattern("HH:mm"))
+                textSize = 14f
+                setTextColor(Color.BLACK)
+            }
+        )
+
+        return block
+    }
+
+    // Read the saved subject color, or fall back to a safe dark text color when it is missing.
+    private fun parseSubjectColor(colorHex: String?): Int {
+        return try {
+            if (colorHex.isNullOrBlank()) Color.parseColor("#222222") else Color.parseColor(colorHex)
+        } catch (_: Exception) {
+            Color.parseColor("#222222")
         }
     }
 
-    // Try a few simple date formats so this screen can read saved assignment due dates.
-    private fun parseDueDate(value: String?): LocalDateTime? {
-        if (value.isNullOrBlank()) {
-            return null
-        }
-
-        val trimmedValue = value.trim()
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (_: Exception) {
-        }
-
-        try {
-            return OffsetDateTime.parse(trimmedValue, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDateTime()
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDate.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay()
-        } catch (_: Exception) {
-        }
-
-        return null
+    // Use one gray shade for past days so they are easier to spot in the calendar.
+    private fun pastDayGray(): Int {
+        return Color.parseColor("#9E9E9E")
     }
 
-    // Format the due date in a simple readable way for the calendar screen.
-    private fun formatDueDate(dueAt: LocalDateTime): String {
-        return dueAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
+    // Apply a 40 percent alpha so the subject color becomes a soft shaded background.
+    private fun withSubjectTint(color: Int): Int {
+        val alpha = (255 * 0.4f).toInt()
+        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+    }
+
+    // Build the basic background for one day cell and add an outline when that day has assignments.
+    private fun buildDayCellBackground(hasAssignments: Boolean, isPastDay: Boolean): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 12f * resources.displayMetrics.density
+            setColor(Color.parseColor("#F7F7F7"))
+            if (hasAssignments) {
+                val strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                setStroke(strokeWidth, if (isPastDay) pastDayGray() else Color.BLACK)
+            }
+        }
     }
 }
 
+
+// if you are reading this, im as amazed as you that this worked.
+// the tutorial was 8 years old
