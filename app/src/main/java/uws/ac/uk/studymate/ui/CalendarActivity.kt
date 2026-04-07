@@ -2,6 +2,10 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Gravity
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -42,9 +46,20 @@ class CalendarActivity : AppCompatActivity() {
             setPadding(padding, padding, padding, padding)
         }
 
+        val headerRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
         calendarTitleText = TextView(this).apply {
             text = "Calendar"
             textSize = 24f
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+        }
+
+        val homeBtn = Button(this).apply {
+            text = "Home"
         }
 
         calendarItemsText = TextView(this).apply {
@@ -53,7 +68,10 @@ class CalendarActivity : AppCompatActivity() {
             setPadding(0, topPadding, 0, 0)
         }
 
-        contentLayout.addView(calendarTitleText)
+        headerRow.addView(calendarTitleText)
+        headerRow.addView(homeBtn)
+
+        contentLayout.addView(headerRow)
         contentLayout.addView(calendarItemsText)
 
         setContentView(
@@ -61,6 +79,11 @@ class CalendarActivity : AppCompatActivity() {
                 addView(contentLayout)
             }
         )
+
+        // Return to the main home screen from the top-right button.
+        homeBtn.setOnClickListener {
+            openHome()
+        }
     }
 
     override fun onResume() {
@@ -76,6 +99,11 @@ class CalendarActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(loginIntent)
+    }
+
+    // Return to the main home screen from the top-right button.
+    private fun openHome() {
+        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
     }
 
     // Load the user's saved assignments and show them on this screen.

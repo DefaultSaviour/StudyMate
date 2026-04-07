@@ -2,6 +2,9 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Gravity
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -36,9 +39,20 @@ class UserSettingsActivity : AppCompatActivity() {
             setPadding(padding, padding, padding, padding)
         }
 
+        val headerRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
         settingsTitleText = TextView(this).apply {
             text = "User settings"
             textSize = 24f
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+        }
+
+        val homeBtn = Button(this).apply {
+            text = "Home"
         }
 
         settingsDetailsText = TextView(this).apply {
@@ -53,7 +67,10 @@ class UserSettingsActivity : AppCompatActivity() {
             setPadding(0, topPadding, 0, 0)
         }
 
-        contentLayout.addView(settingsTitleText)
+        headerRow.addView(settingsTitleText)
+        headerRow.addView(homeBtn)
+
+        contentLayout.addView(headerRow)
         contentLayout.addView(settingsDetailsText)
         contentLayout.addView(logoutBtn)
 
@@ -67,6 +84,11 @@ class UserSettingsActivity : AppCompatActivity() {
         logoutBtn.setOnClickListener {
             sessionManager.logout()
             openLogin()
+        }
+
+        // Return to the main home screen from the top-right button.
+        homeBtn.setOnClickListener {
+            openHome()
         }
     }
 
@@ -83,6 +105,11 @@ class UserSettingsActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(loginIntent)
+    }
+
+    // Return to the main home screen from the top-right button.
+    private fun openHome() {
+        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
     }
 
     // Load the user's saved settings and show them on this screen.
