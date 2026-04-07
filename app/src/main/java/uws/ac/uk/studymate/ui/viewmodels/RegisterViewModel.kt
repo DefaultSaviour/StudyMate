@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
+import uws.ac.uk.studymate.util.SessionManager
 
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -17,6 +18,9 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
     // Use the repository to keep database logic out of the ViewModel.
     private val repo = UserRepo(db)
+
+    // Use the session manager so a new account is logged in as soon as it is created.
+    private val sessionManager = SessionManager(application)
 
 
     // This private value stores whether registration worked.
@@ -38,23 +42,28 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         // Run the registration work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
+            // Clean up the entered values first so extra spaces do not create bad data.
+            val trimmedName = name.trim()
+            val trimmedEmail = email.trim()
+
             // Stop early if any required field is empty.
-            if (name.isBlank() || email.isBlank() || password.isBlank()) {
+            if (trimmedName.isBlank() || trimmedEmail.isBlank() || password.isBlank()) {
                 _errorMessage.postValue("Please fill in all fields")
                 _registrationSuccess.postValue(false)
                 return@launch
             }
 
             // Check whether another account already uses this email.
-            val existingUser = repo.getUserByEmail(email)
+            val existingUser = repo.getUserByEmail(trimmedEmail)
             if (existingUser != null) {
                 _errorMessage.postValue("An account with that email already exists")
                 _registrationSuccess.postValue(false)
                 return@launch
             }
 
-            // Create the new user and clear any previous error.
-            repo.createUserWithDefaults(name, email, password)
+            // Create the new user, save their session, and clear any previous error.
+            val newUserId = repo.createUserWithDefaults(trimmedName, trimmedEmail, password)
+            sessionManager.login(newUserId)
             _errorMessage.postValue(null)
 
             // Tell the UI that registration finished successfully.
