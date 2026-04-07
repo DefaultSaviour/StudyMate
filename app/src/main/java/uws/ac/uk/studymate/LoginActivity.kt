@@ -2,6 +2,7 @@ package uws.ac.uk.studymate
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
@@ -12,7 +13,12 @@ class LoginActivity : AppCompatActivity() {
         supportActionBar?.hide()
         setContentView(R.layout.activity_login)
 
+        val loginButton = findViewById<Button>(R.id.loginButton)
         val registerText = findViewById<TextView>(R.id.registerText)
+
+        loginButton.setOnClickListener {
+            startActivity(Intent(this, DashboardActivity::class.java))
+        }
 
         registerText.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))

@@ -10,52 +10,54 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyMate">
-
+        <activity
+            android:name=".ui.AddFlashcardActivity"
+            android:exported="false" />
         <activity
             android:name=".SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
-
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
-
         <activity
-            android:name=".ui.DashboardActivity"
+            android:name=".DashboardActivity"
             android:exported="false" />
-
+        <activity
+            android:name=".ui.FlashcardDeckActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.FlashcardViewerActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.AddAssignmentActivity"
             android:exported="false" />
-
         <activity
             android:name=".ui.SettingsActivity"
             android:exported="false" />
-
         <activity
             android:name=".ui.AssignmentsActivity"
             android:exported="false" />
-
         <activity
             android:name=".ui.SubjectsActivity"
             android:exported="false" />
-
         <activity
             android:name=".ui.UserTestActivity"
             android:exported="false" />
-
         <activity
             android:name=".ui.MainActivity"
             android:exported="false" />
-
+        <activity
+            android:name=".ui.AddFlashcardActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
