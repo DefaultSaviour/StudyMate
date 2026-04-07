@@ -62,6 +62,10 @@ class CalendarActivity : AppCompatActivity() {
             text = "Home"
         }
 
+        val addAssignmentBtn = Button(this).apply {
+            text = "Add assignment"
+        }
+
         calendarItemsText = TextView(this).apply {
             text = "No calendar items yet"
             val topPadding = (16 * resources.displayMetrics.density).toInt()
@@ -72,6 +76,7 @@ class CalendarActivity : AppCompatActivity() {
         headerRow.addView(homeBtn)
 
         contentLayout.addView(headerRow)
+        contentLayout.addView(addAssignmentBtn)
         contentLayout.addView(calendarItemsText)
 
         setContentView(
@@ -83,6 +88,11 @@ class CalendarActivity : AppCompatActivity() {
         // Return to the main home screen from the top-right button.
         homeBtn.setOnClickListener {
             openHome()
+        }
+
+        // Open the add assignment screen from the calendar page.
+        addAssignmentBtn.setOnClickListener {
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.AddAssignmentActivity"))
         }
     }
 
@@ -113,7 +123,8 @@ class CalendarActivity : AppCompatActivity() {
                 val userId = sessionManager.getLoggedInUserId() ?: return@withContext null
                 val user = repo.getUser(userId) ?: return@withContext null
                 val assignments = db.assignmentDao().getAssignments(userId)
-                user.name to buildCalendarItemsText(assignments)
+                val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
+                user.name to buildCalendarItemsText(assignments, subjectsById.mapValues { it.value.name })
             }
 
             if (result == null) {
@@ -128,26 +139,32 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     // Turn the saved assignments into a simple readable list for the calendar screen.
-    private fun buildCalendarItemsText(assignments: List<Assignment>): String {
+    private fun buildCalendarItemsText(assignments: List<Assignment>, subjectNamesById: Map<Int, String>): String {
         if (assignments.isEmpty()) {
             return "No calendar items yet"
         }
 
-        val datedAssignments = assignments
-            .map { assignment -> assignment to parseDueDate(assignment.dueDate) }
+        val now = LocalDateTime.now()
+        val upcomingAssignments = assignments
+            .mapNotNull { assignment ->
+                val dueAt = parseDueDate(assignment.dueDate) ?: return@mapNotNull null
+                if (dueAt.isBefore(now)) {
+                    return@mapNotNull null
+                }
+                Triple(assignment, dueAt, subjectNamesById[assignment.subjectId] ?: "Unknown subject")
+            }
             .sortedWith(
-                compareBy<Pair<Assignment, LocalDateTime?>> { it.second == null }
-                    .thenBy { it.second ?: LocalDateTime.MAX }
+                compareBy<Triple<Assignment, LocalDateTime, String>> { it.second }
+                    .thenBy { it.third.lowercase() }
                     .thenBy { it.first.title.lowercase() }
             )
 
-        return datedAssignments.joinToString("\n\n") { (assignment, dueAt) ->
-            val dueText = if (dueAt == null) {
-                assignment.dueDate?.takeIf { it.isNotBlank() } ?: "No due date saved"
-            } else {
-                formatDueDate(dueAt)
-            }
-            "${assignment.title}\nDue: $dueText"
+        if (upcomingAssignments.isEmpty()) {
+            return "No upcoming calendar items yet"
+        }
+
+        return upcomingAssignments.joinToString("\n\n") { (assignment, dueAt, subjectName) ->
+            "$subjectName\nAssignment: ${assignment.title}\nTime due: ${formatDueDate(dueAt)}"
         }
     }
 

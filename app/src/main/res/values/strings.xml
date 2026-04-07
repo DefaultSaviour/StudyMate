@@ -7,6 +7,7 @@
     <string name="next_due_details_placeholder">Add an assignment with a due date to see your next deadline here.</string>
     <string name="assignments_button">Assignments</string>
     <string name="flashcards_button">Flashcards</string>
+    <string name="subjects_button">Subjects</string>
     <string name="calendar_button">Calendar</string>
     <string name="statistics_button">Statistics</string>
     <string name="calendar_title">Calendar</string>

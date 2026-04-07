@@ -43,6 +43,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.AddAssignmentActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.SubjectsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.UserTestActivity"
             android:exported="false" />
 

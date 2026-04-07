@@ -33,4 +33,8 @@ interface SubjectDao {
     @Transaction
     @Query("SELECT * FROM Subjects WHERE user_id = :userId")
     suspend fun getSubjectsWithDecks(userId: Int): List<SubjectWithDecks>
+
+    // Find one subject by name for a user, ignoring letter case.
+    @Query("SELECT * FROM Subjects WHERE user_id = :userId AND LOWER(name) = LOWER(:name) LIMIT 1")
+    suspend fun getByName(userId: Int, name: String): Subject?
 }

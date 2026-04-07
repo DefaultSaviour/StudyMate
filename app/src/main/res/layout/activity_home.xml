@@ -64,6 +64,14 @@
             android:text="@string/flashcards_button" />
 
         <Button
+            android:id="@+id/subjectsBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="72dp"
+            android:text="Subjects" />
+
+        <Button
             android:id="@+id/calendarBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

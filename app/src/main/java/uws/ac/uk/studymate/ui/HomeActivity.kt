@@ -28,6 +28,7 @@ class HomeActivity : AppCompatActivity() {
         val nextDueDetailsText = findViewById<TextView>(R.id.nextDueDetailsText)
         val assignmentsBtn = findViewById<Button>(R.id.assignmentsBtn)
         val flashcardsBtn = findViewById<Button>(R.id.flashcardsBtn)
+        val subjectsBtn = findViewById<Button>(R.id.subjectsBtn)
         val calendarBtn = findViewById<Button>(R.id.calendarBtn)
         val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
         // Disabled for now: this testing-only ClearAllData button used to wipe every table.
@@ -69,6 +70,11 @@ class HomeActivity : AppCompatActivity() {
 
         flashcardsBtn.setOnClickListener {
             Toast.makeText(this, "Flashcards screen not built yet", Toast.LENGTH_SHORT).show()
+        }
+
+        // Open the subjects screen so the user can add or remove subjects.
+        subjectsBtn.setOnClickListener {
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.SubjectsActivity"))
         }
 
         // Open the full calendar screen because calendar items no longer live on home.
