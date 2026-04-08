@@ -9,6 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Top bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="120dp"
@@ -37,18 +38,21 @@
                 android:layout_marginEnd="48dp" />
         </LinearLayout>
 
+        <!-- Form -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp">
 
+            <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="4dp"
                 android:background="@color/studymate_purple"
                 android:layout_marginBottom="28dp" />
 
+            <!-- Title input -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -69,6 +73,7 @@
                 android:textColorHint="@color/studymate_text_secondary"
                 android:layout_marginBottom="24dp" />
 
+            <!-- Subject spinner -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -84,6 +89,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp" />
 
+            <!-- Due date input -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -107,6 +113,7 @@
                 android:clickable="true"
                 android:inputType="none" />
 
+            <!-- Save button -->
             <Button
                 android:id="@+id/saveAssignmentBtn"
                 android:layout_width="match_parent"
