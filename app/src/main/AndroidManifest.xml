@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:allowBackup="true"
@@ -13,7 +12,7 @@
         android:theme="@style/Theme.StudyMate">
 
         <activity
-            android:name=".ui.UserTestActivity"
+            android:name=".ui.LoginActivity"
             android:exported="true">
 
             <intent-filter>
@@ -22,6 +21,42 @@
             </intent-filter>
 
         </activity>
+
+        <activity
+            android:name=".ui.RegisterActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.HomeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.AssignmentsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.CalendarActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.StatisticsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.UserSettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.AddAssignmentActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.SubjectsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.UserTestActivity"
+            android:exported="false" />
 
         <activity
             android:name=".ui.MainActivity"

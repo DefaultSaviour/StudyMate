@@ -2,6 +2,7 @@ package uws.ac.uk.studymate.data.repositories
 
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Subject
+import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
 
 // Handles subject-related database operations through the DAO.
 class SubjectRepo(private val db: StudyMateDatabase) {
@@ -13,6 +14,16 @@ class SubjectRepo(private val db: StudyMateDatabase) {
 
     // Get all subjects that belong to a specific user.
     suspend fun getSubjects(userId: Int) = db.subjectDao().getSubjects(userId)
+
+    // Get all subjects together with their assignments for one user.
+    suspend fun getSubjectsWithAssignments(userId: Int): List<SubjectWithAssignments> {
+        return db.subjectDao().getSubjectsWithAssignments(userId)
+    }
+
+    // Find a subject by name for one user, or return null if it does not exist.
+    suspend fun getSubjectByName(userId: Int, name: String): Subject? {
+        return db.subjectDao().getByName(userId, name)
+    }
 
     // Remove a subject from the database.
     suspend fun deleteSubject(subject: Subject) = db.subjectDao().delete(subject)
