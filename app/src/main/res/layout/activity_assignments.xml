@@ -4,8 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/studymate_background">
 
+    <!-- Title -->
     <TextView
         android:id="@+id/titleText"
         android:layout_width="wrap_content"
@@ -13,32 +15,27 @@
         android:text="Assignments"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
+        android:textColor="@color/studymate_text_primary"
+        android:layout_marginBottom="16dp"/>
 
-    <EditText
-        android:id="@+id/assignmentTitleInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Assignment title" />
-
-    <EditText
-        android:id="@+id/dueDateInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Due date e.g. 2026-04-01"
-        android:layout_marginTop="8dp" />
-
+    <!-- Button to Add Assignment -->
     <Button
         android:id="@+id/addAssignmentBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Add Assignment"
-        android:layout_marginTop="8dp" />
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="@color/studymate_pink"
+        android:textColor="@android:color/white"
+        android:textAllCaps="false"
+        android:textStyle="bold"
+        android:padding="14dp"/>
 
+    <!-- List of assignments -->
     <ListView
         android:id="@+id/assignmentsList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="16dp" />
-
+        android:divider="@color/studymate_purple"
+        android:dividerHeight="1dp"/>
 </LinearLayout>

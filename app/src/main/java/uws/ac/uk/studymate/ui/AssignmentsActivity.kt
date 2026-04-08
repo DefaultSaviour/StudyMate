@@ -1,11 +1,10 @@
 package uws.ac.uk.studymate.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ListView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import uws.ac.uk.studymate.R
@@ -19,50 +18,47 @@ class AssignmentsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_assignments)
 
-        val titleInput = findViewById<EditText>(R.id.assignmentTitleInput)
-        val dueDateInput = findViewById<EditText>(R.id.dueDateInput)
         val addButton = findViewById<Button>(R.id.addAssignmentBtn)
         val listView = findViewById<ListView>(R.id.assignmentsList)
 
-        // TEMP: using test user/subject IDs for now while testing
-        // TODO: replace with real logged-in user ID and selected subject ID later
+        // TEMP: test user ID
         val userId = 1
-        val subjectId = 2
 
+        // Adapter to display assignments
         val adapter = ArrayAdapter<String>(
             this,
             android.R.layout.simple_list_item_1,
             mutableListOf()
         )
-
         listView.adapter = adapter
 
+        // Observe assignments from ViewModel
         viewModel.loadAssignments(userId)
-
         viewModel.assignments.observe(this) { assignments ->
             adapter.clear()
-            adapter.addAll(
-                assignments.map { "${it.title} - ${it.dueDate ?: "No due date"}" }
-            )
+            adapter.addAll(assignments.map { "${it.title} - ${it.dueDate ?: "No due date"}" })
         }
 
+        // Open AddAssignmentActivity when button clicked
         addButton.setOnClickListener {
-            val title = titleInput.text.toString()
-            //replace manual date with proper date picking
-            val dueDate = dueDateInput.text.toString()
-
-            if (title.isNotEmpty()) {
-                viewModel.addAssignment(
-                    userId = userId,
-                    subjectId = subjectId,
-                    title = title,
-                    dueDate = if (dueDate.isBlank()) null else dueDate
-                )
-                titleInput.text.clear()
-                dueDateInput.text.clear()
-            } else {
-                Toast.makeText(this, "Enter an assignment title", Toast.LENGTH_SHORT).show()
-            }
+            startActivity(Intent(this, AddAssignmentActivity::class.java))
         }
+
+        // Click an assignment to open AssignmentDetailActivity
+        listView.setOnItemClickListener { _, _, position, _ ->
+            val assignment = viewModel.assignments.value?.get(position)
+            val intent = Intent(this, AssignmentDetailActivity::class.java).apply {
+                putExtra("title", assignment?.title)
+                putExtra("subject", "Sample Subject") // TEMP placeholder
+                putExtra("dueDate", assignment?.dueDate)
+            }
+            startActivity(intent)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val userId = 1 // TEMP: replace with logged-in user ID
+        viewModel.loadAssignments(userId)
     }
 }
