@@ -31,6 +31,12 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var repo: UserRepo
     private lateinit var db: StudyMateDatabase
 
+    /**
+     This screen shows the user's assignment list in one place.
+     it started from the old calendar list screen, and later got renamed because this made more sense.
+     it now keeps only the upcoming assignments and shows them in a cleaner order.
+
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

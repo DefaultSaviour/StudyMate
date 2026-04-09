@@ -17,7 +17,7 @@ import androidx.room.*
 )
 data class UserSettings(
     @PrimaryKey
-    @ColumnInfo(name = "user_id", index = true) val userId: Int,                                           // The user these settings belong to (also the primary key).
+    @ColumnInfo(name = "user_id", index = true) val userId: Int,                                                // The user these settings belong to (also the primary key).
     @ColumnInfo(name = "notifications_enabled", defaultValue = "1") val notificationsEnabled: Boolean = true, // Whether push notifications are turned on.
     @ColumnInfo(name = "dark_mode_enabled", defaultValue = "0") val darkModeEnabled: Boolean = false,         // Whether dark mode is turned on.
     @ColumnInfo(defaultValue = "'UTC'") val timezone: String = "UTC"                                          // The user's chosen timezone.

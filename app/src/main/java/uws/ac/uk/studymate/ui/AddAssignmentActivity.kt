@@ -35,6 +35,12 @@ class AddAssignmentActivity : AppCompatActivity() {
     private var subjects: List<Subject> = emptyList()
     private var selectedDueDateTime: LocalDateTime? = null
 
+    /**
+     This screen lets the user add a new assignment without leaving the app flow.
+     it started with a title, subject, and date, and later got the time picker as well.
+     it now saves the full due date and time and keeps the form simple.
+     the final UI can style this later, but the steps are clear and working now.
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

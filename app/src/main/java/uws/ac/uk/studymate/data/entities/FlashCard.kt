@@ -23,7 +23,7 @@ import androidx.room.*
     ]
 )
 data class FlashCard(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,       // Auto-generated unique ID.
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,               // Auto-generated unique ID.
     @ColumnInfo(name = "user_id", index = true) val userId: Int,  // The user who owns this card.
     @ColumnInfo(name = "deck_id", index = true) val deckId: Int?, // The deck this card belongs to, or null if unassigned.
     val front: String,                                            // The question or prompt shown on the front.

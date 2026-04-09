@@ -31,6 +31,12 @@ class CalendarActivity : AppCompatActivity() {
     private var currentMonth: YearMonth = YearMonth.now()
     private var entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>> = emptyMap()
 
+    /**
+     This screen gives the user a simple month view of their assignments.
+     it started as a basic day grid, and later got colored markers, outlines, and the popup for each day.
+     it now keeps the calendar cleaner by showing stars in the cell and the full list after a tap.
+     the calendar flow is much clearer now and actually working
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -272,7 +278,14 @@ class CalendarActivity : AppCompatActivity() {
         return cell
     }
 
-    // Show one simple marker per assignment so the calendar stays neat inside each day cell.
+
+     /**
+     Show one simple marker per assignment so the calendar stays neat inside each day cell.
+     updates to show a star "★" instead of a colored block, and up to 5 stars per day with a "+X" when there are more than 5 assignments.
+     updated again to show a colored star using the subject color.
+     updated again to only have 2 stars per row to stop them getting cut off.
+     the UI people should finalize this anyway they see fit
+      **/
     private fun createAssignmentMarkers(entries: List<CalendarAssignmentEntry>, isPastDay: Boolean): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -303,7 +316,7 @@ class CalendarActivity : AppCompatActivity() {
                     }
                 )
             }
-
+            // this is working but might need adjusting depending on what the UI people do
             if (entries.size > 5) {
                 addView(
                     TextView(this@CalendarActivity).apply {
@@ -311,7 +324,7 @@ class CalendarActivity : AppCompatActivity() {
                         textSize = 11f
                         val extraTopPadding = (2 * resources.displayMetrics.density).toInt()
                         setPadding(0, extraTopPadding, 0, 0)
-                        setTextColor(if (isPastDay) pastDayGray() else Color.BLACK)
+                        setTextColor(if (isPastDay) pastDayGray() else Color.BLACK) // gray if past the date in the calendar
                     }
                 )
             }
@@ -319,7 +332,12 @@ class CalendarActivity : AppCompatActivity() {
     }
 
 
-    // Show the tapped day's assignments in a popup using softly colored subject boxes.
+    /**
+     Show the full list for one day after the user taps a calendar cell.
+     this started as text inside the cell, and later moved to a popup because the cells got too crowded.
+     it now gives each assignment its own colored box and keeps the month view cleaner.
+     the final UI can make this popup look better later, but the idea is much easier to read now.
+     **/
     private fun showAssignmentsDialog(date: LocalDate, entries: List<CalendarAssignmentEntry>) {
         val contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

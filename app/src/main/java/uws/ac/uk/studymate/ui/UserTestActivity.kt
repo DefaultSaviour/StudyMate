@@ -18,6 +18,11 @@ class UserTestActivity : AppCompatActivity() {
     private lateinit var registerVm: RegisterViewModel
     private lateinit var testVm: UserTestViewModel
 
+    /**
+     This screen is a simple testing page for adding, loading, and deleting users.
+     it started as a quick way to check the user table, and later got the add and delete actions together.
+     this can stay plain for now because it is mainly for checking things during development.
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_test)

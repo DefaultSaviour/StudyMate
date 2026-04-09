@@ -26,6 +26,11 @@ class StatisticsActivity : AppCompatActivity() {
     private lateinit var metricsContainer: LinearLayout
     private lateinit var subjectProgressContainer: LinearLayout
 
+    /**
+     This screen gives the user a quick view of their progress.
+     it started as a plain text page, and later got the summary cards and subject progress list.
+     it now keeps the main numbers at the top and the subject detail underneath.
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -161,7 +166,11 @@ class StatisticsActivity : AppCompatActivity() {
         }
     }
 
-    // Build the subject-by-subject progress list shown under the summary cards.
+    /**
+     Show the subject progress section under the main numbers.
+     this started as simple text, and later changed into one row per subject.
+     it now makes it easier to see which subject is moving and which one is still behind.
+     **/
     private fun renderSubjectProgress(subjectProgress: List<SubjectDeckProgress>) {
         subjectProgressContainer.removeAllViews()
 

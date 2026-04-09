@@ -25,6 +25,12 @@ class UserSettingsActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private lateinit var repo: UserRepo
 
+    /**
+     This screen gives the user one place to check their saved settings and log out.
+     it started as a very plain page, and later got the home button and the live settings text.
+     it now keeps the settings simple and leaves the risky logout action easy to find.
+     UI team might need to fix this but i think it right?
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

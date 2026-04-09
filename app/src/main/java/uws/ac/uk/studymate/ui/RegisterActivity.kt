@@ -16,6 +16,11 @@ class RegisterActivity : AppCompatActivity() {
 
     private lateinit var registerVm: RegisterViewModel
 
+    /**
+     This screen lets the user make an account and go straight into the app.
+     it started as a basic form, and later got the success message and direct move to home.
+     it now keeps the register flow clear without adding too much extra stuff
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
