@@ -2,8 +2,6 @@ package uws.ac.uk.studymate.data
 
 import android.content.Context
 import androidx.room.*
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import uws.ac.uk.studymate.data.dao.*
 import uws.ac.uk.studymate.data.entities.*
 
@@ -21,7 +19,7 @@ import uws.ac.uk.studymate.data.entities.*
         FlashCard::class
     ],
     exportSchema = false,
-    version = 2
+    version = 4
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -40,13 +38,6 @@ abstract class StudyMateDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: StudyMateDatabase? = null
 
-        // This migration updates older version-1 databases by adding the password_salt column.
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE User ADD COLUMN password_salt TEXT NOT NULL DEFAULT ''")
-            }
-        }
-
         // Return the existing database instance, or create a new one if it does not exist yet.
         fun getInstance(context: Context): StudyMateDatabase =
             INSTANCE ?: synchronized(this) {
@@ -55,7 +46,8 @@ abstract class StudyMateDatabase : RoomDatabase() {
                     StudyMateDatabase::class.java,
                     "StudyMate.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    // Clear the old local database so the new assignment icon setup starts clean.
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }

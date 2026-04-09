@@ -13,6 +13,7 @@ import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.AssignmentRepo
 import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
+import uws.ac.uk.studymate.util.AssignmentIcons
 import uws.ac.uk.studymate.util.SessionManager
 
 // Holds the small set of values that the add assignment screen needs to display.
@@ -97,7 +98,7 @@ class AddAssignmentViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun saveAssignment(title: String, selectedSubject: Subject?, dueDate: String?) {
+    fun saveAssignment(title: String, selectedSubject: Subject?, dueDate: String?, iconKey: String?) {
         // Validate the entered values before trying to save.
         val trimmedTitle = title.trim()
         if (trimmedTitle.isEmpty()) {
@@ -114,6 +115,8 @@ class AddAssignmentViewModel(application: Application) : AndroidViewModel(applic
             _message.value = "Choose a due date"
             return
         }
+
+        val savedIconKey = AssignmentIcons.optionForKey(iconKey).key
 
         // Run the save work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
@@ -139,7 +142,8 @@ class AddAssignmentViewModel(application: Application) : AndroidViewModel(applic
                     userId = userId,
                     subjectId = selectedSubject.id,
                     title = trimmedTitle,
-                    dueDate = dueDate
+                    dueDate = dueDate,
+                    icon = savedIconKey
                 )
             )
 

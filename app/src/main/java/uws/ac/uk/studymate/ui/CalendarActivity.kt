@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -17,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
+import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -365,9 +367,12 @@ class CalendarActivity : AppCompatActivity() {
         val subjectColor = parseSubjectColor(entry.subjectColorHex)
         val padding = (12 * resources.displayMetrics.density).toInt()
         val topMargin = (8 * resources.displayMetrics.density).toInt()
+        val badgeSize = (44 * resources.displayMetrics.density).toInt()
+        val iconSize = (20 * resources.displayMetrics.density).toInt()
 
         val block = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(withSubjectTint(subjectColor))
             setPadding(padding, padding, padding, padding)
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
@@ -376,6 +381,28 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         block.addView(
+            LinearLayout(this).apply {
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(badgeSize, badgeSize).apply {
+                    marginEnd = (12 * resources.displayMetrics.density).toInt()
+                }
+                background = buildPopupIconBadgeBackground(subjectColor)
+                addView(
+                    ImageView(this@CalendarActivity).apply {
+                        layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+                        setImageResource(AssignmentIcons.drawableForKey(entry.iconKey))
+                        setColorFilter(Color.WHITE)
+                    }
+                )
+            }
+        )
+
+        val textColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+        }
+
+        textColumn.addView(
             TextView(this).apply {
                 text = entry.subjectName
                 textSize = 14f
@@ -383,7 +410,7 @@ class CalendarActivity : AppCompatActivity() {
             }
         )
 
-        block.addView(
+        textColumn.addView(
             TextView(this).apply {
                 text = entry.assignmentTitle
                 textSize = 16f
@@ -391,13 +418,15 @@ class CalendarActivity : AppCompatActivity() {
             }
         )
 
-        block.addView(
+        textColumn.addView(
             TextView(this).apply {
                 text = entry.dueAt.format(DateTimeFormatter.ofPattern("HH:mm"))
                 textSize = 14f
                 setTextColor(Color.BLACK)
             }
         )
+
+        block.addView(textColumn)
 
         return block
     }
@@ -420,6 +449,15 @@ class CalendarActivity : AppCompatActivity() {
     private fun withSubjectTint(color: Int): Int {
         val alpha = (255 * 0.4f).toInt()
         return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+    }
+
+    // Use the subject color behind the saved icon so the popup matches the rest of the app.
+    private fun buildPopupIconBadgeBackground(subjectColor: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 12f * resources.displayMetrics.density
+            setColor(subjectColor)
+        }
     }
 
     // Build the basic background for one day cell and add an outline when that day has assignments.
