@@ -20,7 +20,8 @@ data class CalendarAssignmentEntry(
     val subjectName: String,
     val assignmentTitle: String,
     val dueAt: LocalDateTime,
-    val subjectColorHex: String?
+    val subjectColorHex: String?,
+    val iconKey: String
 )
 
 // Holds the data that the calendar screen needs to display.
@@ -85,7 +86,8 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                         subjectName = subject?.name ?: "Unknown subject",
                         assignmentTitle = assignment.title,
                         dueAt = dueAt,
-                        subjectColorHex = subject?.color
+                        subjectColorHex = subject?.color,
+                        iconKey = assignment.icon
                     )
                 }
                 .sortedWith(

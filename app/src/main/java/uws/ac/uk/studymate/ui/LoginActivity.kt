@@ -18,6 +18,12 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var loginVm: LoginViewModel
     private lateinit var sessionManager: SessionManager
 
+    /**
+     This screen lets the user log in and skip ahead if they already signed in.
+     it started as a simple email and password screen, and later got the session check at the top.
+     it now also shows clear success and error messages.
+     the final UI can clean this up later, but the flow is doing the right job for now.
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)

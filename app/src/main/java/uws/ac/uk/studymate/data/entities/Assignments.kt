@@ -23,9 +23,10 @@ ForeignKey(
     ]
             )
 data class Assignment(
-        @PrimaryKey(autoGenerate = true) val id: Int = 0,        // Auto-generated unique ID.
+        @PrimaryKey(autoGenerate = true) val id: Int = 0,                   // Auto-generated unique ID.
         @ColumnInfo(name = "user_id", index = true) val userId: Int,     // The user who owns this assignment.
         @ColumnInfo(name = "subject_id", index = true) val subjectId: Int, // The subject this assignment belongs to.
         val title: String,                                                // The name of the assignment.
-        @ColumnInfo(name = "due_date") val dueDate: String?               // Optional due date for the assignment.
+        @ColumnInfo(name = "due_date") val dueDate: String?,             // The saved due date and time for the assignment.
+        @ColumnInfo(name = "icon") val icon: String = "assignment"      // The saved icon key that the UI uses later.
 )

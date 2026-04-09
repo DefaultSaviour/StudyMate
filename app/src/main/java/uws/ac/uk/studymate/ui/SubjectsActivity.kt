@@ -40,6 +40,11 @@ class SubjectsActivity : AppCompatActivity() {
     private var colorChoices: List<SubjectColorChoice> = emptyList()
     private var selectedSubjectId: Int? = null
 
+    /**
+     This screen lets the user add subjects and remove them in one place.
+     it started as a simple subject manager, and later got the assignment preview and delete warning.
+     it now keeps the risky delete part and the add part separate so the page is easier to follow.
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

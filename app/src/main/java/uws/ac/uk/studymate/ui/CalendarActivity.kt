@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -17,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
+import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -31,6 +33,12 @@ class CalendarActivity : AppCompatActivity() {
     private var currentMonth: YearMonth = YearMonth.now()
     private var entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>> = emptyMap()
 
+    /**
+     This screen gives the user a simple month view of their assignments.
+     it started as a basic day grid, and later got colored markers, outlines, and the popup for each day.
+     it now keeps the calendar cleaner by showing stars in the cell and the full list after a tap.
+     the calendar flow is much clearer now and actually working
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -272,7 +280,14 @@ class CalendarActivity : AppCompatActivity() {
         return cell
     }
 
-    // Show one simple marker per assignment so the calendar stays neat inside each day cell.
+
+     /**
+     Show one simple marker per assignment so the calendar stays neat inside each day cell.
+     updates to show a star "★" instead of a colored block, and up to 5 stars per day with a "+X" when there are more than 5 assignments.
+     updated again to show a colored star using the subject color.
+     updated again to only have 2 stars per row to stop them getting cut off.
+     the UI people should finalize this anyway they see fit
+      **/
     private fun createAssignmentMarkers(entries: List<CalendarAssignmentEntry>, isPastDay: Boolean): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -303,7 +318,7 @@ class CalendarActivity : AppCompatActivity() {
                     }
                 )
             }
-
+            // this is working but might need adjusting depending on what the UI people do
             if (entries.size > 5) {
                 addView(
                     TextView(this@CalendarActivity).apply {
@@ -311,7 +326,7 @@ class CalendarActivity : AppCompatActivity() {
                         textSize = 11f
                         val extraTopPadding = (2 * resources.displayMetrics.density).toInt()
                         setPadding(0, extraTopPadding, 0, 0)
-                        setTextColor(if (isPastDay) pastDayGray() else Color.BLACK)
+                        setTextColor(if (isPastDay) pastDayGray() else Color.BLACK) // gray if past the date in the calendar
                     }
                 )
             }
@@ -319,7 +334,12 @@ class CalendarActivity : AppCompatActivity() {
     }
 
 
-    // Show the tapped day's assignments in a popup using softly colored subject boxes.
+    /**
+     Show the full list for one day after the user taps a calendar cell.
+     this started as text inside the cell, and later moved to a popup because the cells got too crowded.
+     it now gives each assignment its own colored box and keeps the month view cleaner.
+     the final UI can make this popup look better later, but the idea is much easier to read now.
+     **/
     private fun showAssignmentsDialog(date: LocalDate, entries: List<CalendarAssignmentEntry>) {
         val contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -347,9 +367,12 @@ class CalendarActivity : AppCompatActivity() {
         val subjectColor = parseSubjectColor(entry.subjectColorHex)
         val padding = (12 * resources.displayMetrics.density).toInt()
         val topMargin = (8 * resources.displayMetrics.density).toInt()
+        val badgeSize = (44 * resources.displayMetrics.density).toInt()
+        val iconSize = (20 * resources.displayMetrics.density).toInt()
 
         val block = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(withSubjectTint(subjectColor))
             setPadding(padding, padding, padding, padding)
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
@@ -358,6 +381,28 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         block.addView(
+            LinearLayout(this).apply {
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(badgeSize, badgeSize).apply {
+                    marginEnd = (12 * resources.displayMetrics.density).toInt()
+                }
+                background = buildPopupIconBadgeBackground(subjectColor)
+                addView(
+                    ImageView(this@CalendarActivity).apply {
+                        layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+                        setImageResource(AssignmentIcons.drawableForKey(entry.iconKey))
+                        setColorFilter(Color.WHITE)
+                    }
+                )
+            }
+        )
+
+        val textColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+        }
+
+        textColumn.addView(
             TextView(this).apply {
                 text = entry.subjectName
                 textSize = 14f
@@ -365,7 +410,7 @@ class CalendarActivity : AppCompatActivity() {
             }
         )
 
-        block.addView(
+        textColumn.addView(
             TextView(this).apply {
                 text = entry.assignmentTitle
                 textSize = 16f
@@ -373,13 +418,15 @@ class CalendarActivity : AppCompatActivity() {
             }
         )
 
-        block.addView(
+        textColumn.addView(
             TextView(this).apply {
                 text = entry.dueAt.format(DateTimeFormatter.ofPattern("HH:mm"))
                 textSize = 14f
                 setTextColor(Color.BLACK)
             }
         )
+
+        block.addView(textColumn)
 
         return block
     }
@@ -402,6 +449,15 @@ class CalendarActivity : AppCompatActivity() {
     private fun withSubjectTint(color: Int): Int {
         val alpha = (255 * 0.4f).toInt()
         return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+    }
+
+    // Use the subject color behind the saved icon so the popup matches the rest of the app.
+    private fun buildPopupIconBadgeBackground(subjectColor: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 12f * resources.displayMetrics.density
+            setColor(subjectColor)
+        }
     }
 
     // Build the basic background for one day cell and add an outline when that day has assignments.

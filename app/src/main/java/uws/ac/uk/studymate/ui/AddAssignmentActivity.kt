@@ -2,14 +2,18 @@ package uws.ac.uk.studymate.ui
 
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.app.TimePickerDialog
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
@@ -19,6 +23,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.ui.viewmodels.AddAssignmentViewModel
+import uws.ac.uk.studymate.util.AssignmentIconOption
+import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -30,11 +36,19 @@ class AddAssignmentActivity : AppCompatActivity() {
     private lateinit var titleInput: EditText
     private lateinit var subjectSpinner: Spinner
     private lateinit var dueDateValueText: TextView
+    private lateinit var iconOptionsContainer: LinearLayout
     private lateinit var saveAssignmentBtn: Button
 
     private var subjects: List<Subject> = emptyList()
     private var selectedDueDateTime: LocalDateTime? = null
+    private var selectedIconKey: String = AssignmentIcons.DEFAULT_KEY
 
+    /**
+     This screen lets the user add a new assignment without leaving the app flow.
+     it started with a title, subject, and date, and later got the time picker as well.
+     it now saves the full due date and time and keeps the form simple.
+     the final UI can style this later, but the steps are clear and working now.
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -102,6 +116,19 @@ class AddAssignmentActivity : AppCompatActivity() {
             setPadding(0, topPadding, 0, 0)
         }
 
+        val iconLabel = TextView(this).apply {
+            text = "Icon"
+            val topPadding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(0, topPadding, 0, 0)
+        }
+
+        iconOptionsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                topMargin = (8 * resources.displayMetrics.density).toInt()
+            }
+        }
+
         val pickDueDateBtn = Button(this).apply {
             text = "Choose due date"
         }
@@ -124,6 +151,8 @@ class AddAssignmentActivity : AppCompatActivity() {
         contentLayout.addView(dueDateLabel)
         contentLayout.addView(dueDateValueText)
         contentLayout.addView(pickDueDateBtn)
+        contentLayout.addView(iconLabel)
+        contentLayout.addView(iconOptionsContainer)
         contentLayout.addView(saveAssignmentBtn)
 
         setContentView(
@@ -137,6 +166,7 @@ class AddAssignmentActivity : AppCompatActivity() {
             screenTitleText.text = summary.titleText
             subjects = summary.subjects
             showSubjects(summary.subjects)
+            showIconOptions()
         }
 
         // Send the user back to login when there is no valid session.
@@ -180,7 +210,8 @@ class AddAssignmentActivity : AppCompatActivity() {
             addAssignmentVm.saveAssignment(
                 title = titleInput.text.toString(),
                 selectedSubject = selectedSubject(),
-                dueDate = selectedDueDateTime?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                dueDate = selectedDueDateTime?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                iconKey = selectedIconKey
             )
         }
     }
@@ -222,6 +253,95 @@ class AddAssignmentActivity : AppCompatActivity() {
         }
 
         saveAssignmentBtn.isEnabled = subjects.isNotEmpty()
+    }
+
+    // Show the small list of icon choices and highlight the one the user picked.
+    private fun showIconOptions() {
+        iconOptionsContainer.removeAllViews()
+
+        AssignmentIcons.options.chunked(3).forEachIndexed { rowIndex, rowOptions ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                    if (rowIndex > 0) {
+                        topMargin = (8 * resources.displayMetrics.density).toInt()
+                    }
+                }
+            }
+
+            rowOptions.forEach { option ->
+                row.addView(createIconOptionView(option))
+            }
+
+            repeat(3 - rowOptions.size) {
+                row.addView(View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+                })
+            }
+
+            iconOptionsContainer.addView(row)
+        }
+    }
+
+    // Build one tappable icon choice for the add assignment screen.
+    private fun createIconOptionView(option: AssignmentIconOption): LinearLayout {
+        val isSelected = option.key == selectedIconKey
+        val outerPadding = (6 * resources.displayMetrics.density).toInt()
+        val iconSize = (26 * resources.displayMetrics.density).toInt()
+        val badgeSize = (54 * resources.displayMetrics.density).toInt()
+        val endPadding = (6 * resources.displayMetrics.density).toInt()
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply {
+                marginEnd = endPadding
+            }
+            setPadding(outerPadding, outerPadding, outerPadding, outerPadding)
+            background = buildIconOptionBackground(isSelected)
+            isClickable = true
+            isFocusable = true
+            contentDescription = option.key
+            setOnClickListener {
+                selectedIconKey = option.key
+                showIconOptions()
+            }
+
+            addView(
+                LinearLayout(this@AddAssignmentActivity).apply {
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(badgeSize, badgeSize)
+                    background = buildIconBadgeBackground(isSelected)
+                    addView(
+                        ImageView(this@AddAssignmentActivity).apply {
+                            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+                            setImageResource(AssignmentIcons.drawableForKey(option.key))
+                            setColorFilter(if (isSelected) Color.parseColor("#4F46E5") else Color.parseColor("#5F6368"))
+                        }
+                    )
+                }
+            )
+        }
+    }
+
+    // Use a slightly stronger border on the icon that is currently selected.
+    private fun buildIconOptionBackground(isSelected: Boolean): GradientDrawable {
+        val strokeWidth = (if (isSelected) 2 else 1) * resources.displayMetrics.density
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 14f * resources.displayMetrics.density
+            setColor(Color.parseColor(if (isSelected) "#EEF2FF" else "#FAFAFA"))
+            setStroke(strokeWidth.toInt(), Color.parseColor(if (isSelected) "#6366F1" else "#D9D9E3"))
+        }
+    }
+
+    // Keep each icon inside its own simple box so the picker feels clear and tidy.
+    private fun buildIconBadgeBackground(isSelected: Boolean): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 12f * resources.displayMetrics.density
+            setColor(Color.parseColor(if (isSelected) "#FFFFFF" else "#F3F4F6"))
+        }
     }
 
     // Return the subject that is currently selected in the dropdown.

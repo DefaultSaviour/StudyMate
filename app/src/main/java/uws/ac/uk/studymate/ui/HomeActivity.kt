@@ -14,6 +14,11 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var homeVm: HomeViewModel
 
+    /**
+     This screen is the main hub that sends the user to the rest of the app.
+     it started as a small home page, and later got more buttons as the other screens were added.
+     it now shows the next due work and the main places the user needs to go
+     **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
