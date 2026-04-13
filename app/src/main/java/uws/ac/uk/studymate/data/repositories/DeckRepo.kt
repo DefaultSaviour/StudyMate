@@ -3,6 +3,10 @@ package uws.ac.uk.studymate.data.repositories
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 
+/*//////////////////////
+Coded by Jamie Coleman
+ 12/03/26
+ *//////////////////////
 // Handles deck-related database operations through the DAO.
 class DeckRepo(private val db: StudyMateDatabase) {
 

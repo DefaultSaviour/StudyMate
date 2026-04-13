@@ -2,7 +2,10 @@ package uws.ac.uk.studymate.data.repositories
 
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+ *//////////////////////
 // Handles flashcard-related database operations through the DAO.
 class FlashCardRepo(private val db: StudyMateDatabase) {
 

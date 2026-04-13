@@ -26,7 +26,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+updated 09/04/26
+ *//////////////////////
 class SubjectsActivity : AppCompatActivity() {
 
     private lateinit var subjectsVm: SubjectsViewModel

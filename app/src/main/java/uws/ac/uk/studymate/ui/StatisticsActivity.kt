@@ -18,7 +18,11 @@ import uws.ac.uk.studymate.ui.viewmodels.StatisticsMetric
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsSummary
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsViewModel
 import uws.ac.uk.studymate.ui.viewmodels.SubjectDeckProgress
-
+/*//////////////////////
+Coded by Jamie Coleman
+05/04/26
+fixed 09/04/26
+ *//////////////////////
 class StatisticsActivity : AppCompatActivity() {
 
     private lateinit var statisticsVm: StatisticsViewModel

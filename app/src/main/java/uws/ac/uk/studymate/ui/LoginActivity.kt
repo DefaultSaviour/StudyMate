@@ -12,7 +12,12 @@ import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.LoginViewModel
 import uws.ac.uk.studymate.util.SessionManager
+/*//////////////////////
+Coded by Jamie Coleman
+15/03/26
+fixed 06/04/24
 
+ *//////////////////////
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var loginVm: LoginViewModel

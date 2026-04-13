@@ -3,8 +3,12 @@ package uws.ac.uk.studymate.data.repositories
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
-
-// Handles subject-related database operations through the DAO.
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+  updated 7/04/26
+ *//////////////////////
+// subject database operations through the DAO.
 class SubjectRepo(private val db: StudyMateDatabase) {
 
     // Create a new subject and return its generated ID.

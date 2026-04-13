@@ -28,7 +28,10 @@ import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
+/*//////////////////////
+Coded by Jamie Coleman
+05/04/26
+ *//////////////////////
 class AddAssignmentActivity : AppCompatActivity() {
 
     private lateinit var addAssignmentVm: AddAssignmentViewModel

@@ -11,7 +11,11 @@ import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.RegisterViewModel
-
+/*//////////////////////
+Coded by Jamie Coleman
+15/03/26
+fixed 06/04/24
+ *//////////////////////
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var registerVm: RegisterViewModel

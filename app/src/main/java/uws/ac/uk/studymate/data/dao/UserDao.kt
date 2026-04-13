@@ -3,7 +3,11 @@ package uws.ac.uk.studymate.data.dao
 import androidx.room.*
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.relations.UserWithSettingsAndStats
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ updated 21/03/26
+ *//////////////////////
 // Provides database operations for the User table.
 @Dao
 interface UserDao {

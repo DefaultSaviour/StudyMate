@@ -10,7 +10,11 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
-
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+fixed 09/04/26
+ *//////////////////////
 // Holds the text that the user settings screen needs to display.
 data class UserSettingsSummary(
     val titleText: String,

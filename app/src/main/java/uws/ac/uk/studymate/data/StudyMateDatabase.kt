@@ -4,7 +4,11 @@ import android.content.Context
 import androidx.room.*
 import uws.ac.uk.studymate.data.dao.*
 import uws.ac.uk.studymate.data.entities.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 09/03/26
+ - i should be tracking migrations as updates
+ *//////////////////////
 
 // List every table the database uses and set the current version number.
 @Database(

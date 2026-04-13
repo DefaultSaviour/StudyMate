@@ -1,4 +1,7 @@
+
 <resources>
+
+
     <string name="app_name">StudyMate</string>
     <string name="user_settings_button">User settings</string>
     <string name="welcome_back_placeholder">Welcome back</string>

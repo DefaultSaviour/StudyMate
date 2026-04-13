@@ -13,7 +13,11 @@ import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
 import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
-
+/*//////////////////////
+Coded by Jamie Coleman
+05/04/26
+fixed 09/04/26
+ *//////////////////////
 // Holds one color option that the add subject form can show by name.
 data class SubjectColorChoice(
     val label: String,

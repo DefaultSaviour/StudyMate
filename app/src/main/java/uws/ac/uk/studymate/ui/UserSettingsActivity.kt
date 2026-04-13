@@ -17,7 +17,11 @@ import kotlinx.coroutines.withContext
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
-
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+fixed 09/04/26
+ *//////////////////////
 class UserSettingsActivity : AppCompatActivity() {
 
     private lateinit var settingsTitleText: TextView

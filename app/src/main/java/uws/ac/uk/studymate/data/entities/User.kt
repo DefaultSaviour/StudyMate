@@ -1,7 +1,10 @@
 package uws.ac.uk.studymate.data.entities
 
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+ *//////////////////////
 // Represents one user in the User table.
 // The email column has a unique index so no two users can share the same email.
 @Entity(

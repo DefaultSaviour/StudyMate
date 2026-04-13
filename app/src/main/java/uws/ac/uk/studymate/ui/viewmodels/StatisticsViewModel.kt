@@ -11,7 +11,11 @@ import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
 import kotlin.math.roundToInt
-
+/*//////////////////////
+Coded by Jamie Coleman
+05/04/26
+fixed 09/04/26
+ *//////////////////////
 // Holds one small metric card shown near the top of the statistics screen.
 data class StatisticsMetric(
     val label: String,

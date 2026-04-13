@@ -1,7 +1,11 @@
 package uws.ac.uk.studymate.data.entities
 
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ updated 7/04/26
+ *//////////////////////
 // Represents one assignment in the Assignments table.
 // Each assignment belongs to a user and a subject.
 // Deleting the user or the subject automatically removes the assignment.

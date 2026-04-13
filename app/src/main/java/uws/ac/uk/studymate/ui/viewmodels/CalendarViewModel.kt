@@ -14,7 +14,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+updated 07/04/26
+updated 09/04/26
+ *//////////////////////
 // Holds one assignment that should appear inside a calendar day cell.
 data class CalendarAssignmentEntry(
     val subjectName: String,

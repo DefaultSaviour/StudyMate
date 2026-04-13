@@ -10,7 +10,11 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.repositories.UserRepo
-
+/*//////////////////////
+Coded by Jamie Coleman
+10/03/26
+- i dont remeber when i removed this
+ *//////////////////////
 class UserTestViewModel(application: Application) : AndroidViewModel(application) {
 
     // Get the app database once so this ViewModel can work with saved user data.

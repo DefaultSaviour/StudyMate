@@ -6,6 +6,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import uws.ac.uk.studymate.R
+/*//////////////////////
+Coded by Jamie Coleman
+10/03/26
+- i dont remeber when i removed this
+ *//////////////////////
+
 
 class MainActivity : AppCompatActivity() {
 

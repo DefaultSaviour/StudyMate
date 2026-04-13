@@ -1,6 +1,9 @@
 package uws.ac.uk.studymate.data.entities
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+ *//////////////////////
 // Represents the settings for one user in the User_Settings table.
 // Each record is linked to a user by user_id.
 // Deleting the user automatically removes their settings.

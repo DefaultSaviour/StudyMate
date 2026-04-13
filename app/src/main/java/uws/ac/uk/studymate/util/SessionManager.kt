@@ -1,7 +1,10 @@
 package uws.ac.uk.studymate.util
 
 import android.content.Context
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 06/04/26
+ *//////////////////////
 class SessionManager(context: Context) {
 
     // Use one shared preferences file to keep the current login session.

@@ -22,7 +22,12 @@ import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+updated 07/04/26
+updated 09/04/26
+ *//////////////////////
 class CalendarActivity : AppCompatActivity() {
 
     private lateinit var calendarVm: CalendarViewModel
@@ -476,4 +481,4 @@ class CalendarActivity : AppCompatActivity() {
 
 
 // if you are reading this, im as amazed as you that this worked.
-// the tutorial was 8 years old
+// the tutorial was 5 years old

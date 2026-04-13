@@ -12,7 +12,11 @@ import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.RegisterViewModel
 import uws.ac.uk.studymate.ui.viewmodels.UserTestViewModel
-
+/*//////////////////////
+Coded by Jamie Coleman
+10/03/26
+- i dont remeber when i removed this
+ *//////////////////////
 class UserTestActivity : AppCompatActivity() {
 
     private lateinit var registerVm: RegisterViewModel

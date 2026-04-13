@@ -15,7 +15,10 @@ import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentIcons
 import uws.ac.uk.studymate.util.SessionManager
-
+/*//////////////////////
+Coded by Jamie Coleman
+05/04/26
+ *//////////////////////
 // Holds the small set of values that the add assignment screen needs to display.
 data class AddAssignmentSummary(
     val titleText: String,

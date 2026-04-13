@@ -9,7 +9,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.HomeViewModel
-
+/*//////////////////////
+Coded by Jamie Coleman
+15/03/26 - ??? was it ???
+updated 18/03/26
+updated 28/03/26
+updated 09/04/26
+ *//////////////////////
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var homeVm: HomeViewModel

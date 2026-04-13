@@ -1,6 +1,10 @@
 package uws.ac.uk.studymate.data.entities
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+  updated 7/04/26
+ *//////////////////////
 // Represents one progress record in the Subject_Progress table.
 // Tracks how many tasks a user has completed out of the total for a subject.
 // Deleting the user or the subject automatically removes the record.

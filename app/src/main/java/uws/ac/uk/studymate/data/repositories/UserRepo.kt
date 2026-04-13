@@ -10,7 +10,11 @@ import uws.ac.uk.studymate.util.PasswordUtils
 
 // Handles user-related database operations through the DAOs.
 class UserRepo(private val db: StudyMateDatabase) {
-
+    /*//////////////////////
+    Coded by Jamie Coleman
+     11/03/26
+      updated 7/04/26
+     *//////////////////////
     // Create a new user together with default settings and stats in one transaction.
     // Return the new user ID so the app can log that user in straight away - this
     // is a workaround im sure this isnt the idiomatic was of doing, it but it works.
