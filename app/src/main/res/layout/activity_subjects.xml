@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/studymate_background"
+    android:padding="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="20dp"
+            android:background="@color/studymate_purple">
+
+            <ImageButton
+                android:id="@+id/backBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_back"
+                android:contentDescription="@string/back" />
+
+            <TextView
+                android:id="@+id/screenTitleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/subjects_title"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/homeBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/home"
+                android:src="@drawable/ic_home" />
+        </LinearLayout>
+
+        <!-- Remove Subject Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/remove_subject_label"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/studymate_text_primary"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/choose_subject"
+                android:textColor="@color/studymate_text_primary"
+                android:layout_marginBottom="8dp"/>
+
+            <Spinner
+                android:id="@+id/removeSubjectSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="51dp"
+                android:layout_marginBottom="16dp"
+                android:spinnerMode="dialog"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/assignmentsOutputText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/assignments_placeholder"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:id="@+id/deleteSubjectBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/delete_subject"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@color/studymate_pink"
+                android:textStyle="bold"
+                android:padding="14dp"
+                android:layout_gravity="center_horizontal"
+                android:minWidth="200dp"/>
+        </LinearLayout>
+
+        <!-- Add Subject Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/add_subject_label"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/studymate_text_primary"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/subject_name_label"
+                android:textColor="@color/studymate_text_primary"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/addSubjectNameInput"
+                android:layout_width="360dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="@color/studymate_purple"
+                android:hint="@string/subject_name_hint"
+                android:padding="12dp"
+                android:textColor="@color/studymate_text_primary"
+                android:textColorHint="@color/studymate_text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/subject_color_label"
+                android:textColor="@color/studymate_text_primary"
+                android:layout_marginBottom="8dp"/>
+
+            <Spinner
+                android:id="@+id/colorSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="51dp"
+                android:layout_marginBottom="16dp"
+                android:spinnerMode="dialog"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <Button
+                android:id="@+id/addSubjectBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/add_subject"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@color/studymate_pink"
+                android:textStyle="bold"
+                android:padding="14dp"
+                android:layout_gravity="center_horizontal"
+                android:minWidth="200dp"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

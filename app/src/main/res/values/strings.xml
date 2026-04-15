@@ -11,14 +11,84 @@
     <string name="calendar_button">Calendar</string>
     <string name="statistics_button">Statistics</string>
     <string name="assignments_title">Assignments</string>
+    <string name="back">Back</string>
+    <string name="home">Home</string>
+    <string name="add_assignment">Add Assignment</string>
+    <string name="assignment_icon">Assignment icon</string>
+    <string name="title_label">Title:</string>
+    <string name="title_hint">Enter assignment title</string>
+    <string name="subject_label">Subject:</string>
+    <string name="due_date_label">Due Date:</string>
+    <string name="due_date_hint">Select due date and time</string>
+    <string name="choose_due_date">Choose due date</string>
+    <string name="icon_label">Icon:</string>
+    <string name="save_assignment">Save Assignment</string>
     <string name="assignments_items_placeholder">No assignments yet</string>
+    <string name="subjects_title">Subjects</string>
+    <string name="remove_subject_label">Remove subject</string>
+    <string name="choose_subject">Choose subject</string>
+    <string name="assignments_placeholder">Select a subject to see its assignments</string>
+    <string name="delete_subject">Delete subject</string>
+    <string name="add_subject_label">Add subject</string>
+    <string name="subject_name_label">Subject name</string>
+    <string name="subject_name_hint">Enter subject name</string>
+    <string name="choose_subject_label">Choose subject</string>
+    <string name="subject_color_label">Subject color</string>
+    <string name="add_subject">Add subject</string>
+    <string name="select_subject_assignments">Select a subject to see its assignments</string>
+    <string name="no_assignments_subject">No assignments for this subject yet</string>
+    <string name="no_subjects_available">No subjects available</string>
+    <string name="no_due_date">No due date</string>
+    <string name="choose_subject_first">Choose a subject first</string>
+    <string name="delete_subject_title">Delete subject</string>
+    <string name="delete_subject_message">This will delete the subject and its assignments. Do you want to continue?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="upcoming_due_date">Upcoming due date</string>
+
+
+    <string name="enter_subject_name">Enter subject name</string>
+    <string name="home_label">Home</string>
     <string name="statistics_title">Statistics</string>
+    <string name="subject_progress_count">%1$d/%2$d</string>
     <string name="statistics_placeholder">Assignments: 0
 Flashcards: 0
 Streak: 0 day(s)</string>
+    <string name="subject_progress_title">Subject progress</string>
+    <string name="flashcards_complete">Flashcards complete</string>
+    <string name="assignments_complete">Assignments complete</string>
+    <string name="daily_streak">Daily streak</string>
+    <string name="cards_studied">Cards studied</string>
+    <string name="progress_completed_over_total">%1$d/%2$d</string>
+    <string name="no_subjects_progress">No subject decks or progress saved yet</string>
+
+    <string name="profile">Profile</string>
+    <string name="profile_icon">Profile Icon</string>
+    <string name="student_name">Student Name</string>
+    <string name="student_email">student@example.com</string>
+    <string name="assignments">Assignments</string>
+    <string name="flashcards">Flashcards</string>
+    <string name="notifications">Notifications</string>
+    <string name="dark_mode">Dark mode</string>
+    <string name="expand_notifications">Expand Notifications</string>
+    <string name="privacy_security">Privacy &amp; Security</string>
+    <string name="expand_privacy">Expand Privacy</string>
+    <string name="keep_signed_in">Keep me signed in</string>
+    <string name="logout">Log Out</string>
     <string name="user_settings_title">User settings</string>
     <string name="user_settings_placeholder">Loading user settings…</string>
-    <string name="logout_button">Logout</string>
     <string name="calendar_title">Calendar</string>
     <string name="calendar_items_placeholder">No calendar items yet</string>
+    <string name="previous_month">&lt;</string>
+    <string name="summary">Summary</string>
+<string name="next_month">&gt;</string>
+<string name="mon">Mon</string>
+<string name="tue">Tue</string>
+<string name="wed">Wed</string>
+<string name="thu">Thu</string>
+<string name="fri">Fri</string>
+<string name="sat">Sat</string>
+<string name="sun">Sun</string>
+
+    <string name="select_a_subject_to_see_its_assignments">Select a subject to see its assignments</string>
 </resources>

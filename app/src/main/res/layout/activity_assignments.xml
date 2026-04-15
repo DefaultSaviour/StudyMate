@@ -1,30 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/studymate_background"
+    android:padding="0dp">
 
+    <!-- Single parent LinearLayout -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/assignmentsTitleText"
+        <!-- Top bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="20dp"
+            android:background="@color/studymate_purple">
+
+            <!-- Back button -->
+            <ImageButton
+                android:id="@+id/backBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_back"
+                android:contentDescription="@string/back" />
+
+            <!-- Screen title centered -->
+            <TextView
+                android:id="@+id/assignmentsTitleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/assignments_title"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <!-- Home button -->
+            <ImageButton
+                android:id="@+id/homeBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/home"
+                android:src="@drawable/ic_home" />
+        </LinearLayout>
+
+        <!-- Body -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/assignments_title"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            android:padding="24dp">
 
-        <TextView
-            android:id="@+id/assignmentsItemsText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/assignments_items_placeholder" />
+            <!-- Add Assignment Button -->
+            <Button
+                android:id="@+id/addAssignmentBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:minWidth="200dp"
+                android:text="@string/add_assignment"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="@color/studymate_pink"
+                android:textColor="@android:color/white"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:padding="14dp"/>
 
+            <!-- Assignments list container -->
+            <LinearLayout
+                android:id="@+id/assignmentsListContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:divider="@color/studymate_border"
+                android:showDividers="middle"/>
+
+            <!-- Placeholder Text -->
+            <TextView
+                android:id="@+id/assignmentsItemsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/assignments_items_placeholder"/>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
-
-

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_marginTop="12dp"
+    android:background="@drawable/rounded_card"
+    android:clipToOutline="true"
+    android:elevation="4dp">
+
+    <!-- Subject Title Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/subjectNameText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Subject Name"
+            android:textSize="18sp"
+            android:textColor="@color/studymate_text_primary" />
+
+        <TextView
+            android:id="@+id/countText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0/0"
+            android:textSize="16sp"
+            android:textColor="@color/studymate_purple" />
+    </LinearLayout>
+
+    <!-- Deck Name -->
+    <TextView
+        android:id="@+id/deckNameText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Deck Name"
+        android:textSize="14sp"
+        android:paddingTop="6dp"
+        android:textColor="@color/studymate_text_secondary" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:progress="0"
+        android:max="10"
+        android:progressTint="@color/studymate_pink"
+        android:progressBackgroundTint="@color/studymate_surface"
+        android:layout_marginTop="10dp" />
+</LinearLayout>

@@ -3,19 +3,16 @@ package uws.ac.uk.studymate.ui
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.ArrayAdapter
+import android.widget.ImageButton
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
@@ -26,7 +23,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+updated 09/04/26
+ *//////////////////////
 class SubjectsActivity : AppCompatActivity() {
 
     private lateinit var subjectsVm: SubjectsViewModel
@@ -41,9 +42,9 @@ class SubjectsActivity : AppCompatActivity() {
     private var selectedSubjectId: Int? = null
 
     /**
-     This screen lets the user add subjects and remove them in one place.
-     it started as a simple subject manager, and later got the assignment preview and delete warning.
-     it now keeps the risky delete part and the add part separate so the page is easier to follow.
+    This screen lets the user add subjects and remove them in one place.
+    it started as a simple subject manager, and later got the assignment preview and delete warning.
+    it now keeps the risky delete part and the add part separate so the page is easier to follow.
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,113 +52,20 @@ class SubjectsActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         subjectsVm = ViewModelProvider(this)[SubjectsViewModel::class.java]
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        //Use XML layout instead.
+        setContentView(R.layout.activity_subjects)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
+        // Link  XML views so this screen matches the current app setup.
+        screenTitleText = findViewById(R.id.screenTitleText)
+        removeSubjectSpinner = findViewById(R.id.removeSubjectSpinner)
+        assignmentsOutputText = findViewById(R.id.assignmentsOutputText)
+        addSubjectNameInput = findViewById(R.id.addSubjectNameInput)
+        colorSpinner = findViewById(R.id.colorSpinner)
 
-        screenTitleText = TextView(this).apply {
-            text = "Subjects"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val removeSectionTitle = TextView(this).apply {
-            text = "Remove subject"
-            textSize = 18f
-            val topPadding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val removeSubjectLabel = TextView(this).apply {
-            text = "Choose subject"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        removeSubjectSpinner = Spinner(this).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        assignmentsOutputText = TextView(this).apply {
-            text = "Select a subject to see its assignments"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val deleteSubjectBtn = Button(this).apply {
-            text = "Delete subject"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val addSectionTitle = TextView(this).apply {
-            text = "Add subject"
-            textSize = 18f
-            val topPadding = (28 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val addSubjectNameLabel = TextView(this).apply {
-            text = "Subject name"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        addSubjectNameInput = EditText(this).apply {
-            hint = "Enter subject name"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val colorLabel = TextView(this).apply {
-            text = "Subject color"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        colorSpinner = Spinner(this).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val addSubjectBtn = Button(this).apply {
-            text = "Add subject"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        headerRow.addView(screenTitleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(removeSectionTitle)
-        contentLayout.addView(removeSubjectLabel)
-        contentLayout.addView(removeSubjectSpinner)
-        contentLayout.addView(assignmentsOutputText)
-        contentLayout.addView(deleteSubjectBtn)
-        contentLayout.addView(addSectionTitle)
-        contentLayout.addView(addSubjectNameLabel)
-        contentLayout.addView(addSubjectNameInput)
-        contentLayout.addView(colorLabel)
-        contentLayout.addView(colorSpinner)
-        contentLayout.addView(addSubjectBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        val backBtn: ImageButton = findViewById(R.id.backBtn)
+        val homeBtn: ImageButton = findViewById(R.id.homeBtn)
+        val deleteSubjectBtn: Button = findViewById(R.id.deleteSubjectBtn)
+        val addSubjectBtn: Button = findViewById(R.id.addSubjectBtn)
 
         // Show the latest subject data when the ViewModel finishes loading it.
         subjectsVm.screenSummary.observe(this) { summary ->
@@ -181,13 +89,18 @@ class SubjectsActivity : AppCompatActivity() {
             }
         }
 
+        // Return to the previous screen from the top-left button.
+        backBtn.setOnClickListener {
+            finish()
+        }
+
         // Return to the main home screen from the top-right button.
         homeBtn.setOnClickListener {
             openHome()
         }
 
         // Update the assignments list when the selected subject changes.
-        removeSubjectSpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+        removeSubjectSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 selectedSubjectId = selectedSubject()?.id
                 showAssignmentsForSelectedSubject()
@@ -195,22 +108,21 @@ class SubjectsActivity : AppCompatActivity() {
 
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
                 selectedSubjectId = null
-                assignmentsOutputText.text = "Select a subject to see its assignments"
-            }
-        })
+                assignmentsOutputText.text = getString(R.string.select_a_subject_to_see_its_assignments)            }
+        }
 
         // Ask for confirmation before deleting the chosen subject.
         deleteSubjectBtn.setOnClickListener {
             val subject = selectedSubject()
             if (subject == null) {
-                Toast.makeText(this, "Choose a subject first", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.choose_subject_first), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
-                .setTitle("Delete subject")
-                .setMessage("This will delete the subject and its assignments. Do you want to continue?")
-                .setPositiveButton("Delete") { _, _ ->
+                .setTitle(getString(R.string.delete_subject_title))
+                .setMessage(getString(R.string.delete_subject_message))
+                .setPositiveButton(getString(R.string.delete)) { _, _ ->
                     subjectsVm.deleteSubject(subject)
                 }
                 .setNegativeButton("Cancel", null)
@@ -259,8 +171,7 @@ class SubjectsActivity : AppCompatActivity() {
     // Fill the remove-subject dropdown with the current subjects.
     private fun showSubjectDropdown(subjectsWithAssignments: List<SubjectWithAssignments>) {
         val names = if (subjectsWithAssignments.isEmpty()) {
-            listOf("No subjects available")
-        } else {
+            listOf(getString(R.string.no_subjects_available))        } else {
             subjectsWithAssignments.map { it.subject.name }
         }
 
@@ -298,7 +209,7 @@ class SubjectsActivity : AppCompatActivity() {
     private fun showAssignmentsForSelectedSubject() {
         val selectedSubject = selectedSubjectWithAssignments()
         if (selectedSubject == null) {
-            assignmentsOutputText.text = "Select a subject to see its assignments"
+            assignmentsOutputText.text = getString(R.string.select_a_subject_to_see_its_assignments)
             return
         }
 
@@ -309,7 +220,7 @@ class SubjectsActivity : AppCompatActivity() {
         )
 
         if (assignments.isEmpty()) {
-            assignmentsOutputText.text = "No assignments for this subject yet"
+            assignmentsOutputText.text = getString(R.string.no_assignments_subject)
             return
         }
 
@@ -347,13 +258,13 @@ class SubjectsActivity : AppCompatActivity() {
     private fun buildAssignmentText(assignment: Assignment): String {
         val dueAt = parseDueDate(assignment.dueDate)
         val dueText = if (dueAt == null) {
-            "No due date"
+            getString(R.string.no_due_date)
         } else {
             formatDueDate(dueAt)
         }
 
         val upcomingText = if (dueAt != null && !dueAt.isBefore(LocalDateTime.now())) {
-            "\nUpcoming due date"
+            "\n${getString(R.string.upcoming_due_date)}"
         } else {
             ""
         }
@@ -397,4 +308,3 @@ class SubjectsActivity : AppCompatActivity() {
         return dueAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
     }
 }
-

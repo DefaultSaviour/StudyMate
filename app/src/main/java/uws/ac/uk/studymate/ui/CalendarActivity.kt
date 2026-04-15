@@ -8,13 +8,14 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
@@ -34,10 +35,10 @@ class CalendarActivity : AppCompatActivity() {
     private var entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>> = emptyMap()
 
     /**
-     This screen gives the user a simple month view of their assignments.
-     it started as a basic day grid, and later got colored markers, outlines, and the popup for each day.
-     it now keeps the calendar cleaner by showing stars in the cell and the full list after a tap.
-     the calendar flow is much clearer now and actually working
+    This screen gives the user a simple month view of their assignments.
+    it started as a basic day grid, and later got colored markers, outlines, and the popup for each day.
+    it now keeps the calendar cleaner by showing stars in the cell and the full list after a tap.
+    the calendar flow is much clearer now and actually working
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,73 +46,17 @@ class CalendarActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         calendarVm = ViewModelProvider(this)[CalendarViewModel::class.java]
 
-        // Build a simple screen in code so each day can be colored by subject.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        // Use the themed XML layout instead of building the full screen in code.
+        setContentView(R.layout.activity_calendar)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
+        val backBtn = findViewById<ImageButton>(R.id.backBtn)
+        val homeBtn = findViewById<ImageButton>(R.id.homeBtn)
+        val previousMonthBtn = findViewById<ImageButton>(R.id.previousMonthBtn)
+        val nextMonthBtn = findViewById<ImageButton>(R.id.nextMonthBtn)
 
-        calendarTitleText = TextView(this).apply {
-            text = "Calendar"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val monthNavRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val previousMonthBtn = Button(this).apply {
-            text = "<"
-        }
-
-        monthLabelText = TextView(this).apply {
-            textSize = 20f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val nextMonthBtn = Button(this).apply {
-            text = ">"
-        }
-
-        val weekdayHeaderRow = createWeekdayHeaderRow()
-
-        calendarRowsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        headerRow.addView(calendarTitleText)
-        headerRow.addView(homeBtn)
-
-        monthNavRow.addView(previousMonthBtn)
-        monthNavRow.addView(monthLabelText)
-        monthNavRow.addView(nextMonthBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(monthNavRow)
-        contentLayout.addView(weekdayHeaderRow)
-        contentLayout.addView(calendarRowsContainer)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        calendarTitleText = findViewById(R.id.calendarTitleText)
+        monthLabelText = findViewById(R.id.monthLabelText)
+        calendarRowsContainer = findViewById(R.id.calendarRowsContainer)
 
         // Show the latest calendar data when the ViewModel finishes loading it.
         calendarVm.calendarSummary.observe(this) { summary ->
@@ -123,6 +68,11 @@ class CalendarActivity : AppCompatActivity() {
             if (expired) {
                 openLogin()
             }
+        }
+
+        // Return to the previous screen when the back button is pressed.
+        backBtn.setOnClickListener {
+            finish()
         }
 
         // Return to the main home screen from the top-right button.
@@ -175,6 +125,9 @@ class CalendarActivity : AppCompatActivity() {
         monthLabelText.text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
         calendarRowsContainer.removeAllViews()
 
+        val weekdayHeaderRow = createWeekdayHeaderRow()
+        calendarRowsContainer.addView(weekdayHeaderRow)
+
         val firstDayOfMonth = currentMonth.atDay(1)
         val leadingBlankCells = firstDayOfMonth.dayOfWeek.value - 1
         val daysInMonth = currentMonth.lengthOfMonth()
@@ -187,11 +140,6 @@ class CalendarActivity : AppCompatActivity() {
             }
 
             for (columnIndex in 0 until 7) {
-                val cellIndex = (dayNumber - 1) + leadingBlankCells
-                if (cellIndex / 7 != (dayNumber - 1 + leadingBlankCells) / 7 && columnIndex == 0) {
-                    break
-                }
-
                 val shouldShowBlank = ((dayNumber == 1) && columnIndex < leadingBlankCells) || dayNumber > daysInMonth
                 if (shouldShowBlank) {
                     weekRow.addView(createEmptyDayCell())
@@ -200,10 +148,6 @@ class CalendarActivity : AppCompatActivity() {
                     weekRow.addView(createDayCell(date, entriesByDate[date].orEmpty()))
                     dayNumber += 1
                 }
-            }
-
-            while (weekRow.childCount < 7) {
-                weekRow.addView(createEmptyDayCell())
             }
 
             calendarRowsContainer.addView(weekRow)
@@ -473,7 +417,3 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 }
-
-
-// if you are reading this, im as amazed as you that this worked.
-// the tutorial was 8 years old
