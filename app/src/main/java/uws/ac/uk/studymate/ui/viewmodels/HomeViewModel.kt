@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
+import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
 import java.time.Duration
@@ -22,6 +23,7 @@ Coded by Jamie Coleman
 updated 18/03/26
 updated 28/03/26
 updated 09/04/26
+updated 16/04/26
  *//////////////////////
 // Holds the small set of values that the home screen needs to display.
 data class HomeSummary(
@@ -55,6 +57,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // This public version lets the UI react when it needs to send the user back to login.
     val sessionExpired: LiveData<Boolean> = _sessionExpired
 
+    // This private value stores a user who still needs to answer the push notification question.
+    // The home screen uses it to decide whether it should show the popup.
+    private val _userNeedingPushChoice = MutableLiveData<User?>()
+
+    // This public version lets the UI react when the popup should be shown.
+    val userNeedingPushChoice: LiveData<User?> = _userNeedingPushChoice
+
     // Disabled for now: this testing-only ClearAllData state was used to tell the UI
     // that every table had been wiped. It is commented out so it can be re-enabled later.
 //    private val _allDataCleared = MutableLiveData<Boolean>()
@@ -82,6 +91,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
 
+            // Ask about push notifications after the user has reached the home screen.
+            _userNeedingPushChoice.postValue(
+                if (user.pushNotificationsEnabled == null) user else null
+            )
+
             // Load the user's assignments for the home screen.
             val assignments = db.assignmentDao().getAssignments(userId)
             val nextDueAssignment = findNextDueAssignment(assignments)
@@ -97,6 +111,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _homeSummary.postValue(summary)
             _sessionExpired.postValue(false)
         }
+    }
+
+    // Save the user's answer to the push notification question.
+    suspend fun savePushNotificationsChoice(userId: Int, enabled: Boolean) {
+        repo.updatePushNotifications(userId, enabled)
+    }
+
+    // Clear the one-off popup event after the screen has handled it.
+    fun clearUserNeedingPushChoice() {
+        _userNeedingPushChoice.value = null
     }
 
 

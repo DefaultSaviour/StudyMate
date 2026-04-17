@@ -12,38 +12,37 @@ import uws.ac.uk.studymate.data.testutil.RoomDbTestBase
 Coded by Jamie Coleman
 2/04/26
 updated 13/04/26
+ updated 16/04/26
  */////////////
 @RunWith(AndroidJUnit4::class)
 class UserSettingsDaoInstrumentedTest : RoomDbTestBase() {
 
     // SETDAO1
     // Save one settings row for a user and load it back.
-    // Check the saved toggle values and timezone match.
+    // Check the saved dark mode value and timezone match.
     @Test
     fun insertSettings_canBeLoadedForTheUser() = runBlocking {
         val userId = insertUser(email = "settings-load@example.com")
-        insertSettings(userId = userId, notificationsEnabled = false, darkModeEnabled = true, timezone = "Europe/London")
+        insertSettings(userId = userId, darkModeEnabled = true, timezone = "Europe/London")
 
         val settings = db.userSettingsDao().get(userId)
 
         assertNotNull(settings)
-        assertEquals(false, settings?.notificationsEnabled)
         assertEquals(true, settings?.darkModeEnabled)
         assertEquals("Europe/London", settings?.timezone)
     }
 
     // SETDAO2
     // Update one settings row that already exists.
-    // Make sure the changed toggle values and timezone were stored.
+    // Make sure the changed dark mode value and timezone were stored.
     @Test
     fun updateSettings_changesSavedValues() = runBlocking {
         val userId = insertUser(email = "settings-update@example.com")
-        insertSettings(userId = userId, notificationsEnabled = true, darkModeEnabled = false, timezone = "UTC")
+        insertSettings(userId = userId, darkModeEnabled = false, timezone = "UTC")
 
         db.userSettingsDao().update(
             UserSettings(
                 userId = userId,
-                notificationsEnabled = false,
                 darkModeEnabled = true,
                 timezone = "Europe/London"
             )
@@ -51,7 +50,6 @@ class UserSettingsDaoInstrumentedTest : RoomDbTestBase() {
 
         val updated = db.userSettingsDao().get(userId)
 
-        assertEquals(false, updated?.notificationsEnabled)
         assertEquals(true, updated?.darkModeEnabled)
         assertEquals("Europe/London", updated?.timezone)
     }

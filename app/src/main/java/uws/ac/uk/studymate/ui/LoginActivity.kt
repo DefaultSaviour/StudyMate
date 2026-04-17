@@ -16,6 +16,7 @@ import uws.ac.uk.studymate.util.SessionManager
 Coded by Jamie Coleman
 15/03/26
 fixed 06/04/24
+updated 16/04/26
 
  *//////////////////////
 class LoginActivity : AppCompatActivity() {
@@ -80,7 +81,7 @@ class LoginActivity : AppCompatActivity() {
         // Open the home screen when login works.
         loginVm.loginSuccess.observe(this) { success ->
             if (success) {
-                loginMessage.text = "Login successful"
+                loginMessage.text = getString(R.string.login_success)
                 loginMessage.setTextColor("#2E7D32".toColorInt())
                 loginMessage.visibility = View.VISIBLE
                 openHome()
@@ -109,6 +110,7 @@ class LoginActivity : AppCompatActivity() {
 //                loginMessage.visibility = View.VISIBLE
 //            }
 //        }
+
     }
 
     // Replace the login screen with the home screen after a successful login.
@@ -118,6 +120,7 @@ class LoginActivity : AppCompatActivity() {
         }
         startActivity(homeIntent)
     }
+
 
     companion object {
         // Use one extra key when registration sends the user back to login.

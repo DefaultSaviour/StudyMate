@@ -14,7 +14,7 @@ import uws.ac.uk.studymate.util.SessionManager
 Coded by Jamie Coleman
 15/03/26
 fixed 06/04/24
-
+updated 16/04/26
  *//////////////////////
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 

@@ -10,24 +10,23 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import uws.ac.uk.studymate.data.StudyMateDatabase
-import uws.ac.uk.studymate.data.repositories.UserRepo
-import uws.ac.uk.studymate.util.SessionManager
+import androidx.appcompat.widget.SwitchCompat
+import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
+import uws.ac.uk.studymate.ui.viewmodels.UserSettingsViewModel
 /*//////////////////////
 Coded by Jamie Coleman
 06/04/26
 fixed 09/04/26
+ updated 16/04/26
  *//////////////////////
 class UserSettingsActivity : AppCompatActivity() {
 
     private lateinit var settingsTitleText: TextView
+    private lateinit var notificationsSwitch: SwitchCompat
     private lateinit var settingsDetailsText: TextView
-    private lateinit var sessionManager: SessionManager
-    private lateinit var repo: UserRepo
+    private lateinit var settingsVm: UserSettingsViewModel
+    private var isUpdatingNotificationsSwitch = false
 
     /**
      This screen gives the user one place to check their saved settings and log out.
@@ -38,9 +37,8 @@ class UserSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set up the helpers used by this screen.
-        sessionManager = SessionManager(this)
-        repo = UserRepo(StudyMateDatabase.getInstance(application))
+        // Set up the ViewModel used by this screen.
+        settingsVm = ViewModelProvider(this)[UserSettingsViewModel::class.java]
 
         // Build a simple screen in code so this page does not depend on extra XML files.
         val contentLayout = LinearLayout(this).apply {
@@ -56,23 +54,40 @@ class UserSettingsActivity : AppCompatActivity() {
         }
 
         settingsTitleText = TextView(this).apply {
-            text = "User settings"
+            text = getString(R.string.user_settings_title)
             textSize = 24f
             layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
         }
 
         val homeBtn = Button(this).apply {
-            text = "Home"
+            text = getString(R.string.home_button)
+        }
+
+        val notificationsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            gravity = Gravity.CENTER_VERTICAL
+            val topPadding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(0, topPadding, 0, 0)
+        }
+
+        val notificationsLabel = TextView(this).apply {
+            text = getString(R.string.push_notifications_label)
+            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+        }
+
+        notificationsSwitch = SwitchCompat(this).apply {
+            text = getString(R.string.setting_toggle_off)
         }
 
         settingsDetailsText = TextView(this).apply {
-            text = "Loading user settings..."
+            text = getString(R.string.settings_loading)
             val topPadding = (16 * resources.displayMetrics.density).toInt()
             setPadding(0, topPadding, 0, 0)
         }
 
         val logoutBtn = Button(this).apply {
-            text = "Logout"
+            text = getString(R.string.logout_button)
             val topPadding = (24 * resources.displayMetrics.density).toInt()
             setPadding(0, topPadding, 0, 0)
         }
@@ -80,7 +95,11 @@ class UserSettingsActivity : AppCompatActivity() {
         headerRow.addView(settingsTitleText)
         headerRow.addView(homeBtn)
 
+        notificationsRow.addView(notificationsLabel)
+        notificationsRow.addView(notificationsSwitch)
+
         contentLayout.addView(headerRow)
+        contentLayout.addView(notificationsRow)
         contentLayout.addView(settingsDetailsText)
         contentLayout.addView(logoutBtn)
 
@@ -92,7 +111,7 @@ class UserSettingsActivity : AppCompatActivity() {
 
         // Clear the session and return to login when the user logs out.
         logoutBtn.setOnClickListener {
-            sessionManager.logout()
+            settingsVm.logout()
             openLogin()
         }
 
@@ -100,13 +119,37 @@ class UserSettingsActivity : AppCompatActivity() {
         homeBtn.setOnClickListener {
             openHome()
         }
+
+        // Let the user turn push notifications on or off after they have answered once.
+        notificationsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isUpdatingNotificationsSwitch) {
+                return@setOnCheckedChangeListener
+            }
+
+            updateNotificationsSwitchText(isChecked)
+            settingsVm.updatePushNotifications(isChecked)
+        }
+
+        // Show the latest saved settings on screen.
+        settingsVm.settingsSummary.observe(this) { summary ->
+            settingsTitleText.text = summary.titleText
+            applyNotificationsSwitchState(summary.notificationsEnabled)
+            settingsDetailsText.text = summary.detailsText
+        }
+
+        // Return to login if the saved session is missing or no longer valid.
+        settingsVm.sessionExpired.observe(this) { expired ->
+            if (expired) {
+                openLogin()
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
 
         // Reload the settings each time the user returns to this screen.
-        loadSettings()
+        settingsVm.loadSettings()
     }
 
     // Replace this screen with the login screen when the session ends.
@@ -122,40 +165,20 @@ class UserSettingsActivity : AppCompatActivity() {
         startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
     }
 
-    // Load the user's saved settings and show them on this screen.
-    private fun loadSettings() {
-        lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                val userId = sessionManager.getLoggedInUserId() ?: return@withContext null
-                val userWithMeta = repo.getUserWithMeta(userId) ?: return@withContext null
-                val settings = userWithMeta.settings
-                userWithMeta.user.name to buildSettingsText(
-                    notificationsEnabled = settings?.notificationsEnabled ?: true,
-                    darkModeEnabled = settings?.darkModeEnabled ?: false,
-                    timezone = settings?.timezone ?: "UTC"
-                )
-            }
-
-            if (result == null) {
-                sessionManager.logout()
-                openLogin()
-                return@launch
-            }
-
-            settingsTitleText.text = "Settings for ${result.first}"
-            settingsDetailsText.text = result.second
-        }
+    // Update the switch without re-triggering its save code.
+    private fun applyNotificationsSwitchState(enabled: Boolean) {
+        isUpdatingNotificationsSwitch = true
+        notificationsSwitch.isChecked = enabled
+        updateNotificationsSwitchText(enabled)
+        isUpdatingNotificationsSwitch = false
     }
 
-    // Turn the saved settings into plain English for the user settings screen.
-    private fun buildSettingsText(
-        notificationsEnabled: Boolean,
-        darkModeEnabled: Boolean,
-        timezone: String
-    ): String {
-        val notificationsText = if (notificationsEnabled) "On" else "Off"
-        val darkModeText = if (darkModeEnabled) "On" else "Off"
-        return "Notifications: $notificationsText\nDark mode: $darkModeText\nTimezone: $timezone"
+    // Keep the small On or Off label beside the switch easy to read.
+    private fun updateNotificationsSwitchText(enabled: Boolean) {
+        notificationsSwitch.text = getString(
+            if (enabled) R.string.setting_toggle_on else R.string.setting_toggle_off
+        )
     }
+
 }
 
