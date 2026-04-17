@@ -23,6 +23,7 @@ import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentIcons
 import uws.ac.uk.studymate.util.SessionManager
+import uws.ac.uk.studymate.LoginActivity
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
