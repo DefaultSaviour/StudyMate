@@ -14,6 +14,7 @@ import uws.ac.uk.studymate.data.testutil.RoomDbTestBase
 Coded by Jamie Coleman
 2/04/26
 updated 13/04/26
+ updated 16/04/26 - added push notifications
  */////////////
 @RunWith(AndroidJUnit4::class)
 class UserDaoInstrumentedTest : RoomDbTestBase() {
@@ -49,18 +50,18 @@ class UserDaoInstrumentedTest : RoomDbTestBase() {
 
     // USRDAO3
     // Load one user together with their settings and stats.
-    // This checks the joined user data comes back in one result.
+    // This checks the joined user data comes back in one result, including the push notification choice.
     @Test
     fun getUserWithMeta_returnsUserSettingsAndStatsTogether() = runBlocking {
-        val userId = insertUser(email = "meta@example.com")
-        insertSettings(userId = userId, notificationsEnabled = false, darkModeEnabled = true)
+        val userId = insertUser(email = "meta@example.com", pushNotificationsEnabled = false)
+        insertSettings(userId = userId, darkModeEnabled = true)
         insertStats(userId = userId, assignmentsCount = 5, flashcardsCount = 8, streakDays = 2)
 
         val result = db.userDao().getUserWithMeta(userId)
 
         assertNotNull(result)
         assertEquals(userId, result?.user?.id)
-        assertEquals(false, result?.settings?.notificationsEnabled)
+        assertEquals(false, result?.user?.pushNotificationsEnabled)
         assertEquals(true, result?.settings?.darkModeEnabled)
         assertEquals(5, result?.stats?.assignmentsCount)
         assertEquals(8, result?.stats?.flashcardsCount)

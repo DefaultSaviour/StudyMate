@@ -16,6 +16,7 @@ import uws.ac.uk.studymate.data.entities.UserStats
 /*//////////////////////
 Coded by Jamie Coleman
  02/04/26
+  updated 16/04/26 - added push notifications tests
  *//////////////////////
 abstract class RoomDbTestBase {
 
@@ -40,28 +41,28 @@ abstract class RoomDbTestBase {
         name: String = "Test User",
         email: String = "test@example.com",
         passwordHash: String = "hash",
-        passwordSalt: String = "salt"
+        passwordSalt: String = "salt",
+        pushNotificationsEnabled: Boolean? = null
     ): Int {
         return db.userDao().insert(
             User(
                 name = name,
                 email = email,
                 passwordHash = passwordHash,
-                passwordSalt = passwordSalt
+                passwordSalt = passwordSalt,
+                pushNotificationsEnabled = pushNotificationsEnabled
             )
         ).toInt()
     }
 
     protected suspend fun insertSettings(
         userId: Int,
-        notificationsEnabled: Boolean = true,
         darkModeEnabled: Boolean = false,
         timezone: String = "UTC"
     ) {
         db.userSettingsDao().insert(
             UserSettings(
                 userId = userId,
-                notificationsEnabled = notificationsEnabled,
                 darkModeEnabled = darkModeEnabled,
                 timezone = timezone
             )

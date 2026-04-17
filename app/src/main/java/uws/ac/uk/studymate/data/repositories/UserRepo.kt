@@ -14,6 +14,7 @@ class UserRepo(private val db: StudyMateDatabase) {
     Coded by Jamie Coleman
      11/03/26
       updated 7/04/26
+       updated 16/04/26
      *//////////////////////
     // Create a new user together with default settings and stats in one transaction.
     // Return the new user ID so the app can log that user in straight away - this
@@ -36,10 +37,10 @@ class UserRepo(private val db: StudyMateDatabase) {
         )
 
         // Create default settings for the new user.
+        // Notifications are left unanswered until the user logs in and chooses. i havent tested this
         db.userSettingsDao().insert(
             UserSettings(
                 userId = userId.toInt(),
-                notificationsEnabled = true,
                 darkModeEnabled = false,
                 timezone = "UTC"
             )
@@ -78,13 +79,21 @@ class UserRepo(private val db: StudyMateDatabase) {
 
     // Update a user's notification and dark mode preferences.
     suspend fun updateSettings(userId: Int, notifications: Boolean, darkMode: Boolean) {
+        updatePushNotifications(userId, notifications)
+
+        val currentSettings = db.userSettingsDao().get(userId)
         db.userSettingsDao().update(
             UserSettings(
                 userId = userId,
-                notificationsEnabled = notifications,
-                darkModeEnabled = darkMode
+                darkModeEnabled = darkMode,
+                timezone = currentSettings?.timezone ?: "UTC"
             )
         )
+    }
+
+    // Save the user's push notification choice on the user row.
+    suspend fun updatePushNotifications(userId: Int, enabled: Boolean) {
+        db.userDao().updatePushNotificationsEnabled(userId, enabled)
     }
 
     // Remove a user from the database.

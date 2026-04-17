@@ -13,13 +13,14 @@ import uws.ac.uk.studymate.data.testutil.RoomDbTestBase
 /*////////////////
 Coded by Jamie Coleman
  13/04/26
+  updated 16/04/26
  */////////////
 @RunWith(AndroidJUnit4::class)
 class UserRepoInstrumentedTest : RoomDbTestBase() {
 
     // USRREP1
     // Create a new user with the default extra rows.
-    // Check the settings, stats, and saved password data were all created properly.
+    // Check the settings, stats, unanswered notification flag, and saved password data were all created properly.
     @Test
     fun createUserWithDefaults_createsUserSettingsAndStatsAndHashesPassword() = runBlocking {
         val repo = UserRepo(db)
@@ -39,7 +40,7 @@ class UserRepoInstrumentedTest : RoomDbTestBase() {
         assertNotNull(stats)
         assertNotEquals("Secret123", user?.passwordHash)
         assertTrue(user?.passwordSalt?.isNotBlank() == true)
-        assertEquals(true, settings?.notificationsEnabled)
+        assertEquals(null, user?.pushNotificationsEnabled)
         assertEquals(false, settings?.darkModeEnabled)
         assertEquals("UTC", settings?.timezone)
         assertEquals(0, stats?.assignmentsCount)
@@ -84,7 +85,7 @@ class UserRepoInstrumentedTest : RoomDbTestBase() {
 
     // USRREP4
     // Update one user's settings through the repository.
-    // Check the saved notification and dark mode values change.
+    // Check the saved notification answer moves onto the user row and dark mode still updates.
     @Test
     fun updateSettings_changesSavedValues() = runBlocking {
         val repo = UserRepo(db)
@@ -96,14 +97,34 @@ class UserRepoInstrumentedTest : RoomDbTestBase() {
 
         repo.updateSettings(userId = userId, notifications = false, darkMode = true)
 
+        val user = db.userDao().getById(userId)
         val settings = db.userSettingsDao().get(userId)
 
-        assertEquals(false, settings?.notificationsEnabled)
+        assertEquals(false, user?.pushNotificationsEnabled)
         assertEquals(true, settings?.darkModeEnabled)
         assertEquals("UTC", settings?.timezone)
     }
 
     // USRREP5
+    // Save one user's push notification choice through the new helper.
+    // This checks the answer is stored on the user row.
+    @Test
+    fun updatePushNotifications_changesSavedUserChoice() = runBlocking {
+        val repo = UserRepo(db)
+        val userId = repo.createUserWithDefaults(
+            name = "Jamie",
+            email = "repo-push@example.com",
+            password = "Password123"
+        )
+
+        repo.updatePushNotifications(userId, true)
+
+        val user = db.userDao().getById(userId)
+
+        assertEquals(true, user?.pushNotificationsEnabled)
+    }
+
+    // USRREP6
     // Delete one user through the repository.
     // Their linked settings and stats rows should be removed too.
     @Test

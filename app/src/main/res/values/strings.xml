@@ -22,6 +22,18 @@ Streak: 0 day(s)</string>
     <string name="user_settings_title">User settings</string>
     <string name="user_settings_placeholder">Loading user settings…</string>
     <string name="logout_button">Logout</string>
+    <string name="home_button">Home</string>
+    <string name="push_notifications_label">Push notifications</string>
+    <string name="setting_toggle_on">On</string>
+    <string name="setting_toggle_off">Off</string>
+    <string name="settings_for_user">Settings for %1$s</string>
+    <string name="settings_loading">Loading settings…</string>
+    <string name="login_success">Login successful</string>
+    <string name="account_created_successfully">Account created successfully</string>
+    <string name="push_notifications_prompt_title">Enable push notifications?</string>
+    <string name="push_notifications_prompt_message">We do not send any yet, but we can save your choice now for later.</string>
+    <string name="yes_button">Yes</string>
+    <string name="no_button">No</string>
     <string name="calendar_title">Calendar</string>
     <string name="calendar_items_placeholder">No calendar items yet</string>
 </resources>

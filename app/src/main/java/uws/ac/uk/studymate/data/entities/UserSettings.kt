@@ -3,6 +3,7 @@ import androidx.room.*
 /*//////////////////////
 Coded by Jamie Coleman
  11/03/26
+  updated 16/04/26
  *//////////////////////
 // Represents the settings for one user in the User_Settings table.
 // Each record is linked to a user by user_id.
@@ -20,8 +21,7 @@ Coded by Jamie Coleman
 )
 data class UserSettings(
     @PrimaryKey
-    @ColumnInfo(name = "user_id", index = true) val userId: Int,                                                // The user these settings belong to (also the primary key).
-    @ColumnInfo(name = "notifications_enabled", defaultValue = "1") val notificationsEnabled: Boolean = true, // Whether push notifications are turned on.
-    @ColumnInfo(name = "dark_mode_enabled", defaultValue = "0") val darkModeEnabled: Boolean = false,         // Whether dark mode is turned on.
-    @ColumnInfo(defaultValue = "'UTC'") val timezone: String = "UTC"                                          // The user's chosen timezone.
+    @ColumnInfo(name = "user_id") val userId: Int,                                        // The user these settings belong to.
+    @ColumnInfo(name = "dark_mode_enabled", defaultValue = "0") val darkModeEnabled: Boolean = false, // Whether dark mode is turned on.
+    @ColumnInfo(defaultValue = "'UTC'") val timezone: String = "UTC"                    // The user's chosen timezone.
 )

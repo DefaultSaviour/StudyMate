@@ -14,11 +14,14 @@ import uws.ac.uk.studymate.util.SessionManager
 Coded by Jamie Coleman
 06/04/26
 fixed 09/04/26
+ updated 16/04/26
+  updated 16/04/26
  *//////////////////////
 // Holds the text that the user settings screen needs to display.
 data class UserSettingsSummary(
     val titleText: String,
-    val detailsText: String
+    val detailsText: String,
+    val notificationsEnabled: Boolean
 )
 
 class UserSettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,8 +72,8 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
             val settings = userWithMeta.settings
             val summary = UserSettingsSummary(
                 titleText = "Settings for ${userWithMeta.user.name}",
+                notificationsEnabled = userWithMeta.user.pushNotificationsEnabled ?: false,
                 detailsText = buildSettingsText(
-                    notificationsEnabled = settings?.notificationsEnabled ?: true,
                     darkModeEnabled = settings?.darkModeEnabled ?: false,
                     timezone = settings?.timezone ?: "UTC"
                 )
@@ -82,6 +85,18 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    // Save the user's push notification choice from the settings screen.
+    fun updatePushNotifications(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val userId = sessionManager.getLoggedInUserId() ?: run {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+
+            repo.updatePushNotifications(userId, enabled)
+        }
+    }
+
     // Clear the saved session when the user logs out from the settings screen.
     fun logout() {
         sessionManager.logout()
@@ -89,13 +104,11 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
 
     // Turn the saved settings into plain English for the user settings screen.
     private fun buildSettingsText(
-        notificationsEnabled: Boolean,
         darkModeEnabled: Boolean,
         timezone: String
     ): String {
-        val notificationsText = if (notificationsEnabled) "On" else "Off"
         val darkModeText = if (darkModeEnabled) "On" else "Off"
-        return "Notifications: $notificationsText\nDark mode: $darkModeText\nTimezone: $timezone"
+        return "Dark mode: $darkModeText\nTimezone: $timezone"
     }
 }
 
