@@ -1,41 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+Coded by Jamie Coleman
+05/04/26
+fixed 08/04/26
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@color/studymate_background">
+    android:layout_height="match_parent">
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/titleText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Assignments"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/studymate_text_primary"
-        android:layout_marginBottom="16dp"/>
-
-    <!-- Button to Add Assignment -->
-    <Button
-        android:id="@+id/addAssignmentBtn"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Assignment"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/studymate_pink"
-        android:textColor="@android:color/white"
-        android:textAllCaps="false"
-        android:textStyle="bold"
-        android:padding="14dp"/>
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <!-- List of assignments -->
-    <ListView
-        android:id="@+id/assignmentsList"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:divider="@color/studymate_purple"
-        android:dividerHeight="1dp"/>
-</LinearLayout>
+        <TextView
+            android:id="@+id/assignmentsTitleText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/assignments_title"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/assignmentsItemsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/assignments_items_placeholder" />
+
+    </LinearLayout>
+</ScrollView>
+
+
