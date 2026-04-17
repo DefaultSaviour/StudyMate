@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +21,8 @@ updated 18/03/26
 updated 28/03/26
 updated 09/04/26
 updated 16/04/26
+updated 17/04/26
+updated 18/04/26
  *//////////////////////
 class HomeActivity : AppCompatActivity() {
 
@@ -97,8 +98,9 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.AssignmentsActivity"))
         }
 
+        // Open the flashcard decks screen so the user can browse and manage their decks.
         flashcardsBtn.setOnClickListener {
-            Toast.makeText(this, "Flashcards screen not built yet", Toast.LENGTH_SHORT).show()
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity"))
         }
 
         // Open the subjects screen so the user can add or remove subjects.

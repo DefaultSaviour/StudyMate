@@ -5,13 +5,14 @@ import uws.ac.uk.studymate.data.entities.FlashcardDeck
 /*//////////////////////
 Coded by Jamie Coleman
  12/03/26
+updated 17/04/26
  *//////////////////////
 // Handles flashcard deck operations through the DAO.
 class FlashcardDeckRepo(private val db: StudyMateDatabase) {
 
-    // Save a new deck to the database.
-    suspend fun addDeck(deck: FlashcardDeck) {
-        db.deckDao().insert(deck)
+    // Save a new deck to the database and return its generated ID.
+    suspend fun addDeck(deck: FlashcardDeck): Long {
+        return db.deckDao().insert(deck)
     }
 
     // Update an existing deck's details.
