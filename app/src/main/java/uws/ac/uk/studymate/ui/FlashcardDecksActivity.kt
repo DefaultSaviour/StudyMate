@@ -1,23 +1,22 @@
 package uws.ac.uk.studymate.ui
 
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.graphics.toColorInt
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksViewModel
 import uws.ac.uk.studymate.ui.viewmodels.SubjectDecksGroup
@@ -40,64 +39,16 @@ class FlashcardDecksActivity : AppCompatActivity() {
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_flashcard_decks)
 
         // Set up the ViewModel used by this screen.
         decksVm = ViewModelProvider(this)[FlashcardDecksViewModel::class.java]
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        screenTitleText = TextView(this).apply {
-            text = "Flashcards"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val createDeckBtn = Button(this).apply {
-            text = "Create new deck"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (16 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        emptyText = TextView(this).apply {
-            text = "No decks yet"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        decksListContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        headerRow.addView(screenTitleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(createDeckBtn)
-        contentLayout.addView(emptyText)
-        contentLayout.addView(decksListContainer)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        screenTitleText = findViewById(R.id.flashcardDecksTitleText)
+        decksListContainer = findViewById(R.id.decksListContainer)
+        emptyText = findViewById(R.id.flashcardDecksEmptyText)
+        val homeBtn: Button = findViewById(R.id.flashcardDecksHomeBtn)
+        val createDeckBtn: Button = findViewById(R.id.createDeckBtn)
 
         // Show the latest deck data when the ViewModel finishes loading it.
         decksVm.screenSummary.observe(this) { summary ->
@@ -151,12 +102,12 @@ class FlashcardDecksActivity : AppCompatActivity() {
         decksListContainer.removeAllViews()
 
         if (groups.isEmpty()) {
-            emptyText.text = "No decks yet — create one to get started"
-            emptyText.visibility = TextView.VISIBLE
+            emptyText.text = getString(R.string.no_decks_yet_create_one)
+            emptyText.visibility = android.view.View.VISIBLE
             return
         }
 
-        emptyText.visibility = TextView.GONE
+        emptyText.visibility = android.view.View.GONE
 
         groups.forEach { group ->
             // Add a subject heading.
@@ -191,7 +142,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // Show a dialog that lets the user pick a subject and name for the new deck.
     private fun showCreateDeckDialog() {
         if (subjects.isEmpty()) {
-            Toast.makeText(this, "Add a subject first before creating a deck", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.add_subject_first_message), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -202,7 +153,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
         }
 
         val nameInput = EditText(this).apply {
-            hint = "Enter deck name"
+            hint = getString(R.string.enter_deck_name_hint)
         }
 
         val subjectSpinner = Spinner(this).apply {
@@ -215,32 +166,32 @@ class FlashcardDecksActivity : AppCompatActivity() {
             }
         }
 
-        dialogLayout.addView(TextView(this).apply { text = "Deck name" })
+        dialogLayout.addView(TextView(this).apply { text = getString(R.string.deck_name_label) })
         dialogLayout.addView(nameInput)
         dialogLayout.addView(TextView(this).apply {
-            text = "Subject"
+            text = getString(R.string.subject_label)
             val topPadding = (12 * resources.displayMetrics.density).toInt()
             setPadding(0, topPadding, 0, 0)
         })
         dialogLayout.addView(subjectSpinner)
 
         AlertDialog.Builder(this)
-            .setTitle("Create new deck")
+            .setTitle(R.string.create_new_deck_title)
             .setView(dialogLayout)
-            .setPositiveButton("Create") { _, _ ->
+            .setPositiveButton(R.string.create_button) { _, _ ->
                 val selectedSubject = subjects.getOrNull(subjectSpinner.selectedItemPosition)
                 decksVm.createDeck(nameInput.text.toString(), selectedSubject)
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(R.string.cancel_button, null)
             .show()
     }
 
     // Read the saved subject color, or fall back to a safe dark color when it is missing.
     private fun parseSubjectColor(colorHex: String?): Int {
         return try {
-            if (colorHex.isNullOrBlank()) Color.parseColor("#444444") else Color.parseColor(colorHex)
+            if (colorHex.isNullOrBlank()) "#444444".toColorInt() else colorHex.toColorInt()
         } catch (_: Exception) {
-            Color.parseColor("#444444")
+            "#444444".toColorInt()
         }
     }
 

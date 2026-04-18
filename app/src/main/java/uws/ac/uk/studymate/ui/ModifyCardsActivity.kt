@@ -2,23 +2,24 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
+updated 18/04/26
 *//////////////////////
 class ModifyCardsActivity : AppCompatActivity() {
 
@@ -33,62 +34,18 @@ class ModifyCardsActivity : AppCompatActivity() {
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_modify_cards)
 
         deckId = intent.getIntExtra("deck_id", -1)
         deckName = intent.getStringExtra("deck_name") ?: "Deck"
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        val backBtn: Button = findViewById(R.id.modifyCardsBackBtn)
+        val titleText: TextView = findViewById(R.id.modifyCardsTitleText)
+        val homeBtn: Button = findViewById(R.id.modifyCardsHomeBtn)
+        emptyText = findViewById(R.id.modifyCardsEmptyText)
+        cardsContainer = findViewById(R.id.modifyCardsContainer)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val backBtn = Button(this).apply {
-            text = "Back"
-        }
-
-        val titleText = TextView(this).apply {
-            text = "Modify cards"
-            textSize = 24f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        emptyText = TextView(this).apply {
-            text = "No cards in this deck"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        cardsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        headerRow.addView(backBtn)
-        headerRow.addView(titleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(emptyText)
-        contentLayout.addView(cardsContainer)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        titleText.text = deckName
 
         // Return to the previous screen when the back button is pressed.
         backBtn.setOnClickListener { finish() }
@@ -122,16 +79,16 @@ class ModifyCardsActivity : AppCompatActivity() {
         cardsContainer.removeAllViews()
 
         if (cards.isEmpty()) {
-            emptyText.visibility = TextView.VISIBLE
+            emptyText.visibility = View.VISIBLE
             return
         }
 
-        emptyText.visibility = TextView.GONE
+        emptyText.visibility = View.GONE
 
         cards.forEach { card ->
             cardsContainer.addView(
                 Button(this).apply {
-                    text = "${card.front} -- ${card.back}"
+                    text = getString(R.string.flashcard_question_answer, card.front, card.back)
                     isAllCaps = false
                     layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
                         topMargin = (8 * resources.displayMetrics.density).toInt()

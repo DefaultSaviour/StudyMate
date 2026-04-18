@@ -2,13 +2,10 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 /*//////////////////////
@@ -37,70 +35,18 @@ class RemoveCardsActivity : AppCompatActivity() {
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_remove_cards)
 
         val deckId = intent.getIntExtra("deck_id", -1)
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        val backBtn: Button = findViewById(R.id.removeCardsBackBtn)
+        val titleText: TextView = findViewById(R.id.removeCardsTitleText)
+        val homeBtn: Button = findViewById(R.id.removeCardsHomeBtn)
+        emptyText = findViewById(R.id.removeCardsEmptyText)
+        cardsContainer = findViewById(R.id.removeCardsContainer)
+        removeBtn = findViewById(R.id.removeSelectedBtn)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val backBtn = Button(this).apply {
-            text = "Back"
-        }
-
-        val titleText = TextView(this).apply {
-            text = "Remove cards"
-            textSize = 24f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        emptyText = TextView(this).apply {
-            text = "No cards in this deck"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        cardsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        removeBtn = Button(this).apply {
-            text = "Remove selected"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (20 * resources.displayMetrics.density).toInt()
-            }
-            isEnabled = false
-        }
-
-        headerRow.addView(backBtn)
-        headerRow.addView(titleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(emptyText)
-        contentLayout.addView(cardsContainer)
-        contentLayout.addView(removeBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        titleText.text = getString(R.string.remove_cards_title)
 
         // Return to the previous screen when the back button is pressed.
         backBtn.setOnClickListener { finish() }
@@ -137,17 +83,17 @@ class RemoveCardsActivity : AppCompatActivity() {
         cardsContainer.removeAllViews()
 
         if (cards.isEmpty()) {
-            emptyText.visibility = TextView.VISIBLE
+            emptyText.visibility = View.VISIBLE
             removeBtn.isEnabled = false
             return
         }
 
-        emptyText.visibility = TextView.GONE
+        emptyText.visibility = View.GONE
 
         cards.forEach { card ->
             cardsContainer.addView(
                 CheckBox(this).apply {
-                    text = "${card.front} -- ${card.back}"
+                    text = getString(R.string.flashcard_question_answer, card.front, card.back)
                     textSize = 16f
                     val topPadding = (8 * resources.displayMetrics.density).toInt()
                     setPadding(paddingLeft, topPadding, paddingRight, topPadding)
@@ -169,7 +115,7 @@ class RemoveCardsActivity : AppCompatActivity() {
                     db.cardDao().delete(card)
                 }
             }
-            Toast.makeText(this@RemoveCardsActivity, "Cards removed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@RemoveCardsActivity, getString(R.string.cards_removed_message), Toast.LENGTH_SHORT).show()
             loadCards(deckId)
         }
     }

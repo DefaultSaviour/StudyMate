@@ -1,22 +1,16 @@
 package uws.ac.uk.studymate.ui
 
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 /*//////////////////////
@@ -42,108 +36,22 @@ class ReviewDeckActivity : AppCompatActivity() {
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_review_deck)
 
         val deckId = intent.getIntExtra("deck_id", -1)
         val deckName = intent.getStringExtra("deck_name") ?: "Deck"
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        val backBtn: Button = findViewById(R.id.reviewDeckBackBtn)
+        val titleText: TextView = findViewById(R.id.reviewDeckTitleText)
+        val homeBtn: Button = findViewById(R.id.reviewDeckHomeBtn)
+        cardCountText = findViewById(R.id.cardCountText)
+        cardContentText = findViewById(R.id.cardContentText)
+        flipBtn = findViewById(R.id.flipBtn)
+        prevBtn = findViewById(R.id.prevBtn)
+        nextBtn = findViewById(R.id.nextBtn)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val backBtn = Button(this).apply {
-            text = "Back"
-        }
-
-        val titleText = TextView(this).apply {
-            text = deckName
-            textSize = 24f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        cardCountText = TextView(this).apply {
-            text = "Loading..."
-            textSize = 14f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (20 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        // The card area shows the front or back text inside a simple bordered box.
-        cardContentText = TextView(this).apply {
-            text = ""
-            textSize = 20f
-            gravity = Gravity.CENTER
-            val cardPadding = (32 * resources.displayMetrics.density).toInt()
-            setPadding(cardPadding, cardPadding, cardPadding, cardPadding)
-            minHeight = (200 * resources.displayMetrics.density).toInt()
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (16 * resources.displayMetrics.density).toInt()
-            }
-            background = buildCardBackground()
-            setOnClickListener { flipCard() }
-        }
-
-        flipBtn = Button(this).apply {
-            text = "Flip"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (16 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        val navRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (12 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        prevBtn = Button(this).apply {
-            text = "Previous"
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply {
-                marginEnd = (8 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        nextBtn = Button(this).apply {
-            text = "Next"
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply {
-                marginStart = (8 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        navRow.addView(prevBtn)
-        navRow.addView(nextBtn)
-
-        headerRow.addView(backBtn)
-        headerRow.addView(titleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(cardCountText)
-        contentLayout.addView(cardContentText)
-        contentLayout.addView(flipBtn)
-        contentLayout.addView(navRow)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        titleText.text = deckName
+        cardContentText.setOnClickListener { flipCard() }
 
         // Return to the previous screen when the back button is pressed.
         backBtn.setOnClickListener { finish() }
@@ -174,8 +82,8 @@ class ReviewDeckActivity : AppCompatActivity() {
             showingFront = true
 
             if (cards.isEmpty()) {
-                cardCountText.text = "This deck has no cards yet"
-                cardContentText.text = "Add cards from the alter deck screen"
+                cardCountText.text = getString(R.string.deck_has_no_cards)
+                cardContentText.text = getString(R.string.add_cards_from_alter_deck)
                 flipBtn.isEnabled = false
                 prevBtn.isEnabled = false
                 nextBtn.isEnabled = false
@@ -191,7 +99,7 @@ class ReviewDeckActivity : AppCompatActivity() {
 
         showingFront = true
         val card = cards[currentIndex]
-        cardCountText.text = "Card ${currentIndex + 1} of ${cards.size}"
+        cardCountText.text = getString(R.string.card_position, currentIndex + 1, cards.size)
         cardContentText.text = card.front
         cardContentText.setTypeface(null, Typeface.BOLD)
         prevBtn.isEnabled = currentIndex > 0
@@ -226,16 +134,6 @@ class ReviewDeckActivity : AppCompatActivity() {
         if (currentIndex < cards.size - 1) {
             currentIndex++
             showCurrentCard()
-        }
-    }
-
-    // Build a simple bordered box for the card display area.
-    private fun buildCardBackground(): GradientDrawable {
-        return GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = 16f * resources.displayMetrics.density
-            setColor(Color.parseColor("#F7F7F7"))
-            setStroke((2 * resources.displayMetrics.density).toInt(), Color.parseColor("#D8D8D8"))
         }
     }
 }

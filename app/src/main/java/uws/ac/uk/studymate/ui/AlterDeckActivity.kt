@@ -2,12 +2,7 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -16,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.StudyMateDatabase
 /*//////////////////////
 Coded by Jamie Coleman
@@ -32,85 +28,20 @@ class AlterDeckActivity : AppCompatActivity() {
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_alter_deck)
 
         deckId = intent.getIntExtra("deck_id", -1)
         deckName = intent.getStringExtra("deck_name") ?: "Deck"
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        val backBtn: Button = findViewById(R.id.alterDeckBackBtn)
+        val titleText: TextView = findViewById(R.id.alterDeckTitleText)
+        val homeBtn: Button = findViewById(R.id.alterDeckHomeBtn)
+        val addCardBtn: Button = findViewById(R.id.addCardBtn)
+        val removeCardsBtn: Button = findViewById(R.id.removeCardsBtn)
+        val modifyCardsBtn: Button = findViewById(R.id.modifyCardsBtn)
+        val deleteDeckBtn: Button = findViewById(R.id.deleteDeckBtn)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val backBtn = Button(this).apply {
-            text = "Back"
-        }
-
-        val titleText = TextView(this).apply {
-            text = deckName
-            textSize = 24f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val addCardBtn = Button(this).apply {
-            text = "Add card"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (24 * resources.displayMetrics.density).toInt()
-            }
-            minHeight = (64 * resources.displayMetrics.density).toInt()
-        }
-
-        val removeCardsBtn = Button(this).apply {
-            text = "Remove cards"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (12 * resources.displayMetrics.density).toInt()
-            }
-            minHeight = (64 * resources.displayMetrics.density).toInt()
-        }
-
-        val modifyCardsBtn = Button(this).apply {
-            text = "Modify cards"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (12 * resources.displayMetrics.density).toInt()
-            }
-            minHeight = (64 * resources.displayMetrics.density).toInt()
-        }
-
-        val deleteDeckBtn = Button(this).apply {
-            text = "Delete deck"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (24 * resources.displayMetrics.density).toInt()
-            }
-            minHeight = (64 * resources.displayMetrics.density).toInt()
-        }
-
-        headerRow.addView(backBtn)
-        headerRow.addView(titleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(addCardBtn)
-        contentLayout.addView(removeCardsBtn)
-        contentLayout.addView(modifyCardsBtn)
-        contentLayout.addView(deleteDeckBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        titleText.text = deckName
 
         // Return to the previous screen when the back button is pressed.
         backBtn.setOnClickListener { finish() }
@@ -150,12 +81,12 @@ class AlterDeckActivity : AppCompatActivity() {
         // Ask for confirmation before deleting the entire deck.
         deleteDeckBtn.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Delete deck")
-                .setMessage("This will delete \"$deckName\" and all its cards. Do you want to continue?")
-                .setPositiveButton("Delete") { _, _ ->
+                .setTitle(R.string.delete_deck_title)
+                .setMessage(getString(R.string.delete_deck_message, deckName))
+                .setPositiveButton(R.string.delete_button) { _, _ ->
                     deleteDeck()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(R.string.cancel_button, null)
                 .show()
         }
     }
@@ -172,7 +103,7 @@ class AlterDeckActivity : AppCompatActivity() {
                 ).firstOrNull { it.id == deckId } ?: return@withContext
                 db.deckDao().delete(deck)
             }
-            Toast.makeText(this@AlterDeckActivity, "Deck deleted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@AlterDeckActivity, getString(R.string.deck_deleted_message), Toast.LENGTH_SHORT).show()
             // Return to the flashcard decks list after deleting.
             val intent = Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity")
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP

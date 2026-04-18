@@ -2,20 +2,15 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.util.SessionManager
@@ -31,82 +26,15 @@ class AddCardActivity : AppCompatActivity() {
      **/
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_add_card)
 
         val deckId = intent.getIntExtra("deck_id", -1)
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val backBtn = Button(this).apply {
-            text = "Back"
-        }
-
-        val titleText = TextView(this).apply {
-            text = "Add card"
-            textSize = 24f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val frontLabel = TextView(this).apply {
-            text = "Front (question)"
-            val topPadding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val frontInput = EditText(this).apply {
-            hint = "Enter front text"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val backLabel = TextView(this).apply {
-            text = "Back (answer)"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val backInput = EditText(this).apply {
-            hint = "Enter back text"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val saveBtn = Button(this).apply {
-            text = "Save card"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (24 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        headerRow.addView(backBtn)
-        headerRow.addView(titleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(frontLabel)
-        contentLayout.addView(frontInput)
-        contentLayout.addView(backLabel)
-        contentLayout.addView(backInput)
-        contentLayout.addView(saveBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        val backBtn: Button = findViewById(R.id.addCardBackBtn)
+        val homeBtn: Button = findViewById(R.id.addCardHomeBtn)
+        val frontInput: EditText = findViewById(R.id.frontInput)
+        val backInput: EditText = findViewById(R.id.backInput)
+        val saveBtn: Button = findViewById(R.id.saveCardBtn)
 
         // Return to the previous screen when the back button is pressed.
         backBtn.setOnClickListener { finish() }
@@ -122,17 +50,17 @@ class AddCardActivity : AppCompatActivity() {
             val back = backInput.text.toString().trim()
 
             if (front.isEmpty()) {
-                Toast.makeText(this, "Enter the front text", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.enter_front_text_message), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (back.isEmpty()) {
-                Toast.makeText(this, "Enter the back text", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.enter_back_text_message), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             val userId = SessionManager(this).getLoggedInUserId()
             if (userId == null) {
-                Toast.makeText(this, "Session expired", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.session_expired_message), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -148,7 +76,7 @@ class AddCardActivity : AppCompatActivity() {
                         )
                     )
                 }
-                Toast.makeText(this@AddCardActivity, "Card added", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@AddCardActivity, getString(R.string.card_added_message), Toast.LENGTH_SHORT).show()
                 frontInput.text.clear()
                 backInput.text.clear()
             }
