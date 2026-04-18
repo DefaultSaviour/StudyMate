@@ -14,7 +14,7 @@ import uws.ac.uk.studymate.data.repositories.AssignmentRepo
 import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentIcons
-import uws.ac.uk.studymate.util.SessionManager
+import uws.ac.uk.studymate.util.SessionUserResolver
 /*//////////////////////
 Coded by Jamie Coleman
 05/04/26
@@ -35,8 +35,8 @@ class AddAssignmentViewModel(application: Application) : AndroidViewModel(applic
     private val subjectRepo = SubjectRepo(db)
     private val assignmentRepo = AssignmentRepo(db)
 
-    // Use the session manager so this screen always saves data for the logged-in user.
-    private val sessionManager = SessionManager(application)
+    // Use the shared session resolver so login validation stays consistent with other screens.
+    private val sessionResolver = SessionUserResolver(application, userRepo)
 
     // This private value stores the latest screen data.
     // It is mutable here so only the ViewModel can change it.
@@ -70,20 +70,14 @@ class AddAssignmentViewModel(application: Application) : AndroidViewModel(applic
         // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Stop early when there is no logged-in user saved in the session.
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            // Stop early when there is no valid logged-in user.
+            val session = sessionResolver.requireUser()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
 
-            // Load the user and end the session if their account no longer exists.
-            val user = userRepo.getUser(userId)
-            if (user == null) {
-                sessionManager.logout()
-                _sessionExpired.postValue(true)
-                return@launch
-            }
+            val userId = session.userId
 
             // Load the subjects that the dropdown needs to show.
             val subjects = subjectRepo.getSubjects(userId).sortedBy { it.name.lowercase() }
@@ -124,20 +118,14 @@ class AddAssignmentViewModel(application: Application) : AndroidViewModel(applic
         // Run the save work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Stop early when there is no logged-in user saved in the session.
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            // Stop early when there is no valid logged-in user.
+            val session = sessionResolver.requireUser()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
 
-            // Load the user and end the session if their account no longer exists.
-            val user = userRepo.getUser(userId)
-            if (user == null) {
-                sessionManager.logout()
-                _sessionExpired.postValue(true)
-                return@launch
-            }
+            val userId = session.userId
 
             // Save the new assignment using the entered values.
             assignmentRepo.addAssignment(

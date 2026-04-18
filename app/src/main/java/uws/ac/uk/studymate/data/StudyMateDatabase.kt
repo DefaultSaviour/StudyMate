@@ -26,7 +26,7 @@ Coded by Jamie Coleman
         FlashCard::class
     ],
     exportSchema = false,
-    version = 5
+    version = 6
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -71,6 +71,16 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
+        // Add the account creation timestamp column required by the current User entity.
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `User` ADD COLUMN `created_at` TEXT")
+                db.execSQL("UPDATE `User` SET `created_at` = CURRENT_TIMESTAMP WHERE `created_at` IS NULL")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6)
+
         // Keep one shared instance so the database is not opened more than once.
         @Volatile
         private var INSTANCE: StudyMateDatabase? = null
@@ -84,7 +94,7 @@ abstract class StudyMateDatabase : RoomDatabase() {
                     "StudyMate.db"
                 )
                     // Keep old saved data and move it to the new schema version.
-                    .addMigrations(MIGRATION_4_5)
+                    .addMigrations(*MIGRATIONS)
                     .build()
                     .also { INSTANCE = it }
             }

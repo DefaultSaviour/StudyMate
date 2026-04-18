@@ -12,7 +12,7 @@ import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.DeckRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
-import uws.ac.uk.studymate.util.SessionManager
+import uws.ac.uk.studymate.util.SessionUserResolver
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
@@ -39,8 +39,8 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     private val userRepo = UserRepo(db)
     private val deckRepo = DeckRepo(db)
 
-    // Use the session manager so this screen always reads data for the logged-in user.
-    private val sessionManager = SessionManager(application)
+    // Use the shared session resolver so login validation stays consistent with other screens.
+    private val sessionResolver = SessionUserResolver(application, userRepo)
 
     // This private value stores the latest decks screen data.
     private val _screenSummary = MutableLiveData<FlashcardDecksSummary>()
@@ -70,20 +70,14 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
         // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Stop early when there is no logged-in user saved in the session.
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            // Stop early when there is no valid logged-in user.
+            val session = sessionResolver.requireUser()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
 
-            // Load the user and end the session if their account no longer exists.
-            val user = userRepo.getUser(userId)
-            if (user == null) {
-                sessionManager.logout()
-                _sessionExpired.postValue(true)
-                return@launch
-            }
+            val userId = session.userId
 
             // Load subjects and decks, then group decks under their subject.
             val subjects = db.subjectDao().getSubjects(userId).sortedBy { it.name.lowercase() }
@@ -125,11 +119,13 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
 
         // Run the save work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
+
+            val userId = session.userId
 
             val newId = deckRepo.addDeck(
                 FlashcardDeck(

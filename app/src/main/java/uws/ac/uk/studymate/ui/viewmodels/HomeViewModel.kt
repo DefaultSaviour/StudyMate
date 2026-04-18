@@ -11,12 +11,10 @@ import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.repositories.UserRepo
-import uws.ac.uk.studymate.util.SessionManager
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
+import uws.ac.uk.studymate.util.SessionUserResolver
 import java.time.Duration
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 /*//////////////////////
 Coded by Jamie Coleman
 15/03/26 - ??? was it ???
@@ -40,8 +38,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // Use the repository to keep user lookup logic out of the ViewModel.
     private val repo = UserRepo(db)
 
-    // Use the session manager so this screen always reads data for the logged-in user.
-    private val sessionManager = SessionManager(application)
+    // Use the shared session resolver so login validation stays consistent with other screens.
+    private val sessionResolver = SessionUserResolver(application, repo)
 
     // This private value stores the latest home screen summary.
     // It is mutable here so only the ViewModel can change it.
@@ -76,20 +74,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Stop early when there is no logged-in user saved in the session.
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            // Stop early when there is no valid logged-in user.
+            val session = sessionResolver.requireUser()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
 
-            // Load the user and end the session if their account no longer exists.
-            val user = repo.getUser(userId)
-            if (user == null) {
-                sessionManager.logout()
-                _sessionExpired.postValue(true)
-                return@launch
-            }
+            val userId = session.userId
+            val user = session.value
 
             // Ask about push notifications after the user has reached the home screen.
             _userNeedingPushChoice.postValue(
@@ -145,7 +138,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // Prefer an upcoming assignment, but fall back to the most recent overdue one when needed.
     private fun findNextDueAssignment(assignments: List<Assignment>): Pair<Assignment, LocalDateTime>? {
         val datedAssignments = assignments.mapNotNull { assignment ->
-            parseDueDate(assignment.dueDate)?.let { dueAt -> assignment to dueAt }
+            AssignmentDateTimeUtils.parseDueDate(assignment.dueDate)?.let { dueAt -> assignment to dueAt }
         }
 
         val now = LocalDateTime.now()
@@ -182,44 +175,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         val assignment = nextDueAssignment.first
         val dueAt = nextDueAssignment.second
-        return "${assignment.title}\n${formatDueDate(dueAt)}"
-    }
-
-
-    // Try a few simple date formats so the dashboard can read saved assignment due dates.
-    private fun parseDueDate(value: String?): LocalDateTime? {
-        if (value.isNullOrBlank()) {
-            return null
-        }
-
-        val trimmedValue = value.trim()
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (_: Exception) {
-        }
-
-        try {
-            return OffsetDateTime.parse(trimmedValue, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDateTime()
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDate.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay()
-        } catch (_: Exception) {
-        }
-
-        return null
-    }
-
-    // Format the due date in a simple readable way for the home screen.
-    private fun formatDueDate(dueAt: LocalDateTime): String {
-        return dueAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
+        return "${assignment.title}\n${AssignmentDateTimeUtils.formatDueDate(dueAt)}"
     }
 
     // Turn a duration into short plain English.

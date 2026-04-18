@@ -12,21 +12,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
-import uws.ac.uk.studymate.data.StudyMateDatabase
-import uws.ac.uk.studymate.data.entities.Assignment
-import uws.ac.uk.studymate.data.entities.Subject
-import uws.ac.uk.studymate.data.repositories.UserRepo
+import uws.ac.uk.studymate.ui.viewmodels.AssignmentsItem
+import uws.ac.uk.studymate.ui.viewmodels.AssignmentsViewModel
 import uws.ac.uk.studymate.util.AssignmentIcons
-import uws.ac.uk.studymate.util.SessionManager
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 /*//////////////////////
 Coded by Jamie Coleman
 05/04/26
@@ -34,20 +25,10 @@ fixed 08/04/26
  *//////////////////////
 class AssignmentsActivity : AppCompatActivity() {
 
-   private lateinit var assignmentsTitleText: TextView
+    private lateinit var assignmentsVm: AssignmentsViewModel
+    private lateinit var assignmentsTitleText: TextView
     private lateinit var emptyAssignmentsText: TextView
     private lateinit var assignmentsListContainer: LinearLayout
-    private lateinit var sessionManager: SessionManager
-    private lateinit var repo: UserRepo
-    private lateinit var db: StudyMateDatabase
-
-    private data class UpcomingAssignmentItem(
-        val title: String,
-        val dueAt: LocalDateTime,
-        val subjectName: String,
-        val subjectColorHex: String?,
-        val iconKey: String
-    )
 
     /**
      This screen shows the user's assignment list in one place.
@@ -58,10 +39,8 @@ class AssignmentsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set up the helpers used by this screen.
-        sessionManager = SessionManager(this)
-        db = StudyMateDatabase.getInstance(application)
-        repo = UserRepo(db)
+        // Set up the ViewModel used by this screen.
+        assignmentsVm = ViewModelProvider(this)[AssignmentsViewModel::class.java]
 
         // Inflate the XML layout and bind the dynamic views used by rendering methods.
         setContentView(R.layout.activity_assignments)
@@ -80,13 +59,24 @@ class AssignmentsActivity : AppCompatActivity() {
         addAssignmentBtn.setOnClickListener {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.AddAssignmentActivity"))
         }
+
+        assignmentsVm.assignmentsSummary.observe(this) { summary ->
+            assignmentsTitleText.text = summary.titleText
+            showAssignments(summary.items)
+        }
+
+        assignmentsVm.sessionExpired.observe(this) { expired ->
+            if (expired) {
+                openLogin()
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
 
         // Reload the assignment list each time the user returns to this screen.
-        loadAssignments()
+        assignmentsVm.loadAssignments()
     }
 
     // Replace this screen with the login screen when the session ends.
@@ -102,63 +92,12 @@ class AssignmentsActivity : AppCompatActivity() {
         startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
     }
 
-    // Load the user's saved assignments and show them on this screen.
-    private fun loadAssignments() {
-        lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                val userId = sessionManager.getLoggedInUserId() ?: return@withContext null
-                val user = repo.getUser(userId) ?: return@withContext null
-                val assignments = db.assignmentDao().getAssignments(userId)
-                val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
-                user.name to buildUpcomingAssignments(assignments, subjectsById)
-            }
-
-            if (result == null) {
-                sessionManager.logout()
-                openLogin()
-                return@launch
-            }
-
-            assignmentsTitleText.text = "Assignments for ${result.first}"
-            showAssignments(result.second)
-        }
-    }
-
-    // Keep only upcoming assignments and sort them so the nearest due work appears first.
-    private fun buildUpcomingAssignments(
-        assignments: List<Assignment>,
-        subjectsById: Map<Int, Subject>
-    ): List<UpcomingAssignmentItem> {
-        val now = LocalDateTime.now()
-        return assignments
-            .mapNotNull { assignment ->
-                val dueAt = parseDueDate(assignment.dueDate) ?: return@mapNotNull null
-                if (dueAt.isBefore(now)) {
-                    return@mapNotNull null
-                }
-
-                val subject = subjectsById[assignment.subjectId]
-                UpcomingAssignmentItem(
-                    title = assignment.title,
-                    dueAt = dueAt,
-                    subjectName = subject?.name ?: "Unknown subject",
-                    subjectColorHex = subject?.color,
-                    iconKey = assignment.icon
-                )
-            }
-            .sortedWith(
-                compareBy<UpcomingAssignmentItem> { it.dueAt }
-                    .thenBy { it.subjectName.lowercase() }
-                    .thenBy { it.title.lowercase() }
-            )
-    }
-
     // Show the current upcoming assignments as simple cards with the chosen icon.
-    private fun showAssignments(assignments: List<UpcomingAssignmentItem>) {
+    private fun showAssignments(assignments: List<AssignmentsItem>) {
         assignmentsListContainer.removeAllViews()
 
         if (assignments.isEmpty()) {
-            emptyAssignmentsText.text = "No upcoming assignments yet"
+            emptyAssignmentsText.text = getString(R.string.no_upcoming_assignments_yet)
             emptyAssignmentsText.visibility = TextView.VISIBLE
             return
         }
@@ -170,7 +109,7 @@ class AssignmentsActivity : AppCompatActivity() {
     }
 
     // Build one assignment card with the saved icon inside a box that uses the subject color.
-    private fun createAssignmentCard(item: UpcomingAssignmentItem): LinearLayout {
+    private fun createAssignmentCard(item: AssignmentsItem): LinearLayout {
         val subjectColor = parseSubjectColor(item.subjectColorHex)
         val padding = (14 * resources.displayMetrics.density).toInt()
         val badgeSize = (48 * resources.displayMetrics.density).toInt()
@@ -217,7 +156,7 @@ class AssignmentsActivity : AppCompatActivity() {
 
                     addView(
                         TextView(this@AssignmentsActivity).apply {
-                            text = "Assignment: ${item.title}"
+                            text = getString(R.string.assignment_label_with_title, item.title)
                             textSize = 16f
                             setTextColor(Color.BLACK)
                         }
@@ -225,7 +164,10 @@ class AssignmentsActivity : AppCompatActivity() {
 
                     addView(
                         TextView(this@AssignmentsActivity).apply {
-                            text = "Time due: ${formatDueDate(item.dueAt)}"
+                            text = getString(
+                                R.string.time_due_label_with_value,
+                                AssignmentDateTimeUtils.formatDueDate(item.dueAt)
+                            )
                             textSize = 14f
                             setTextColor(Color.BLACK)
                         }
@@ -235,41 +177,6 @@ class AssignmentsActivity : AppCompatActivity() {
         }
     }
 
-    // Try a few simple date formats so this screen can read saved assignment due dates.
-    private fun parseDueDate(value: String?): LocalDateTime? {
-        if (value.isNullOrBlank()) {
-            return null
-        }
-
-        val trimmedValue = value.trim()
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (_: Exception) {
-        }
-
-        try {
-            return OffsetDateTime.parse(trimmedValue, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDateTime()
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDate.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay()
-        } catch (_: Exception) {
-        }
-
-        return null
-    }
-
-    // Format the due date in a simple readable way for the assignments screen.
-    private fun formatDueDate(dueAt: LocalDateTime): String {
-        return dueAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
-    }
 
     // Read the saved subject color, or fall back to a safe dark color when it is missing.
     private fun parseSubjectColor(colorHex: String?): Int {

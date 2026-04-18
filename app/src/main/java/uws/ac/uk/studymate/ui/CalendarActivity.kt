@@ -14,11 +14,13 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.YearMonth
@@ -272,7 +274,7 @@ class CalendarActivity : AppCompatActivity() {
             if (entries.size > 5) {
                 addView(
                     TextView(this@CalendarActivity).apply {
-                        text = "+${entries.size - 5}"
+                        text = getString(R.string.calendar_more_assignments, entries.size - 5)
                         textSize = 11f
                         val extraTopPadding = (2 * resources.displayMetrics.density).toInt()
                         setPadding(0, extraTopPadding, 0, 0)
@@ -370,7 +372,7 @@ class CalendarActivity : AppCompatActivity() {
 
         textColumn.addView(
             TextView(this).apply {
-                text = entry.dueAt.format(DateTimeFormatter.ofPattern("HH:mm"))
+                text = AssignmentDateTimeUtils.formatDueTime(entry.dueAt)
                 textSize = 14f
                 setTextColor(Color.BLACK)
             }
@@ -384,15 +386,15 @@ class CalendarActivity : AppCompatActivity() {
     // Read the saved subject color, or fall back to a safe dark text color when it is missing.
     private fun parseSubjectColor(colorHex: String?): Int {
         return try {
-            if (colorHex.isNullOrBlank()) Color.parseColor("#222222") else Color.parseColor(colorHex)
+            if (colorHex.isNullOrBlank()) "#222222".toColorInt() else colorHex.toColorInt()
         } catch (_: Exception) {
-            Color.parseColor("#222222")
+            "#222222".toColorInt()
         }
     }
 
     // Use one gray shade for past days so they are easier to spot in the calendar.
     private fun pastDayGray(): Int {
-        return Color.parseColor("#9E9E9E")
+        return "#9E9E9E".toColorInt()
     }
 
     // Apply a 40 percent alpha so the subject color becomes a soft shaded background.
@@ -415,7 +417,7 @@ class CalendarActivity : AppCompatActivity() {
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = 12f * resources.displayMetrics.density
-            setColor(Color.parseColor("#F7F7F7"))
+            setColor("#F7F7F7".toColorInt())
             if (hasAssignments) {
                 val strokeWidth = (2 * resources.displayMetrics.density).toInt()
                 setStroke(strokeWidth, if (isPastDay) pastDayGray() else Color.BLACK)

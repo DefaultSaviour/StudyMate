@@ -7,6 +7,7 @@ import uws.ac.uk.studymate.data.entities.UserSettings
 import uws.ac.uk.studymate.data.entities.UserStats
 import uws.ac.uk.studymate.data.relations.UserWithSettingsAndStats
 import uws.ac.uk.studymate.util.PasswordUtils
+import java.time.Instant
 
 // Handles user-related database operations through the DAOs.
 class UserRepo(private val db: StudyMateDatabase) {
@@ -32,7 +33,8 @@ class UserRepo(private val db: StudyMateDatabase) {
                 name = name,
                 email = email,
                 passwordHash = hash,   // Store the hash, not the plain password.
-                passwordSalt = salt    // Store the salt so we can verify later.
+                passwordSalt = salt,   // Store the salt so we can verify later.
+                createdAt = Instant.now().toString()
             )
         )
 
