@@ -87,7 +87,5 @@
             android:name=".ui.EditCardActivity"
             android:exported="false" />
 
-
-
     </application>
 </manifest>
