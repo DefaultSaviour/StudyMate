@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import uws.ac.uk.studymate.ui.HomeActivity
 
 class LoginActivity : AppCompatActivity() {
 
@@ -16,12 +17,11 @@ class LoginActivity : AppCompatActivity() {
         val createAccountButton = findViewById<Button>(R.id.createAccountBtn)
 
         loginButton.setOnClickListener {
-            startActivity(Intent(this, DashboardActivity::class.java))
+            startActivity(Intent(this, HomeActivity::class.java))
         }
 
         createAccountButton.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
-}
 }

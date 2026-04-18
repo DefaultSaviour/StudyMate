@@ -13,7 +13,7 @@ class AddFlashcardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_flashcard)
+        setContentView(R.layout.activity_add_card)
 
         val deckSpinner = findViewById<Spinner>(R.id.deckSpinner)
         val questionInput = findViewById<EditText>(R.id.questionInput)
