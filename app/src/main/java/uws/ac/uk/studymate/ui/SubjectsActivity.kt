@@ -18,10 +18,8 @@ import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
 import uws.ac.uk.studymate.ui.viewmodels.SubjectColorChoice
 import uws.ac.uk.studymate.ui.viewmodels.SubjectsSummary
 import uws.ac.uk.studymate.ui.viewmodels.SubjectsViewModel
-import java.time.LocalDate
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 /*//////////////////////
 Coded by Jamie Coleman
 06/04/26
@@ -98,7 +96,7 @@ class SubjectsActivity : AppCompatActivity() {
 
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
                 selectedSubjectId = null
-                assignmentsOutputText.text = "Select a subject to see its assignments"
+                assignmentsOutputText.text = getString(R.string.select_subject_assignments_placeholder)
             }
         })
 
@@ -201,18 +199,18 @@ class SubjectsActivity : AppCompatActivity() {
     private fun showAssignmentsForSelectedSubject() {
         val selectedSubject = selectedSubjectWithAssignments()
         if (selectedSubject == null) {
-            assignmentsOutputText.text = "Select a subject to see its assignments"
+            assignmentsOutputText.text = getString(R.string.select_subject_assignments_placeholder)
             return
         }
 
         val assignments = selectedSubject.assignments.sortedWith(
-            compareBy<Assignment> { parseDueDate(it.dueDate) == null }
-                .thenBy { parseDueDate(it.dueDate) ?: LocalDateTime.MAX }
+            compareBy<Assignment> { AssignmentDateTimeUtils.parseDueDate(it.dueDate) == null }
+                .thenBy { AssignmentDateTimeUtils.parseDueDate(it.dueDate) ?: LocalDateTime.MAX }
                 .thenBy { it.title.lowercase() }
         )
 
         if (assignments.isEmpty()) {
-            assignmentsOutputText.text = "No assignments for this subject yet"
+            assignmentsOutputText.text = getString(R.string.no_subject_assignments_yet)
             return
         }
 
@@ -248,11 +246,11 @@ class SubjectsActivity : AppCompatActivity() {
 
     // Build a clear block of text for one assignment under the selected subject.
     private fun buildAssignmentText(assignment: Assignment): String {
-        val dueAt = parseDueDate(assignment.dueDate)
+        val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate)
         val dueText = if (dueAt == null) {
             "No due date"
         } else {
-            formatDueDate(dueAt)
+            AssignmentDateTimeUtils.formatDueDate(dueAt)
         }
 
         val upcomingText = if (dueAt != null && !dueAt.isBefore(LocalDateTime.now())) {
@@ -262,42 +260,6 @@ class SubjectsActivity : AppCompatActivity() {
         }
 
         return "${assignment.title}\nDue: $dueText$upcomingText"
-    }
-
-    // Try a few simple date formats so this screen can read saved assignment due dates.
-    private fun parseDueDate(value: String?): LocalDateTime? {
-        if (value.isNullOrBlank()) {
-            return null
-        }
-
-        val trimmedValue = value.trim()
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (_: Exception) {
-        }
-
-        try {
-            return OffsetDateTime.parse(trimmedValue, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDateTime()
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        } catch (_: Exception) {
-        }
-
-        try {
-            return LocalDate.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay()
-        } catch (_: Exception) {
-        }
-
-        return null
-    }
-
-    // Format the due date in a simple readable way for this screen.
-    private fun formatDueDate(dueAt: LocalDateTime): String {
-        return dueAt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))
     }
 }
 

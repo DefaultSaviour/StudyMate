@@ -15,6 +15,9 @@
     <string name="statistics_button">Statistics</string>
     <string name="assignments_title">Assignments</string>
     <string name="assignments_items_placeholder">No assignments yet</string>
+    <string name="no_upcoming_assignments_yet">No upcoming assignments yet</string>
+    <string name="assignment_label_with_title">Assignment: %1$s</string>
+    <string name="time_due_label_with_value">Time due: %1$s</string>
     <string name="statistics_title">Statistics</string>
     <string name="statistics_placeholder">Assignments: 0
 Flashcards: 0
@@ -36,6 +39,7 @@ Streak: 0 day(s)</string>
     <string name="no_button">No</string>
     <string name="calendar_title">Calendar</string>
     <string name="calendar_items_placeholder">No calendar items yet</string>
+    <string name="calendar_more_assignments">+%1$d</string>
     <string name="add_assignment_button">Add assignment</string>
     <string name="save_assignment_button">Save assignment</string>
     <string name="title_label">Title</string>
@@ -47,6 +51,7 @@ Streak: 0 day(s)</string>
     <string name="remove_subject_section_title">Remove subject</string>
     <string name="choose_subject_label">Choose subject</string>
     <string name="select_subject_assignments_placeholder">Select a subject to see its assignments</string>
+    <string name="no_subject_assignments_yet">No assignments for this subject yet</string>
     <string name="delete_subject_button">Delete subject</string>
     <string name="add_subject_section_title">Add subject</string>
     <string name="subject_name_label">Subject name</string>
@@ -81,7 +86,7 @@ Streak: 0 day(s)</string>
     <string name="deck_has_no_cards">This deck has no cards yet</string>
     <string name="add_cards_from_alter_deck">Add cards from the alter deck screen</string>
     <string name="card_position">Card %1$d of %2$d</string>
-    <string name="flashcard_question_answer">%1$s -- %2$s</string>
+    <string name="flashcard_question_answer">%1$s — %2$s</string>
     <string name="enter_deck_name_hint">Enter deck name</string>
     <string name="deck_name_label">Deck name</string>
     <string name="subject_label">Subject</string>
