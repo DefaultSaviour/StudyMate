@@ -14,6 +14,7 @@ Coded by Jamie Coleman
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- Add User -->
         <EditText
             android:id="@+id/nameInput"
             android:hint="Name"
@@ -41,6 +42,7 @@ Coded by Jamie Coleman
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"/>
 
+        <!-- Error or success message shown after tapping Add User -->
         <TextView
             android:id="@+id/registerMessage"
             android:layout_width="match_parent"
@@ -56,6 +58,7 @@ Coded by Jamie Coleman
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"/>
 
+        <!-- Displays all users with their name, hash, and salt -->
         <TextView
             android:id="@+id/usersOutput"
             android:text="Users will appear here..."
@@ -64,6 +67,7 @@ Coded by Jamie Coleman
             android:padding="12dp"
             android:textSize="14sp"/>
 
+        <!-- Delete User -->
         <EditText
             android:id="@+id/deleteIdInput"
             android:hint="User ID to delete"

@@ -2,15 +2,4 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-
-    <color name="studymate_pink">#F5429E</color>
-    <color name="studymate_purple">#7B3FF2</color>
-    <color name="studymate_yellow">#FFC83D</color>
-    <color name="studymate_blue">#7DD3FC</color>
-
-    <color name="studymate_background">#FFF8FC</color>
-    <color name="studymate_surface">#FFFFFF</color>
-    <color name="studymate_text_primary">#2B1B3B</color>
-    <color name="studymate_text_secondary">#6E5F7E</color>
-    <color name="studymate_border">#E9DFF0</color>
 </resources>

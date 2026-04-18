@@ -22,7 +22,6 @@ import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
 import uws.ac.uk.studymate.ui.viewmodels.SubjectColorChoice
 import uws.ac.uk.studymate.ui.viewmodels.SubjectsSummary
 import uws.ac.uk.studymate.ui.viewmodels.SubjectsViewModel
-import uws.ac.uk.studymate.LoginActivity
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
