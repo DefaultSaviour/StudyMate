@@ -11,20 +11,11 @@ class AddCardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_card)
 
-        val addCardBackBtn = findViewById<Button>(R.id.addCardBackBtn)
-        val addCardHomeBtn = findViewById<Button>(R.id.addCardHomeBtn)
-        val saveCardBtn = findViewById<Button>(R.id.saveCardBtn)
+        
 
-        addCardBackBtn.setOnClickListener {
-            finish()
-        }
+       
 
-        addCardHomeBtn.setOnClickListener {
-            finish()
-        }
+      
 
-        saveCardBtn.setOnClickListener {
-            finish()
-        }
     }
 }
