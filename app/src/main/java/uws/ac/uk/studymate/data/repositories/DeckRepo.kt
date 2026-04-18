@@ -13,6 +13,9 @@ class DeckRepo(private val db: StudyMateDatabase) {
     // Save a new deck and return its generated ID.
     suspend fun addDeck(deck: FlashcardDeck): Long = db.deckDao().insert(deck)
 
+    // Update an existing deck's details.
+    suspend fun updateDeck(deck: FlashcardDeck) = db.deckDao().update(deck)
+
     // Get all decks that belong to a specific user.
     suspend fun getDecks(userId: Int) = db.deckDao().getDecks(userId)
 

@@ -41,6 +41,33 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     }
 
     // CRDREP2
+    // Update one saved flash card through the repository.
+    // Make sure both the front and back text are changed.
+    @Test
+    fun updateCard_changesSavedValues() = runBlocking {
+        val repo = CardRepo(db)
+        val userId = insertUser(email = "card-repo-update@example.com")
+        val subjectId = insertSubject(userId = userId, name = "Italian")
+        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
+        repo.addCard(
+            FlashCard(
+                userId = userId,
+                deckId = deckId,
+                front = "Ciao",
+                back = "Hello"
+            )
+        )
+
+        val saved = repo.getCards(deckId).first()
+        repo.updateCard(saved.copy(front = "Grazie", back = "Thank you"))
+
+        val updated = repo.getCards(deckId).first()
+
+        assertEquals("Grazie", updated.front)
+        assertEquals("Thank you", updated.back)
+    }
+
+    // CRDREP3
     // Delete one saved card through the repository.
     // Make sure the chosen deck no longer has any cards left.
     @Test

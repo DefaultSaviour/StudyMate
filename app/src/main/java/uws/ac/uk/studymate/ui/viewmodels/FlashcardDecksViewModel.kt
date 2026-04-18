@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.entities.Subject
-import uws.ac.uk.studymate.data.repositories.FlashcardDeckRepo
+import uws.ac.uk.studymate.data.repositories.DeckRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
 /*//////////////////////
@@ -37,7 +37,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
 
     // Use repositories to keep database logic out of the ViewModel.
     private val userRepo = UserRepo(db)
-    private val deckRepo = FlashcardDeckRepo(db)
+    private val deckRepo = DeckRepo(db)
 
     // Use the session manager so this screen always reads data for the logged-in user.
     private val sessionManager = SessionManager(application)

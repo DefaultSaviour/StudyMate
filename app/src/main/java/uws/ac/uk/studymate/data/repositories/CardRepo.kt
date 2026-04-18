@@ -13,6 +13,9 @@ class CardRepo(private val db: StudyMateDatabase) {
     // Save a new flashcard to the database.
     suspend fun addCard(card: FlashCard) = db.cardDao().insert(card)
 
+    // Update an existing flashcard's content.
+    suspend fun updateCard(card: FlashCard) = db.cardDao().update(card)
+
     // Get all flashcards that belong to a specific deck.
     suspend fun getCards(deckId: Int) = db.cardDao().getCards(deckId)
 
