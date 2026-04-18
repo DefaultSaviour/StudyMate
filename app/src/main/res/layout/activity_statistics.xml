@@ -15,20 +15,54 @@ fixed 09/04/26
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
-            android:id="@+id/statisticsTitleText"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/statistics_title"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/statisticsTitleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/statistics_title"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/homeBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Home" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/statisticsDetailsText"
+            android:id="@+id/metricsTitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:text="Summary"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:id="@+id/metricsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/statistics_placeholder" />
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/progressTitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="24dp"
+            android:text="Subject progress"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:id="@+id/subjectProgressContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
 
     </LinearLayout>
 </ScrollView>

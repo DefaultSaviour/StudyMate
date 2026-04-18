@@ -15,6 +15,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
@@ -50,73 +51,17 @@ class CalendarActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         calendarVm = ViewModelProvider(this)[CalendarViewModel::class.java]
 
-        // Build a simple screen in code so each day can be colored by subject.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+        // Inflate the XML layout and bind the dynamic views used by rendering methods.
+        setContentView(R.layout.activity_calendar)
+        calendarTitleText = findViewById(R.id.calendarTitleText)
+        val homeBtn: Button = findViewById(R.id.homeBtn)
+        val previousMonthBtn: Button = findViewById(R.id.previousMonthBtn)
+        monthLabelText = findViewById(R.id.monthLabelText)
+        val nextMonthBtn: Button = findViewById(R.id.nextMonthBtn)
+        val weekdayHeaderContainer: LinearLayout = findViewById(R.id.weekdayHeaderContainer)
+        calendarRowsContainer = findViewById(R.id.calendarRowsContainer)
 
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        calendarTitleText = TextView(this).apply {
-            text = "Calendar"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val monthNavRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val previousMonthBtn = Button(this).apply {
-            text = "<"
-        }
-
-        monthLabelText = TextView(this).apply {
-            textSize = 20f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val nextMonthBtn = Button(this).apply {
-            text = ">"
-        }
-
-        val weekdayHeaderRow = createWeekdayHeaderRow()
-
-        calendarRowsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        headerRow.addView(calendarTitleText)
-        headerRow.addView(homeBtn)
-
-        monthNavRow.addView(previousMonthBtn)
-        monthNavRow.addView(monthLabelText)
-        monthNavRow.addView(nextMonthBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(monthNavRow)
-        contentLayout.addView(weekdayHeaderRow)
-        contentLayout.addView(calendarRowsContainer)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        weekdayHeaderContainer.addView(createWeekdayHeaderRow())
 
         // Show the latest calendar data when the ViewModel finishes loading it.
         calendarVm.calendarSummary.observe(this) { summary ->

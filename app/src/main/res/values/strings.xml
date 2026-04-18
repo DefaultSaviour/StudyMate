@@ -36,6 +36,9 @@ Streak: 0 day(s)</string>
     <string name="no_button">No</string>
     <string name="calendar_title">Calendar</string>
     <string name="calendar_items_placeholder">No calendar items yet</string>
+    <string name="add_assignment_button">Add assignment</string>
+    <string name="previous_month_button">&lt;</string>
+    <string name="next_month_button">&gt;</string>
     <string name="back_button">Back</string>
     <string name="flashcard_decks_title">Flashcards</string>
     <string name="create_new_deck_button">Create new deck</string>

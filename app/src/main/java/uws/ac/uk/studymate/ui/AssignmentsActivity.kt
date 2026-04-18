@@ -10,13 +10,13 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.Subject
@@ -63,57 +63,13 @@ class AssignmentsActivity : AppCompatActivity() {
         db = StudyMateDatabase.getInstance(application)
         repo = UserRepo(db)
 
-        // Build a simple screen in code so this page does not depend on extra XML files.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        assignmentsTitleText = TextView(this).apply {
-            text = "Assignments"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val addAssignmentBtn = Button(this).apply {
-            text = "Add assignment"
-        }
-
-        emptyAssignmentsText = TextView(this).apply {
-            text = "No assignments yet"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        assignmentsListContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        headerRow.addView(assignmentsTitleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(addAssignmentBtn)
-        contentLayout.addView(emptyAssignmentsText)
-        contentLayout.addView(assignmentsListContainer)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        // Inflate the XML layout and bind the dynamic views used by rendering methods.
+        setContentView(R.layout.activity_assignments)
+        assignmentsTitleText = findViewById(R.id.assignmentsTitleText)
+        val homeBtn: Button = findViewById(R.id.homeBtn)
+        val addAssignmentBtn: Button = findViewById(R.id.addAssignmentBtn)
+        emptyAssignmentsText = findViewById(R.id.emptyAssignmentsText)
+        assignmentsListContainer = findViewById(R.id.assignmentsListContainer)
 
         // Return to the main home screen from the top-right button.
         homeBtn.setOnClickListener {

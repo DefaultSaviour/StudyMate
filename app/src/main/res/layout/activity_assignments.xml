@@ -14,20 +14,45 @@ fixed 08/04/26
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
-            android:id="@+id/assignmentsTitleText"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/assignments_title"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/assignmentsTitleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/assignments_title"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/homeBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/home_button" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/addAssignmentBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_assignment_button" />
 
         <TextView
-            android:id="@+id/assignmentsItemsText"
+            android:id="@+id/emptyAssignmentsText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:paddingTop="16dp"
             android:text="@string/assignments_items_placeholder" />
+
+        <LinearLayout
+            android:id="@+id/assignmentsListContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
 
     </LinearLayout>
 </ScrollView>

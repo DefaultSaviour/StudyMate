@@ -2,12 +2,7 @@ package uws.ac.uk.studymate.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -40,74 +35,13 @@ class UserSettingsActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         settingsVm = ViewModelProvider(this)[UserSettingsViewModel::class.java]
 
-        // Build a simple screen in code so this page does not depend on extra XML files.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        settingsTitleText = TextView(this).apply {
-            text = getString(R.string.user_settings_title)
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = getString(R.string.home_button)
-        }
-
-        val notificationsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val notificationsLabel = TextView(this).apply {
-            text = getString(R.string.push_notifications_label)
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        notificationsSwitch = SwitchCompat(this).apply {
-            text = getString(R.string.setting_toggle_off)
-        }
-
-        settingsDetailsText = TextView(this).apply {
-            text = getString(R.string.settings_loading)
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val logoutBtn = Button(this).apply {
-            text = getString(R.string.logout_button)
-            val topPadding = (24 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        headerRow.addView(settingsTitleText)
-        headerRow.addView(homeBtn)
-
-        notificationsRow.addView(notificationsLabel)
-        notificationsRow.addView(notificationsSwitch)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(notificationsRow)
-        contentLayout.addView(settingsDetailsText)
-        contentLayout.addView(logoutBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        // Inflate the XML layout and bind controls used by this screen.
+        setContentView(R.layout.activity_user_settings)
+        settingsTitleText = findViewById(R.id.settingsTitleText)
+        val homeBtn: Button = findViewById(R.id.homeBtn)
+        notificationsSwitch = findViewById(R.id.notificationsSwitch)
+        settingsDetailsText = findViewById(R.id.settingsDetailsText)
+        val logoutBtn: Button = findViewById(R.id.logoutBtn)
 
         // Clear the session and return to login when the user logs out.
         logoutBtn.setOnClickListener {

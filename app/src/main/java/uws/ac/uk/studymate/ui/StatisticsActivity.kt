@@ -10,10 +10,10 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsMetric
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsSummary
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsViewModel
@@ -41,67 +41,12 @@ class StatisticsActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         statisticsVm = ViewModelProvider(this)[StatisticsViewModel::class.java]
 
-        // Build a simple screen in code so this page does not depend on extra XML files.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        statisticsTitleText = TextView(this).apply {
-            text = "Statistics"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val metricsTitleText = TextView(this).apply {
-            text = "Summary"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-            textSize = 18f
-        }
-
-        metricsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val progressTitleText = TextView(this).apply {
-            text = "Subject progress"
-            val topPadding = (24 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-            textSize = 18f
-        }
-
-        subjectProgressContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        headerRow.addView(statisticsTitleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(metricsTitleText)
-        contentLayout.addView(metricsContainer)
-        contentLayout.addView(progressTitleText)
-        contentLayout.addView(subjectProgressContainer)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        // Inflate the XML layout and bind the dynamic containers used by rendering methods.
+        setContentView(R.layout.activity_statistics)
+        statisticsTitleText = findViewById(R.id.statisticsTitleText)
+        val homeBtn: Button = findViewById(R.id.homeBtn)
+        metricsContainer = findViewById(R.id.metricsContainer)
+        subjectProgressContainer = findViewById(R.id.subjectProgressContainer)
 
         // Show the latest statistics data when the ViewModel finishes loading it.
         statisticsVm.statisticsSummary.observe(this) { summary ->
