@@ -1,7 +1,11 @@
 package uws.ac.uk.studymate.data.entities
 
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+  updated 7/04/26
+ *//////////////////////
 // Represents one subject in the Subjects table.
 // Each subject belongs to a user.
 // Deleting the user automatically removes all their subjects.

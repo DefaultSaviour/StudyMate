@@ -2,7 +2,10 @@ package uws.ac.uk.studymate.data.dao
 import androidx.room.*
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.relations.DeckWithCards
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ *//////////////////////
 // Provides database operations for the Flashcard_Decks table.
 @Dao
 interface FlashcardDeckDao {

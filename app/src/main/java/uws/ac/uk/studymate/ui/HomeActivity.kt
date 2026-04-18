@@ -4,15 +4,30 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import uws.ac.uk.studymate.R
+import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.ui.viewmodels.HomeViewModel
-
+/*//////////////////////
+Coded by Jamie Coleman
+15/03/26 - ??? was it ???
+updated 18/03/26
+updated 28/03/26
+updated 09/04/26
+updated 16/04/26
+updated 17/04/26
+updated 18/04/26
+ *//////////////////////
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var homeVm: HomeViewModel
+    private var isPushNotificationsDialogShowing = false
 
     /**
      This screen is the main hub that sends the user to the rest of the app.
@@ -54,6 +69,16 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        // Ask about push notifications only after the user has reached this home screen.
+        homeVm.userNeedingPushChoice.observe(this) { user ->
+            if (user == null || isPushNotificationsDialogShowing) {
+                return@observe
+            }
+
+            homeVm.clearUserNeedingPushChoice()
+            showPushNotificationsChoice(user)
+        }
+
         // Disabled for now: this testing-only observer used to react after wiping every table.
         // It is commented out so it can be re-enabled later.
 //        homeVm.allDataCleared.observe(this) { cleared ->
@@ -73,8 +98,9 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.AssignmentsActivity"))
         }
 
+        // Open the flashcard decks screen so the user can browse and manage their decks.
         flashcardsBtn.setOnClickListener {
-            Toast.makeText(this, "Flashcards screen not built yet", Toast.LENGTH_SHORT).show()
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity"))
         }
 
         // Open the subjects screen so the user can add or remove subjects.
@@ -113,6 +139,33 @@ class HomeActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(loginIntent)
+    }
+
+    // Ask the user if they want push notifications now that they are past the login screen.
+    private fun showPushNotificationsChoice(user: User) {
+        isPushNotificationsDialogShowing = true
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.push_notifications_prompt_title)
+            .setMessage(R.string.push_notifications_prompt_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.yes_button) { _, _ ->
+                savePushNotificationsChoice(user.id, true)
+            }
+            .setNegativeButton(R.string.no_button) { _, _ ->
+                savePushNotificationsChoice(user.id, false)
+            }
+            .show()
+    }
+
+    // Save the user's choice and keep the home screen open.
+    private fun savePushNotificationsChoice(userId: Int, enabled: Boolean) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                homeVm.savePushNotificationsChoice(userId, enabled)
+            }
+            isPushNotificationsDialogShowing = false
+        }
     }
 }
 

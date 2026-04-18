@@ -54,13 +54,40 @@
             android:name=".ui.SubjectsActivity"
             android:exported="false" />
 
+
         <activity
-            android:name=".ui.UserTestActivity"
+            android:name=".ui.FlashcardDecksActivity"
             android:exported="false" />
 
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".ui.DeckOptionsActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".ui.ReviewDeckActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.AlterDeckActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.AddCardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.RemoveCardsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.ModifyCardsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.EditCardActivity"
+            android:exported="false" />
+
+
 
     </application>
 </manifest>

@@ -11,7 +11,12 @@ import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModelProvider
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.RegisterViewModel
-
+/*//////////////////////
+Coded by Jamie Coleman
+15/03/26
+fixed 06/04/24
+updated 16/04/26
+ *//////////////////////
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var registerVm: RegisterViewModel
@@ -50,17 +55,13 @@ class RegisterActivity : AppCompatActivity() {
             finish()
         }
 
-        // Show a success message and open the home screen when registration works.
+        // Show a success message when registration works.
         registerVm.registrationSuccess.observe(this) { success ->
             if (success) {
-                registerMessage.text = "Account created successfully"
+                registerMessage.text = getString(R.string.account_created_successfully)
                 registerMessage.setTextColor("#2E7D32".toColorInt())
                 registerMessage.visibility = View.VISIBLE
-
-                val homeIntent = Intent(this, HomeActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-                startActivity(homeIntent)
+                openHome()
             }
         }
 
@@ -74,6 +75,15 @@ class RegisterActivity : AppCompatActivity() {
                 registerMessage.visibility = View.GONE
             }
         }
+    }
+
+
+    // Replace the register screen with the home screen once setup is complete.
+    private fun openHome() {
+        val homeIntent = Intent(this, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(homeIntent)
     }
 }
 

@@ -1,7 +1,11 @@
 package uws.ac.uk.studymate.data.entities
 
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+ updated 16/04/26
+ *//////////////////////
 // Represents one user in the User table.
 // The email column has a unique index so no two users can share the same email.
 @Entity(
@@ -14,5 +18,6 @@ data class User(
     val email: String,                                                                          // The user's email address (must be unique).
     @ColumnInfo(name = "password_hash") val passwordHash: String,                               // The hashed version of the user's password.
     @ColumnInfo(name = "password_salt") val passwordSalt: String,                               // The salt used when hashing the password.
+    @ColumnInfo(name = "push_notifications_enabled") val pushNotificationsEnabled: Boolean? = null, // Null means the user has not answered the push notification question yet.
     @ColumnInfo(name = "created_at", defaultValue = "CURRENT_TIMESTAMP") val createdAt: String? = null // The date and time the account was created.
 )

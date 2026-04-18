@@ -1,6 +1,9 @@
 package uws.ac.uk.studymate.data.entities
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 11/03/26
+ *//////////////////////
 // Represents the stats for one user in the User_Stats table.
 // Tracks counts like assignments, flashcards, and study streak days.
 // Deleting the user automatically removes their stats.

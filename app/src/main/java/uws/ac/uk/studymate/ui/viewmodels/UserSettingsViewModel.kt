@@ -9,12 +9,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
-import uws.ac.uk.studymate.util.SessionManager
-
+import uws.ac.uk.studymate.util.SessionUserResolver
+/*//////////////////////
+Coded by Jamie Coleman
+06/04/26
+fixed 09/04/26
+ updated 16/04/26
+  updated 16/04/26
+ *//////////////////////
 // Holds the text that the user settings screen needs to display.
 data class UserSettingsSummary(
     val titleText: String,
-    val detailsText: String
+    val detailsText: String,
+    val notificationsEnabled: Boolean
 )
 
 class UserSettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -25,8 +32,8 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
     // Use the repository to keep user lookup logic out of the ViewModel.
     private val repo = UserRepo(db)
 
-    // Use the session manager so this screen always reads data for the logged-in user.
-    private val sessionManager = SessionManager(application)
+    // Use the shared session resolver so login validation stays consistent with other screens.
+    private val sessionResolver = SessionUserResolver(application, repo)
 
     // This private value stores the latest settings text.
     // It is mutable here so only the ViewModel can change it.
@@ -46,27 +53,21 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
         // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Stop early when there is no logged-in user saved in the session.
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            // Stop early when there is no valid logged-in user.
+            val session = sessionResolver.requireUserWithMeta()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
 
-            // Load the user together with their settings and stats.
-            val userWithMeta = repo.getUserWithMeta(userId)
-            if (userWithMeta == null) {
-                sessionManager.logout()
-                _sessionExpired.postValue(true)
-                return@launch
-            }
+            val userWithMeta = session.value
 
             // Build the settings text for this screen.
             val settings = userWithMeta.settings
             val summary = UserSettingsSummary(
                 titleText = "Settings for ${userWithMeta.user.name}",
+                notificationsEnabled = userWithMeta.user.pushNotificationsEnabled ?: false,
                 detailsText = buildSettingsText(
-                    notificationsEnabled = settings?.notificationsEnabled ?: true,
                     darkModeEnabled = settings?.darkModeEnabled ?: false,
                     timezone = settings?.timezone ?: "UTC"
                 )
@@ -78,20 +79,30 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    // Save the user's push notification choice from the settings screen.
+    fun updatePushNotifications(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: run {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+
+            repo.updatePushNotifications(session.userId, enabled)
+        }
+    }
+
     // Clear the saved session when the user logs out from the settings screen.
     fun logout() {
-        sessionManager.logout()
+        sessionResolver.logout()
     }
 
     // Turn the saved settings into plain English for the user settings screen.
     private fun buildSettingsText(
-        notificationsEnabled: Boolean,
         darkModeEnabled: Boolean,
         timezone: String
     ): String {
-        val notificationsText = if (notificationsEnabled) "On" else "Off"
         val darkModeText = if (darkModeEnabled) "On" else "Off"
-        return "Notifications: $notificationsText\nDark mode: $darkModeText\nTimezone: $timezone"
+        return "Dark mode: $darkModeText\nTimezone: $timezone"
     }
 }
 

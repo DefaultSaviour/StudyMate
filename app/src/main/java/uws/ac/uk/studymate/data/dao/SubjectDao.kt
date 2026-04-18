@@ -4,7 +4,12 @@ import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
 import uws.ac.uk.studymate.data.relations.SubjectWithDecks
 import uws.ac.uk.studymate.data.relations.SubjectWithProgress
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ updated 18/03/26
+ updated 05/04/26
+ *//////////////////////
 // Provides database operations for the Subjects table.
 @Dao
 interface SubjectDao {

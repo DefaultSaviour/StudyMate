@@ -9,9 +9,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
-import uws.ac.uk.studymate.util.SessionManager
-import kotlin.math.roundToInt
-
+import uws.ac.uk.studymate.util.SessionUserResolver
+/*//////////////////////
+Coded by Jamie Coleman
+05/04/26
+fixed 09/04/26
+ *//////////////////////
 // Holds one small metric card shown near the top of the statistics screen.
 data class StatisticsMetric(
     val label: String,
@@ -42,8 +45,8 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
     // Use the repository to keep user lookup logic out of the ViewModel.
     private val repo = UserRepo(db)
 
-    // Use the session manager so this screen always reads data for the logged-in user.
-    private val sessionManager = SessionManager(application)
+    // Use the shared session resolver so login validation stays consistent with other screens.
+    private val sessionResolver = SessionUserResolver(application, repo)
 
     // This private value stores the latest statistics screen data.
     // It is mutable here so only the ViewModel can change it.
@@ -63,27 +66,22 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
         // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Stop early when there is no logged-in user saved in the session.
-            val userId = sessionManager.getLoggedInUserId()
-            if (userId == null) {
+            // Stop early when there is no valid logged-in user.
+            val session = sessionResolver.requireUser()
+            if (session == null) {
                 _sessionExpired.postValue(true)
                 return@launch
             }
 
-            // Load the user together with their settings and stats.
-            val userWithMeta = repo.getUserWithMeta(userId)
-            if (userWithMeta == null) {
-                sessionManager.logout()
-                _sessionExpired.postValue(true)
-                return@launch
-            }
+            val userId = session.userId
+            val user = session.value
 
             // Load the saved records that the statistics screen needs.
             val assignments = db.assignmentDao().getAssignments(userId)
-            val stats = userWithMeta.stats
             val subjects = db.subjectDao().getSubjects(userId)
             val progressBySubject = db.subjectProgressDao().getAll(userId).associateBy { it.subjectId }
-            val decksBySubject = db.deckDao().getDecksWithCards(userId).groupBy { it.deck.subjectId }
+            val decksWithCards = db.deckDao().getDecksWithCards(userId)
+            val decksBySubject = decksWithCards.groupBy { it.deck.subjectId }
 
             // Build the subject progress list shown underneath the summary cards.
             // For now this uses SubjectProgress as the best available source for
@@ -111,26 +109,18 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
                     )
                 }
 
-            val totalCompletedCards = subjectProgress.sumOf { it.completedCards }
-            val totalTrackedCards = subjectProgress.sumOf { it.totalCards }
-            val flashcardsCompletePercent = if (totalTrackedCards == 0) {
-                0
-            } else {
-                ((totalCompletedCards.toDouble() / totalTrackedCards.toDouble()) * 100.0).roundToInt()
-            }
-
-            val assignmentsComplete = stats?.assignmentsCount ?: assignments.size
-
-            // For now we reuse the saved flashcard count as a stand-in for cards studied
-            // until a real study-session table exists.
-            val cardsStudied = stats?.flashcardsCount ?: subjectProgress.sumOf { it.totalCards }
+            val totalDecks = decksWithCards.size
+            val totalFlashcards = decksWithCards.sumOf { it.cards.size }
+            val subjectsWithTrackedProgress = subjectProgress.count { it.totalCards > 0 }
 
             val summary = StatisticsSummary(
-                titleText = "Statistics for ${userWithMeta.user.name}",
+                titleText = "Statistics for ${user.name}",
                 metrics = buildStatisticsMetrics(
-                    flashcardsCompletePercent = flashcardsCompletePercent,
-                    assignmentsComplete = assignmentsComplete,
-                    cardsStudied = cardsStudied
+                    assignmentsCount = assignments.size,
+                    flashcardsCount = totalFlashcards,
+                    subjectCount = subjects.size,
+                    deckCount = totalDecks,
+                    subjectsWithTrackedProgress = subjectsWithTrackedProgress
                 ),
                 subjectProgress = subjectProgress
             )
@@ -143,16 +133,20 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
 
     // Build the four summary cards shown near the top of the statistics screen.
     private fun buildStatisticsMetrics(
-        flashcardsCompletePercent: Int,
-        assignmentsComplete: Int,
-        cardsStudied: Int
+        assignmentsCount: Int,
+        flashcardsCount: Int,
+        subjectCount: Int,
+        deckCount: Int,
+        subjectsWithTrackedProgress: Int
     ): List<StatisticsMetric> {
         return listOf(
-            StatisticsMetric(label = "Flashcards complete", value = "$flashcardsCompletePercent%"),
-            StatisticsMetric(label = "Assignments complete", value = assignmentsComplete.toString()),
-            // TODO: Replace this placeholder when the app starts tracking daily study sessions.
-            StatisticsMetric(label = "Daily streak", value = "TODO"),
-            StatisticsMetric(label = "Cards studied", value = cardsStudied.toString())
+            StatisticsMetric(label = "Assignments saved", value = assignmentsCount.toString()),
+            StatisticsMetric(label = "Flashcards saved", value = flashcardsCount.toString()),
+            StatisticsMetric(label = "Subjects", value = subjectCount.toString()),
+            StatisticsMetric(
+                label = "Decks with tracked progress",
+                value = "$subjectsWithTrackedProgress/$deckCount"
+            )
         )
     }
 }

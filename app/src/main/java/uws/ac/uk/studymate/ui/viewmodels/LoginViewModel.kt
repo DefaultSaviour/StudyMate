@@ -10,7 +10,12 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
-
+/*//////////////////////
+Coded by Jamie Coleman
+15/03/26
+fixed 06/04/24
+updated 16/04/26
+ *//////////////////////
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     // Get the app database once so this ViewModel can check saved user accounts.

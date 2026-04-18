@@ -5,7 +5,10 @@ import androidx.room.Relation
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.entities.UserSettings
 import uws.ac.uk.studymate.data.entities.UserStats
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 24/03/26
+ *//////////////////////
 // Joins a user with their settings and stats in one object.
 // Room fills in the settings and stats automatically using the relationships.
 data class UserWithSettingsAndStats(

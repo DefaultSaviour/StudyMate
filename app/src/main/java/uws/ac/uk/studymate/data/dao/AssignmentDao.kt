@@ -1,7 +1,10 @@
 package uws.ac.uk.studymate.data.dao
 import androidx.room.*
 import uws.ac.uk.studymate.data.entities.Assignment
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ *//////////////////////
 // Provides database operations for the Assignments table.
 @Dao
 interface AssignmentDao {

@@ -1,7 +1,10 @@
 package uws.ac.uk.studymate.data.dao
 import androidx.room.*
 import uws.ac.uk.studymate.data.entities.UserStats
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ *//////////////////////
 // Provides database operations for the User_Stats table.
 @Dao
 interface UserStatsDao {

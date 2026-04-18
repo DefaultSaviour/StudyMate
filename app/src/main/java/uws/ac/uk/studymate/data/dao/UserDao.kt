@@ -3,7 +3,12 @@ package uws.ac.uk.studymate.data.dao
 import androidx.room.*
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.relations.UserWithSettingsAndStats
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ updated 21/03/26
+  updated 16/04/26
+ *//////////////////////
 // Provides database operations for the User table.
 @Dao
 interface UserDao {
@@ -19,6 +24,10 @@ interface UserDao {
     // Update an existing user's details.
     @Update
     suspend fun update(user: User)
+
+    // Save whether the user wants push notifications.
+    @Query("UPDATE User SET push_notifications_enabled = :enabled WHERE id = :userId")
+    suspend fun updatePushNotificationsEnabled(userId: Int, enabled: Boolean)
 
     // Remove a user from the database.
     @Delete

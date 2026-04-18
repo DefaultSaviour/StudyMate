@@ -5,7 +5,11 @@ package uws.ac.uk.studymate.util
 import java.security.MessageDigest
 import java.security.SecureRandom
 import android.util.Base64
-
+/*//////////////////////
+Coded by Jamie Coleman
+created ?????
+updated 06/04/26
+ *//////////////////////
 object PasswordUtils {
 
     // Create a random salt so matching passwords do not produce the same hash.

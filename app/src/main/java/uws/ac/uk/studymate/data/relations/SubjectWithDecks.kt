@@ -4,7 +4,10 @@ import androidx.room.Embedded
 import androidx.room.Relation
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.entities.Subject
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 26/03/26
+ *//////////////////////
 // Joins a subject with all the flashcard decks that belong to it.
 // Room fills in the decks list automatically using the relationship.
 data class SubjectWithDecks(

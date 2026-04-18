@@ -1,7 +1,10 @@
 package uws.ac.uk.studymate.data.entities
 
 import androidx.room.*
-
+/*//////////////////////
+Coded by Jamie Coleman
+ 10/03/26
+ *//////////////////////
 // Represents one flashcard in the Flash_Cards table.
 // Each card belongs to a user and optionally to a deck.
 // Deleting the user removes the card; deleting the deck sets deck_id to null.
