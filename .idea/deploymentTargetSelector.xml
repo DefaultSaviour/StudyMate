@@ -4,8 +4,6 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-feature/ui-ux
-=======
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="UserRepoInstrumentedTest">
@@ -19,7 +17,6 @@ feature/ui-ux
       <SelectionState runConfigName="Tests in 'uws.ac.uk.studymate.data.repositories'">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
-master
       </SelectionState>
     </selectionStates>
   </component>
