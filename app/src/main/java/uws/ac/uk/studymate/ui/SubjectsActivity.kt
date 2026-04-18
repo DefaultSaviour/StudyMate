@@ -3,19 +3,15 @@ package uws.ac.uk.studymate.ui
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
@@ -55,113 +51,16 @@ class SubjectsActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         subjectsVm = ViewModelProvider(this)[SubjectsViewModel::class.java]
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        screenTitleText = TextView(this).apply {
-            text = "Subjects"
-            textSize = 24f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val removeSectionTitle = TextView(this).apply {
-            text = "Remove subject"
-            textSize = 18f
-            val topPadding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val removeSubjectLabel = TextView(this).apply {
-            text = "Choose subject"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        removeSubjectSpinner = Spinner(this).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        assignmentsOutputText = TextView(this).apply {
-            text = "Select a subject to see its assignments"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val deleteSubjectBtn = Button(this).apply {
-            text = "Delete subject"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val addSectionTitle = TextView(this).apply {
-            text = "Add subject"
-            textSize = 18f
-            val topPadding = (28 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val addSubjectNameLabel = TextView(this).apply {
-            text = "Subject name"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        addSubjectNameInput = EditText(this).apply {
-            hint = "Enter subject name"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val colorLabel = TextView(this).apply {
-            text = "Subject color"
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        colorSpinner = Spinner(this).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val addSubjectBtn = Button(this).apply {
-            text = "Add subject"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        headerRow.addView(screenTitleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(removeSectionTitle)
-        contentLayout.addView(removeSubjectLabel)
-        contentLayout.addView(removeSubjectSpinner)
-        contentLayout.addView(assignmentsOutputText)
-        contentLayout.addView(deleteSubjectBtn)
-        contentLayout.addView(addSectionTitle)
-        contentLayout.addView(addSubjectNameLabel)
-        contentLayout.addView(addSubjectNameInput)
-        contentLayout.addView(colorLabel)
-        contentLayout.addView(colorSpinner)
-        contentLayout.addView(addSubjectBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        // Inflate the XML layout and bind controls used by this screen.
+        setContentView(R.layout.activity_subjects)
+        screenTitleText = findViewById(R.id.screenTitleText)
+        val homeBtn: Button = findViewById(R.id.homeBtn)
+        removeSubjectSpinner = findViewById(R.id.removeSubjectSpinner)
+        assignmentsOutputText = findViewById(R.id.assignmentsOutputText)
+        val deleteSubjectBtn: Button = findViewById(R.id.deleteSubjectBtn)
+        addSubjectNameInput = findViewById(R.id.addSubjectNameInput)
+        colorSpinner = findViewById(R.id.colorSpinner)
+        val addSubjectBtn: Button = findViewById(R.id.addSubjectBtn)
 
         // Show the latest subject data when the ViewModel finishes loading it.
         subjectsVm.screenSummary.observe(this) { summary ->

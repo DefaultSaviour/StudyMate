@@ -15,12 +15,12 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.ui.viewmodels.AddAssignmentViewModel
 import uws.ac.uk.studymate.util.AssignmentIconOption
@@ -58,111 +58,17 @@ class AddAssignmentActivity : AppCompatActivity() {
         // Set up the ViewModel used by this screen.
         addAssignmentVm = ViewModelProvider(this)[AddAssignmentViewModel::class.java]
 
-        // Build a simple screen in code so this page matches the current app setup.
-        val contentLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val backBtn = Button(this).apply {
-            text = "Back"
-        }
-
-        screenTitleText = TextView(this).apply {
-            text = "Add assignment"
-            textSize = 24f
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-        }
-
-        val homeBtn = Button(this).apply {
-            text = "Home"
-        }
-
-        val titleLabel = TextView(this).apply {
-            text = "Title"
-            val topPadding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        titleInput = EditText(this).apply {
-            hint = "Enter assignment title"
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val subjectLabel = TextView(this).apply {
-            text = "Subject"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        subjectSpinner = Spinner(this).apply {
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        }
-
-        val dueDateLabel = TextView(this).apply {
-            text = "Due date"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        dueDateValueText = TextView(this).apply {
-            text = "No due date selected"
-            val topPadding = (10 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        val iconLabel = TextView(this).apply {
-            text = "Icon"
-            val topPadding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        iconOptionsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                topMargin = (8 * resources.displayMetrics.density).toInt()
-            }
-        }
-
-        val pickDueDateBtn = Button(this).apply {
-            text = "Choose due date"
-        }
-
-        saveAssignmentBtn = Button(this).apply {
-            text = "Save assignment"
-            val topPadding = (24 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        }
-
-        headerRow.addView(backBtn)
-        headerRow.addView(screenTitleText)
-        headerRow.addView(homeBtn)
-
-        contentLayout.addView(headerRow)
-        contentLayout.addView(titleLabel)
-        contentLayout.addView(titleInput)
-        contentLayout.addView(subjectLabel)
-        contentLayout.addView(subjectSpinner)
-        contentLayout.addView(dueDateLabel)
-        contentLayout.addView(dueDateValueText)
-        contentLayout.addView(pickDueDateBtn)
-        contentLayout.addView(iconLabel)
-        contentLayout.addView(iconOptionsContainer)
-        contentLayout.addView(saveAssignmentBtn)
-
-        setContentView(
-            ScrollView(this).apply {
-                addView(contentLayout)
-            }
-        )
+        // Inflate the XML layout and bind dynamic controls used by this screen.
+        setContentView(R.layout.activity_add_assignment)
+        val backBtn: Button = findViewById(R.id.backBtn)
+        screenTitleText = findViewById(R.id.screenTitleText)
+        val homeBtn: Button = findViewById(R.id.homeBtn)
+        titleInput = findViewById(R.id.titleInput)
+        subjectSpinner = findViewById(R.id.subjectSpinner)
+        dueDateValueText = findViewById(R.id.dueDateValueText)
+        val pickDueDateBtn: Button = findViewById(R.id.pickDueDateBtn)
+        iconOptionsContainer = findViewById(R.id.iconOptionsContainer)
+        saveAssignmentBtn = findViewById(R.id.saveAssignmentBtn)
 
         // Show the latest title and subject list when the ViewModel finishes loading it.
         addAssignmentVm.screenSummary.observe(this) { summary ->
