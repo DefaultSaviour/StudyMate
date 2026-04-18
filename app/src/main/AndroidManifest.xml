@@ -54,9 +54,6 @@
             android:name=".ui.SubjectsActivity"
             android:exported="false" />
 
-        <activity
-            android:name=".ui.UserTestActivity"
-            android:exported="false" />
 
         <activity
             android:name=".ui.MainActivity"

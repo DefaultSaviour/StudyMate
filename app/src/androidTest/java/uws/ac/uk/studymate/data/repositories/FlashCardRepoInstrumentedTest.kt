@@ -19,7 +19,7 @@ class FlashCardRepoInstrumentedTest : RoomDbTestBase() {
     // Check the chosen deck can load that saved card back.
     @Test
     fun addCard_savesTheCard() = runBlocking {
-        val repo = FlashCardRepo(db)
+        val repo = CardRepo(db)
         val userId = insertUser(email = "flashcard-repo-save@example.com")
         val subjectId = insertSubject(userId = userId, name = "German")
         val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Words")
@@ -44,7 +44,7 @@ class FlashCardRepoInstrumentedTest : RoomDbTestBase() {
     // Make sure both the front and back text are changed.
     @Test
     fun updateCard_changesSavedValues() = runBlocking {
-        val repo = FlashCardRepo(db)
+        val repo = CardRepo(db)
         val userId = insertUser(email = "flashcard-repo-update@example.com")
         val subjectId = insertSubject(userId = userId, name = "Italian")
         val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
@@ -71,7 +71,7 @@ class FlashCardRepoInstrumentedTest : RoomDbTestBase() {
     // Make sure the chosen deck becomes empty afterwards.
     @Test
     fun deleteCard_removesTheCard() = runBlocking {
-        val repo = FlashCardRepo(db)
+        val repo = CardRepo(db)
         val userId = insertUser(email = "flashcard-repo-delete@example.com")
         val subjectId = insertSubject(userId = userId, name = "Latin")
         val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
