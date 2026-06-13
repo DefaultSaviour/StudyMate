@@ -143,5 +143,74 @@ class UserRepoInstrumentedTest : RoomDbTestBase() {
         assertNull(db.userSettingsDao().get(userId))
         assertNull(db.userStatsDao().get(userId))
     }
+
+    // USRREP7
+    // Create a biometric-only account and confirm the auth mode is stored
+    // and surfaced through the one-bio lookup.
+    @Test
+    fun createUserWithDefaults_storesBiometricAuthMode() = runBlocking {
+        val repo = UserRepo(db)
+
+        val bioId = repo.createUserWithDefaults(
+            name = "BioUser",
+            email = "bio@example.com",
+            password = "Secret123",
+            authMode = "biometric_only"
+        )
+
+        val user = db.userDao().getById(bioId)
+        assertEquals("biometric_only", user?.authMode)
+        assertEquals(bioId, repo.getBiometricOnlyUser()?.id)
+    }
+
+    // USRREP8
+    // Multi-user, one-bio model: several password accounts can coexist, but
+    // getBiometricOnlyUser returns the single biometric account (or null).
+    @Test
+    fun getBiometricOnlyUser_isNullUntilABiometricAccountExists() = runBlocking {
+        val repo = UserRepo(db)
+        repo.createUserWithDefaults("PwOne", "pw1@example.com", "Secret123")
+        repo.createUserWithDefaults("PwTwo", "pw2@example.com", "Secret123")
+
+        assertNull(repo.getBiometricOnlyUser())
+
+        val bioId = repo.createUserWithDefaults(
+            name = "Bio",
+            email = "bio@example.com",
+            password = "Secret123",
+            authMode = "biometric_only"
+        )
+
+        assertEquals(bioId, repo.getBiometricOnlyUser()?.id)
+        assertEquals(3, repo.getAllUsers().size)
+    }
+
+    // USRREP9
+    // Look a user up by their username through the repository (case-insensitive).
+    @Test
+    fun getUserByName_findsTheAccountCaseInsensitively() = runBlocking {
+        val repo = UserRepo(db)
+        val userId = repo.createUserWithDefaults("Jamie", "name@example.com", "Secret123")
+
+        val found = repo.getUserByName("JAMIE")
+
+        assertNotNull(found)
+        assertEquals(userId, found?.id)
+    }
+
+    // USRREP10
+    // Usernames must be unique — creating a second account with a taken name fails.
+    @Test
+    fun createUserWithDefaults_rejectsDuplicateName() = runBlocking {
+        val repo = UserRepo(db)
+        repo.createUserWithDefaults("Jamie", "first@example.com", "Secret123")
+
+        val error = runCatching {
+            repo.createUserWithDefaults("Jamie", "second@example.com", "Secret123")
+        }.exceptionOrNull()
+
+        assertTrue(error != null)
+        assertEquals(1, repo.getAllUsers().size)
+    }
 }
 

@@ -93,18 +93,58 @@ class UserDaoInstrumentedTest : RoomDbTestBase() {
     }
 
     // USRDAO5
-    // Stop two users from sharing the same email address.
+    // Stop two users from sharing the same username.
+    // (As of v8, `name` is the unique identifier — email is no longer unique.)
     // The second save should fail and the table should keep one row.
     @Test
-    fun duplicateEmail_isRejected() = runBlocking {
-        insertUser(email = "taken@example.com")
+    fun duplicateName_isRejected() = runBlocking {
+        insertUser(name = "Jamie")
 
         val error = runCatching {
-            insertUser(email = "taken@example.com")
+            insertUser(name = "Jamie")
         }.exceptionOrNull()
 
         assertTrue(error != null)
         assertEquals(1, db.userDao().getAll().size)
+    }
+
+    // USRDAO6
+    // Two accounts may now share an email (it's an internal placeholder).
+    // Both saves should succeed.
+    @Test
+    fun duplicateEmail_isAllowed() = runBlocking {
+        insertUser(name = "First", email = "shared@example.com")
+        insertUser(name = "Second", email = "shared@example.com")
+
+        assertEquals(2, db.userDao().getAll().size)
+    }
+
+    // USRDAO7
+    // Look a user up by username, case-insensitively.
+    @Test
+    fun getByName_isCaseInsensitive() = runBlocking {
+        val userId = insertUser(name = "Jamie")
+
+        val found = db.userDao().getByName("jAmIe")
+
+        assertNotNull(found)
+        assertEquals(userId, found?.id)
+    }
+
+    // USRDAO8
+    // Return the single biometric-only account, or null when none exists.
+    @Test
+    fun getBiometricOnlyUser_returnsOnlyTheBiometricAccount() = runBlocking {
+        assertNull(db.userDao().getBiometricOnlyUser())
+
+        insertUser(name = "PasswordUser", authMode = "password")
+        val bioId = insertUser(name = "BioUser", authMode = "biometric_only")
+
+        val found = db.userDao().getBiometricOnlyUser()
+
+        assertNotNull(found)
+        assertEquals(bioId, found?.id)
+        assertEquals("biometric_only", found?.authMode)
     }
 }
 

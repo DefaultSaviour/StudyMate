@@ -22,6 +22,11 @@ abstract class RoomDbTestBase {
 
     protected lateinit var db: StudyMateDatabase
 
+    // The User table now has a unique index on `name` (v8). Tests routinely
+    // insert several users distinguished only by email, so give each one a
+    // distinct default name to avoid spurious unique-constraint failures.
+    private var userNameCounter = 0
+
     @Before
     fun setUpDatabase() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -38,18 +43,20 @@ abstract class RoomDbTestBase {
     }
 
     protected suspend fun insertUser(
-        name: String = "Test User",
+        name: String? = null,
         email: String = "test@example.com",
         passwordHash: String = "hash",
         passwordSalt: String = "salt",
+        authMode: String = "password",
         pushNotificationsEnabled: Boolean? = null
     ): Int {
         return db.userDao().insert(
             User(
-                name = name,
+                name = name ?: "Test User ${userNameCounter++}",
                 email = email,
                 passwordHash = passwordHash,
                 passwordSalt = passwordSalt,
+                authMode = authMode,
                 pushNotificationsEnabled = pushNotificationsEnabled
             )
         ).toInt()
