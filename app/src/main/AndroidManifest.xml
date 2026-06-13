@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Runtime permission for posting notifications on Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
+        android:name=".StudyMateApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -13,7 +17,9 @@
 
         <activity
             android:name=".ui.LoginActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.StudyMate.Splash">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,15 +29,12 @@
         </activity>
 
         <activity
-            android:name=".ui.RegisterActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".ui.HomeActivity"
             android:exported="false" />
 
         <activity
             android:name=".ui.AssignmentsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <activity
@@ -39,52 +42,28 @@
             android:exported="false" />
 
         <activity
-            android:name=".ui.StatisticsActivity"
-            android:exported="false" />
-
-        <activity
             android:name=".ui.UserSettingsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.AddAssignmentActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <activity
             android:name=".ui.SubjectsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
 
         <activity
             android:name=".ui.FlashcardDecksActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <activity
-            android:name=".ui.DeckOptionsActivity"
+            android:name=".ui.DeckCardsActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <activity
             android:name=".ui.ReviewDeckActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.AlterDeckActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.AddCardActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.RemoveCardsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.ModifyCardsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.EditCardActivity"
             android:exported="false" />
 
     </application>

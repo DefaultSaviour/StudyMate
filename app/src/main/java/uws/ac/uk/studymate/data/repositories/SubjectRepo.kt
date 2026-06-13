@@ -31,4 +31,7 @@ class SubjectRepo(private val db: StudyMateDatabase) {
 
     // Remove a subject from the database.
     suspend fun deleteSubject(subject: Subject) = db.subjectDao().delete(subject)
+
+    // Update an existing subject's name and/or color.
+    suspend fun updateSubject(subject: Subject) = db.subjectDao().update(subject)
 }

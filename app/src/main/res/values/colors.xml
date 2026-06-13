@@ -2,4 +2,35 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Dark Academic — navy base -->
+    <color name="navy">#0F172A</color>
+    <color name="navy_mid">#1E293B</color>
+
+    <!-- Dark Academic — brass gold (cooler, less orange) -->
+    <color name="gold">#C4A24A</color>
+    <color name="gold_dark">#8B6B1A</color>
+    <color name="gold_light">#D4BC7E</color>
+
+    <!-- Material theme slots (used by themes.xml and component defaults) -->
+    <color name="primary">#8B6B1A</color>
+    <color name="primary_dark">#0F172A</color>
+    <color name="primary_light">#C4A24A</color>
+    <color name="primary_container">#F5E6C0</color>
+    <color name="on_primary">#FAF8F5</color>
+    <color name="on_primary_container">#3D2A00</color>
+
+    <!-- Surfaces -->
+    <color name="background">#0F172A</color>
+    <color name="surface">#FAF8F5</color>
+
+    <!-- Text — warm tones for the cream card -->
+    <color name="text_primary">#1C1917</color>
+    <color name="text_secondary">#78716C</color>
+    <color name="text_hint">#A8956A</color>
+
+    <!-- Semantic -->
+    <color name="error_text">#DC2626</color>
+    <color name="success_text">#16A34A</color>
+    <color name="divider">#E7DED0</color>
 </resources>

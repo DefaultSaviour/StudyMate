@@ -7,17 +7,27 @@ Coded by Jamie Coleman
  updated 16/04/26
  *//////////////////////
 // Represents one user in the User table.
-// The email column has a unique index so no two users can share the same email.
+//
+// Multi-user, one-bio model:
+//   - Multiple accounts can exist on the device; the username is unique.
+//   - auth_mode = "password" means the user types a password to sign in.
+//   - auth_mode = "biometric_only" means the user has no typed password — only
+//     fingerprint/face/screen-lock unlocks them. At most one user may hold this
+//     mode; password users may *also* enable biometric as a shortcut.
+//
+// Email is kept as a placeholder column so existing relations + tests keep
+// working without a deeper refactor; it isn't exposed to the user any more.
 @Entity(
     tableName = "User",
-    indices = [Index(value = ["email"], unique = true)]
+    indices = [Index(value = ["name"], unique = true)]
 )
 data class User(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,                                           // Auto-generated unique ID.
-    val name: String,                                                                           // The user's display name.
-    val email: String,                                                                          // The user's email address (must be unique).
-    @ColumnInfo(name = "password_hash") val passwordHash: String,                               // The hashed version of the user's password.
-    @ColumnInfo(name = "password_salt") val passwordSalt: String,                               // The salt used when hashing the password.
-    @ColumnInfo(name = "push_notifications_enabled") val pushNotificationsEnabled: Boolean? = null, // Null means the user has not answered the push notification question yet.
-    @ColumnInfo(name = "created_at", defaultValue = "CURRENT_TIMESTAMP") val createdAt: String? = null // The date and time the account was created.
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val email: String,
+    @ColumnInfo(name = "password_hash") val passwordHash: String,
+    @ColumnInfo(name = "password_salt") val passwordSalt: String,
+    @ColumnInfo(name = "auth_mode", defaultValue = "password") val authMode: String = "password",
+    @ColumnInfo(name = "push_notifications_enabled") val pushNotificationsEnabled: Boolean? = null,
+    @ColumnInfo(name = "created_at", defaultValue = "CURRENT_TIMESTAMP") val createdAt: String? = null
 )

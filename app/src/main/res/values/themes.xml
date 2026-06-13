@@ -1,9 +1,121 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.StudyMate" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+        <item name="colorSecondary">@color/gold</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorError">@color/error_text</item>
+        <item name="android:statusBarColor">@color/navy</item>
+        <item name="android:navigationBarColor">@color/navy</item>
     </style>
 
     <style name="Theme.StudyMate" parent="Base.Theme.StudyMate" />
+
+    <!-- Launch theme: extends the platform splash so the system splash screen
+         and our SplashActivity look identical — no flash between them. -->
+    <style name="Theme.StudyMate.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#000000</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_logo_1</item>
+        <item name="postSplashScreenTheme">@style/Theme.StudyMate</item>
+    </style>
+
+    <style name="ShapeAppearance.StudyMate.LoginCard" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">28dp</item>
+        <item name="cornerSizeTopRight">28dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <!-- Applied to the card's inner FrameLayout so all form elements
+         render with light colours over the dark frosted background -->
+    <!-- Date / time picker dialogs themed to match the wood-glass UI:
+         35% black background, gold border, gold accent + text. -->
+    <style name="Theme.StudyMate.DateTimePicker" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowBackground">@drawable/bg_dialog_dark</item>
+        <item name="android:colorBackground">#59000000</item>
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorOnPrimary">@color/navy</item>
+        <item name="colorSecondary">@color/gold</item>
+        <item name="colorSurface">#59000000</item>
+        <item name="colorOnSurface">@color/gold_light</item>
+        <item name="colorOnSurfaceVariant">@color/gold_light</item>
+        <item name="android:textColorPrimary">@color/gold_light</item>
+        <item name="android:textColorSecondary">@color/gold_light</item>
+        <item name="android:textColor">@color/gold_light</item>
+        <item name="colorControlNormal">@color/gold_light</item>
+        <item name="colorControlActivated">@color/gold</item>
+        <item name="colorControlHighlight">#33D4BC7E</item>
+        <item name="colorAccent">@color/gold</item>
+        <item name="android:datePickerStyle">@style/StudyMate.DatePicker</item>
+        <item name="android:timePickerStyle">@style/StudyMate.TimePicker</item>
+        <item name="buttonBarPositiveButtonStyle">@style/StudyMate.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/StudyMate.DialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/StudyMate.DialogButton</item>
+    </style>
+
+    <style name="StudyMate.DatePicker" parent="@android:style/Widget.Material.DatePicker">
+        <item name="android:headerBackground">#59000000</item>
+        <item name="android:datePickerMode">calendar</item>
+    </style>
+
+    <style name="StudyMate.TimePicker" parent="@android:style/Widget.Material.TimePicker">
+        <item name="android:headerBackground">#59000000</item>
+        <item name="android:numbersBackgroundColor">#59000000</item>
+        <item name="android:numbersTextColor">@color/gold_light</item>
+        <item name="android:numbersSelectorColor">@color/gold</item>
+    </style>
+
+    <style name="StudyMate.DialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gold</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Confirmation / alert dialogs themed to match the wood-glass UI. -->
+    <style name="Theme.StudyMate.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowBackground">@drawable/bg_dialog_dark</item>
+        <item name="android:colorBackground">#59000000</item>
+        <item name="colorSurface">#59000000</item>
+        <item name="colorOnSurface">@color/gold_light</item>
+        <item name="colorOnSurfaceVariant">@color/gold_light</item>
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorOnPrimary">@color/navy</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/StudyMate.AlertDialog.Title</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/StudyMate.AlertDialog.Body</item>
+        <item name="buttonBarPositiveButtonStyle">@style/StudyMate.AlertDialog.PositiveButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/StudyMate.AlertDialog.NegativeButton</item>
+    </style>
+
+    <style name="StudyMate.AlertDialog.Title" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">@color/surface</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="StudyMate.AlertDialog.Body" parent="MaterialAlertDialog.Material3.Body.Text">
+        <item name="android:textColor">@color/gold_light</item>
+    </style>
+
+    <style name="StudyMate.AlertDialog.PositiveButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">#E8A48A</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="StudyMate.AlertDialog.NegativeButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gold_light</item>
+    </style>
+
+    <style name="ThemeOverlay.StudyMate.DarkCard" parent="">
+        <item name="colorOnSurface">@color/surface</item>
+        <item name="colorOnSurfaceVariant">@color/gold_light</item>
+        <item name="android:textColorPrimary">@color/surface</item>
+        <item name="android:textColorSecondary">@color/gold_light</item>
+        <item name="android:textColorHint">#80FAF8F5</item>
+        <item name="colorOutline">#80FAF8F5</item>
+        <item name="colorOutlineVariant">#33FAF8F5</item>
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorOnPrimary">@color/navy</item>
+    </style>
 </resources>

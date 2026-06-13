@@ -1,91 +1,625 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-Coded by Jamie Coleman
-15/03/26
-fixed 06/04/24
--->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_login_combined">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/brandingGuide"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.37" />
 
-        <TextView
+    <!-- Ambient orbs — behind all other views -->
+    <ImageView
+        android:id="@+id/orb1"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_astronomy"
+        android:padding="28dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginTop="-28dp"
+        android:layout_marginStart="-18dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/orb2"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_music"
+        android:padding="20dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginEnd="-12dp"
+        android:layout_marginBottom="-18dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/brandingGuide" />
+
+    <ImageView
+        android:id="@+id/orb3"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_math"
+        android:padding="13dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginTop="36dp"
+        android:layout_marginEnd="24dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageView
+        android:id="@+id/orb7"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_biology"
+        android:padding="16dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginEnd="18dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/brandingGuide"
+        app:layout_constraintVertical_bias="0.48" />
+
+    <ImageView
+        android:id="@+id/orb8"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_engineering"
+        android:padding="11dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginEnd="-6dp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/brandingGuide"
+        app:layout_constraintVertical_bias="0.25" />
+
+    <ImageView
+        android:id="@+id/orb4"
+        android:layout_width="68dp"
+        android:layout_height="68dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_chemistry"
+        android:padding="18dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginStart="14dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/brandingGuide"
+        app:layout_constraintVertical_bias="0.58" />
+
+    <ImageView
+        android:id="@+id/orb5"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_art"
+        android:padding="12dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginStart="58dp"
+        android:layout_marginBottom="6dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/brandingGuide" />
+
+    <ImageView
+        android:id="@+id/orb6"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:background="@drawable/bg_orb"
+        android:src="@drawable/ic_subject_physics"
+        android:padding="20dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.28"
+        android:contentDescription="@null"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_bias="0.62" />
+
+    <!-- Branding chain -->
+    <ImageView
+        android:id="@+id/logoIcon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:contentDescription="@null"
+        android:padding="18dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_studymate_logo"
+        app:layout_constraintBottom_toTopOf="@+id/appNameText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/appNameText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="-0.01"
+        android:text="StudyMate"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+        android:shadowColor="#99000000"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="6"
+        app:layout_constraintBottom_toTopOf="@+id/appTaglineText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/logoIcon" />
+
+    <TextView
+        android:id="@+id/appTaglineText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="Your personal study companion"
+        android:textColor="@color/gold_light"
+        android:textSize="13sp"
+        android:background="@drawable/bg_text_pill"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:shadowColor="#CC000000"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="4"
+        app:layout_constraintBottom_toTopOf="@+id/brandingGuide"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/appNameText" />
+
+    <!-- Login card — frosted glass panel: very translucent so the dark navy/wood shows through -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/loginCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="#59000000"
+        app:cardForegroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.StudyMate.LoginCard"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/brandingGuide">
+
+        <!-- Clip both panels to the card bounds so off-screen slides don't show -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Login"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:layout_height="match_parent"
+            android:clipChildren="true"
+            android:clipToPadding="true">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Sign in with an existing account" />
+            <!-- ── Sign-in panel (shown when an account exists) ────────────────── -->
+            <ScrollView
+                android:id="@+id/signInPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:overScrollMode="never">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Email" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:paddingTop="24dp"
+                    android:paddingBottom="20dp">
 
-        <EditText
-            android:id="@+id/emailInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Email"
-            android:inputType="textEmailAddress" />
+                    <TextView
+                        android:id="@+id/cardSubText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Welcome back"
+                        android:textColor="@color/gold_light"
+                        android:textSize="14sp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Password" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/usernameInputLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:hint="Username"
+                        app:startIconDrawable="@drawable/ic_person"
+                        app:startIconTint="@color/gold_light"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E">
 
-        <EditText
-            android:id="@+id/passwordInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Password"
-            android:inputType="textPassword" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/usernameInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/surface"
+                            android:imeOptions="actionDone"
+                            android:inputType="text"
+                            android:maxLines="1"
+                            android:maxLength="60" />
 
-        <TextView
-            android:id="@+id/loginMessage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="14sp"
-            android:visibility="gone" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-        <Button
-            android:id="@+id/loginBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Login" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/passwordInputLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Password"
+                        app:endIconMode="password_toggle"
+                        app:startIconDrawable="@drawable/ic_lock"
+                        app:startIconTint="@color/gold_light"
+                        app:endIconTint="@color/gold_light"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E">
 
-        <Button
-            android:id="@+id/createAccountBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Create new account" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/passwordInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/surface"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPassword" />
 
-        <!-- Disabled for now: this testing-only ClearAllData button used to wipe every table. -->
-        <!-- It is commented out so it stays in the file and can be re-enabled later. -->
-        <!--
-        <Button
-            android:id="@+id/clearDataBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Clear all saved data" />
-        -->
+                    </com.google.android.material.textfield.TextInputLayout>
 
-    </LinearLayout>
-</ScrollView>
+                    <TextView
+                        android:id="@+id/loginMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/loginBtn"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="16dp"
+                        android:text="Sign In"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/navy"
+                        android:backgroundTint="@color/gold" />
+
+                    <!-- "or" divider between Sign In and the biometric button.
+                         Shown only when both buttons are visible (see LoginActivity). -->
+                    <LinearLayout
+                        android:id="@+id/orDivider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="10dp"
+                        android:visibility="gone">
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"
+                            android:background="#33D4BC7E" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:text="or"
+                            android:textColor="@color/gold_light"
+                            android:textSize="13sp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"
+                            android:background="#33D4BC7E" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/biometricBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Use fingerprint or screen lock"
+                        android:textColor="@color/gold_light"
+                        android:textSize="15sp"
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_fingerprint"
+                        app:iconTint="@color/gold_light"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1.5dp" />
+
+                    <View
+                        android:id="@+id/signInDivider"
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="16dp"
+                        android:background="#33D4BC7E" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/createNewAccountBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="14dp"
+                        android:text="Create new account"
+                        android:textColor="@color/gold_light"
+                        android:textSize="15sp"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1.5dp" />
+
+                    <TextView
+                        android:id="@+id/differentAccountLink"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="18dp"
+                        android:padding="6dp"
+                        android:text="Use a different account"
+                        android:textColor="@color/gold_light"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+            <!-- ── Signup chooser panel (no account yet — pick a sign-in method) ── -->
+            <ScrollView
+                android:id="@+id/signupChoosePanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:overScrollMode="never">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:paddingTop="32dp"
+                    android:paddingBottom="28dp">
+
+                    <TextView
+                        android:id="@+id/regSubText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Set up your account"
+                        android:textColor="@color/gold_light"
+                        android:textSize="14sp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/regNameInputLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="28dp"
+                        android:hint="Your name"
+                        app:startIconDrawable="@drawable/ic_person"
+                        app:startIconTint="@color/gold_light"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/regNameInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/surface"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPersonName|textCapWords"
+                            android:maxLines="1"
+                            android:maxLength="60" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:id="@+id/regMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/useDeviceUnlockBtn"
+                        style="@style/Widget.Material3.Button.Icon"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="24dp"
+                        android:text="Use fingerprint or screen lock"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/navy"
+                        android:backgroundTint="@color/gold"
+                        app:icon="@drawable/ic_fingerprint"
+                        app:iconTint="@color/navy"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/setPasswordBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Set a password instead"
+                        android:textColor="@color/gold_light"
+                        android:textSize="15sp"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1.5dp" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+            <!-- ── Signup password panel (manual password setup) ─────────────── -->
+            <ScrollView
+                android:id="@+id/signupPasswordPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:overScrollMode="never">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:paddingTop="32dp"
+                    android:paddingBottom="28dp">
+
+                    <TextView
+                        android:id="@+id/pwSubText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Choose a password"
+                        android:textColor="@color/gold_light"
+                        android:textSize="14sp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/newPasswordLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="28dp"
+                        android:hint="Password"
+                        app:endIconMode="password_toggle"
+                        app:startIconDrawable="@drawable/ic_lock"
+                        app:startIconTint="@color/gold_light"
+                        app:endIconTint="@color/gold_light"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/newPasswordInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/surface"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPassword" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/confirmPasswordLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="Confirm password"
+                        app:endIconMode="password_toggle"
+                        app:startIconDrawable="@drawable/ic_lock"
+                        app:startIconTint="@color/gold_light"
+                        app:endIconTint="@color/gold_light"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/confirmPasswordInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/surface"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPassword" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:id="@+id/pwMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/createAccountBtn"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="24dp"
+                        android:text="Create account"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/navy"
+                        android:backgroundTint="@color/gold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/pwBackBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Back"
+                        android:textColor="@color/gold_light"
+                        android:textSize="15sp"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1.5dp" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+        </FrameLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

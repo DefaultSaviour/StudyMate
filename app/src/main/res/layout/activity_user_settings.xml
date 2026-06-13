@@ -1,77 +1,670 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-Coded by Jamie Coleman
-06/04/26
-fixed 09/04/26
--->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_settings_combined">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/headerGuide"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.16" />
 
-        <LinearLayout
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/settingsCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="#59000000"
+        app:cardForegroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.StudyMate.LoginCard"
+        app:layout_constraintTop_toBottomOf="@id/headerGuide"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_height="match_parent">
 
-            <TextView
-                android:id="@+id/settingsTitleText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/user_settings_title"
-                android:textSize="24sp" />
+            <!-- ───────────── LIST PANEL ───────────── -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/listPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:overScrollMode="never">
 
-            <Button
-                android:id="@+id/homeBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/home_button" />
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="22dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingTop="16dp">
+                    <TextView
+                        android:id="@+id/settingsTitleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Settings"
+                        android:textColor="@color/surface"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/notificationsLabel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/push_notifications_label" />
+                    <TextView
+                        android:id="@+id/settingsSubText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp"
+                        android:text="Manage your account and preferences"
+                        android:textColor="@color/gold_light"
+                        android:textSize="13sp" />
 
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/notificationsSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/setting_toggle_off"
-                app:showText="true" />
-        </LinearLayout>
+                    <!-- ACCOUNT (name + email + edit/delete) -->
+                    <TextView
+                        android:id="@+id/accountSectionLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="22dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="ACCOUNT"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp" />
 
-        <TextView
-            android:id="@+id/settingsDetailsText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:text="@string/settings_loading" />
+                    <LinearLayout
+                        android:id="@+id/accountRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_subject_row"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
 
-        <Button
-            android:id="@+id/logoutBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/logout_button" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-    </LinearLayout>
-</ScrollView>
+                            <TextView
+                                android:id="@+id/settingsNameText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/surface"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
 
+                            <TextView
+                                android:id="@+id/settingsEmailText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/gold_light"
+                                android:textSize="12sp"
+                                android:visibility="gone" />
+
+                            <TextView
+                                android:id="@+id/settingsMemberSinceText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="#B2FAF8F5"
+                                android:textSize="11sp" />
+
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/editAccountBtn"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:contentDescription="Edit account"
+                            app:icon="@drawable/ic_edit"
+                            app:iconTint="@color/gold_light"
+                            app:iconSize="20dp"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            android:backgroundTint="#00000000"
+                            app:rippleColor="#33D4BC7E" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/deleteAccountBtn"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:contentDescription="Delete account"
+                            app:icon="@drawable/ic_delete"
+                            app:iconTint="#E8A48A"
+                            app:iconSize="20dp"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            android:backgroundTint="#00000000"
+                            app:rippleColor="#44E8A48A" />
+
+                    </LinearLayout>
+
+                    <!-- PREFERENCES -->
+                    <TextView
+                        android:id="@+id/prefSectionLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="PREFERENCES"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:id="@+id/prefRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_subject_row"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Push notifications"
+                                android:textColor="@color/surface"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Reminders for upcoming assignments"
+                                android:textColor="@color/gold_light"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/notificationsSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:thumbTint="@color/gold"
+                            app:trackTint="#66D4BC7E" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/biometricRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_subject_row"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_fingerprint"
+                            android:tint="@color/gold_light" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Quick sign-in"
+                                android:textColor="@color/surface"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/biometricSubText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Use fingerprint, face, or screen lock"
+                                android:textColor="@color/gold_light"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/biometricSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:thumbTint="@color/gold"
+                            app:trackTint="#66D4BC7E" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/testNotificationBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Send a test reminder now"
+                        android:textColor="@color/gold_light"
+                        android:textSize="13sp"
+                        android:visibility="gone"
+                        app:strokeColor="#33D4BC7E"
+                        app:strokeWidth="1dp" />
+
+                    <!-- AT A GLANCE -->
+                    <TextView
+                        android:id="@+id/glanceSectionLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="AT A GLANCE"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:id="@+id/glanceRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_subject_row"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/settingsLibraryText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/surface"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/settingsAssignmentsText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:textColor="@color/surface"
+                            android:textSize="15sp" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/logoutBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="22dp"
+                        android:layout_marginBottom="20dp"
+                        android:text="Sign out"
+                        android:textColor="#E8A48A"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:backgroundTint="#59000000"
+                        app:strokeColor="#E8A48A"
+                        app:strokeWidth="1.5dp" />
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- ───────────── EDIT ACCOUNT PANEL ───────────── -->
+            <ScrollView
+                android:id="@+id/editPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:overScrollMode="never"
+                android:visibility="invisible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="20dp">
+
+                    <TextView
+                        android:id="@+id/editTitleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Edit account"
+                        android:textColor="@color/surface"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/editSubText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp"
+                        android:text="Update your name or password"
+                        android:textColor="@color/gold_light"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/editNameLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="22dp"
+                        android:hint="Full name"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E"
+                        app:startIconDrawable="@drawable/ic_person"
+                        app:startIconTint="@color/gold_light">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editNameInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPersonName|textCapWords"
+                            android:maxLines="1"
+                            android:maxLength="60"
+                            android:textColor="@color/surface" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/editEmailLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:hint="Email address"
+                        android:visibility="gone"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E"
+                        app:startIconDrawable="@drawable/ic_email"
+                        app:startIconTint="@color/gold_light">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editEmailInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:inputType="textEmailAddress"
+                            android:maxLines="1"
+                            android:maxLength="120"
+                            android:textColor="@color/surface" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:id="@+id/editPasswordLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="22dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="CHANGE PASSWORD (OPTIONAL)"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/editNewPasswordLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:hint="New password"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E"
+                        app:startIconDrawable="@drawable/ic_lock"
+                        app:startIconTint="@color/gold_light"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="@color/gold_light">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editNewPasswordInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPassword"
+                            android:maxLines="1"
+                            android:maxLength="120"
+                            android:textColor="@color/surface" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/editConfirmPasswordLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Confirm new password"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#99D4BC7E"
+                        app:startIconDrawable="@drawable/ic_lock"
+                        app:startIconTint="@color/gold_light"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="@color/gold_light">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editConfirmPasswordInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:inputType="textPassword"
+                            android:maxLines="1"
+                            android:maxLength="120"
+                            android:textColor="@color/surface" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/editConfirmBtn"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="22dp"
+                        android:text="Save changes"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/navy"
+                        android:backgroundTint="@color/gold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/editCancelBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Cancel"
+                        android:textColor="@color/gold_light"
+                        android:textSize="15sp"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1.5dp" />
+
+                    <TextView
+                        android:id="@+id/dangerZoneLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="DANGER ZONE"
+                        android:textColor="#E8A48A"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/editDeleteBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="10dp"
+                        app:icon="@drawable/ic_delete"
+                        app:iconTint="#E8A48A"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        android:text="Delete account"
+                        android:textColor="#E8A48A"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:backgroundTint="#59000000"
+                        app:strokeColor="#E8A48A"
+                        app:strokeWidth="1.5dp" />
+
+                </LinearLayout>
+
+            </ScrollView>
+
+        </FrameLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <ImageView
+        android:id="@+id/orb1"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@drawable/ic_person"
+        android:background="@drawable/bg_orb"
+        android:padding="12dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.40"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.12"
+        android:layout_marginTop="46dp" />
+
+    <ImageView
+        android:id="@+id/orb2"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:src="@drawable/ic_subject_business"
+        android:background="@drawable/bg_orb"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.36"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.48"
+        android:layout_marginTop="38dp" />
+
+    <ImageView
+        android:id="@+id/orb3"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:src="@drawable/ic_subject_design"
+        android:background="@drawable/bg_orb"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.36"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.82"
+        android:layout_marginTop="92dp" />
+
+    <ImageView
+        android:id="@+id/orb4"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:src="@drawable/ic_subject_psychology"
+        android:background="@drawable/bg_orb"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:alpha="0.34"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.26"
+        android:layout_marginTop="94dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/homeBtn"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@drawable/ic_arrow_back"
+        app:iconTint="@color/surface"
+        app:iconSize="26dp"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        android:backgroundTint="#59000000"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:cornerRadius="26dp"
+        app:rippleColor="#33D4BC7E"
+        android:contentDescription="Back to home"
+        app:layout_constraintBottom_toTopOf="@id/settingsCard"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="12dp"
+        android:layout_marginEnd="16dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

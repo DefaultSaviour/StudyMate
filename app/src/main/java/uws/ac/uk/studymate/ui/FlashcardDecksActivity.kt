@@ -1,229 +1,468 @@
 package uws.ac.uk.studymate.ui
 
+import android.animation.ObjectAnimator
 import android.content.Intent
-import android.graphics.Typeface
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.EditText
+import android.view.Gravity
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.graphics.toColorInt
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import uws.ac.uk.studymate.R
+import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.entities.Subject
+import uws.ac.uk.studymate.ui.viewmodels.DeckListItem
+import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksSummary
 import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksViewModel
-import uws.ac.uk.studymate.ui.viewmodels.SubjectDecksGroup
+
 /*//////////////////////
 Coded by Jamie Coleman
- 17/04/26
+17/04/26
+redesigned 18/04/26 — wood-glass UI, RecyclerView, inline add/edit panel-swap
  *//////////////////////
 class FlashcardDecksActivity : AppCompatActivity() {
 
-    private lateinit var decksVm: FlashcardDecksViewModel
-    private lateinit var screenTitleText: TextView
-    private lateinit var decksListContainer: LinearLayout
+    private lateinit var vm: FlashcardDecksViewModel
+
+    private lateinit var card: MaterialCardView
+    private lateinit var listPanel: LinearLayout
+    private lateinit var addPanel: View
+    private lateinit var editPanel: View
+
+    private lateinit var recycler: RecyclerView
     private lateinit var emptyText: TextView
+    private lateinit var createDeckBtn: MaterialButton
+
+    private lateinit var addNameInput: TextInputEditText
+    private lateinit var addSubjectRow: LinearLayout
+    private lateinit var addConfirmBtn: MaterialButton
+    private lateinit var addCancelBtn: MaterialButton
+
+    private lateinit var editNameInput: TextInputEditText
+    private lateinit var editSubjectRow: LinearLayout
+    private lateinit var editConfirmBtn: MaterialButton
+    private lateinit var editCancelBtn: MaterialButton
+
+    private lateinit var adapter: DeckListAdapter
 
     private var subjects: List<Subject> = emptyList()
+    private var addSubject: Subject? = null
+    private var editSubject: Subject? = null
+    private var editingDeck: FlashcardDeck? = null
 
-    /**
-     This screen shows all flashcard decks grouped by subject.
-     The user can tap a deck to review or alter it, or create a new deck.
-     **/
+    private enum class Panel { LIST, ADD, EDIT }
+    private var currentPanel: Panel = Panel.LIST
+    private var isAnimating = false
+
+    private lateinit var listElems: List<Pair<View, Float>>
+    private lateinit var addElems: List<Pair<View, Float>>
+    private lateinit var editElems: List<Pair<View, Float>>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_flashcard_decks)
+        uws.ac.uk.studymate.util.KeyboardInsets.apply(this)
 
-        // Set up the ViewModel used by this screen.
-        decksVm = ViewModelProvider(this)[FlashcardDecksViewModel::class.java]
+        vm = ViewModelProvider(this)[FlashcardDecksViewModel::class.java]
 
-        screenTitleText = findViewById(R.id.flashcardDecksTitleText)
-        decksListContainer = findViewById(R.id.decksListContainer)
-        emptyText = findViewById(R.id.flashcardDecksEmptyText)
-        val homeBtn: Button = findViewById(R.id.flashcardDecksHomeBtn)
-        val createDeckBtn: Button = findViewById(R.id.createDeckBtn)
+        bindViews()
+        setupRecycler()
+        setupClicks()
+        setupBackHandler()
+        setupWindowInsets()
+        setupFloatingOrbs()
+        runEntranceAnimation()
 
-        // Show the latest deck data when the ViewModel finishes loading it.
-        decksVm.screenSummary.observe(this) { summary ->
-            screenTitleText.text = summary.titleText
-            subjects = summary.subjects
-            showDeckGroups(summary.groups)
+        vm.screenSummary.observe(this) { applySummary(it) }
+        vm.sessionExpired.observe(this) { if (it) openLogin() }
+        vm.message.observe(this) { msg ->
+            if (msg.isNullOrBlank()) return@observe
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            if (msg == "Deck updated") swapToPanel(Panel.LIST)
+            // "Deck created" is handled via createdDeckId observer below.
         }
-
-        // Send the user back to login when there is no valid session.
-        decksVm.sessionExpired.observe(this) { expired ->
-            if (expired) {
-                openLogin()
-            }
-        }
-
-        // Show validation and save messages from the ViewModel.
-        decksVm.message.observe(this) { message ->
-            if (!message.isNullOrBlank()) {
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        // Navigate to the alter deck screen after a new deck is created.
-        decksVm.createdDeckId.observe(this) { deckId ->
+        vm.createdDeckId.observe(this) { deckId ->
             if (deckId != null) {
-                decksVm.clearCreatedDeckId()
+                vm.clearCreatedDeckId()
+                swapToPanel(Panel.LIST)
                 openAlterDeck(deckId)
             }
-        }
-
-        // Return to the main home screen from the top-right button.
-        homeBtn.setOnClickListener {
-            openHome()
-        }
-
-        // Show the create deck dialog when the user presses the button.
-        createDeckBtn.setOnClickListener {
-            showCreateDeckDialog()
         }
     }
 
     override fun onResume() {
         super.onResume()
-
-        // Reload the deck list each time the user returns to this screen.
-        decksVm.loadScreen()
+        vm.loadScreen()
     }
 
-    // Show the deck groups on screen, one subject heading followed by its deck buttons.
-    private fun showDeckGroups(groups: List<SubjectDecksGroup>) {
-        decksListContainer.removeAllViews()
+    private fun bindViews() {
+        card = findViewById(R.id.decksCard)
+        listPanel = findViewById(R.id.listPanel)
+        addPanel = findViewById(R.id.addPanel)
+        editPanel = findViewById(R.id.editPanel)
 
-        if (groups.isEmpty()) {
-            emptyText.text = getString(R.string.no_decks_yet_create_one)
-            emptyText.visibility = android.view.View.VISIBLE
-            return
+        recycler = findViewById(R.id.decksRecycler)
+        emptyText = findViewById(R.id.emptyStateText)
+        createDeckBtn = findViewById(R.id.createDeckBtn)
+
+        addNameInput = findViewById(R.id.addDeckNameInput)
+        addSubjectRow = findViewById(R.id.addSubjectRow)
+        addConfirmBtn = findViewById(R.id.addConfirmBtn)
+        addCancelBtn = findViewById(R.id.addCancelBtn)
+
+        editNameInput = findViewById(R.id.editDeckNameInput)
+        editSubjectRow = findViewById(R.id.editSubjectRow)
+        editConfirmBtn = findViewById(R.id.editConfirmBtn)
+        editCancelBtn = findViewById(R.id.editCancelBtn)
+
+        listElems = listOf(
+            findViewById<View>(R.id.listTitle)        to -1f,
+            findViewById<View>(R.id.listSubText)      to  1f,
+            createDeckBtn                              to -1f,
+            findViewById<View>(R.id.listSectionLabel) to  1f,
+            recycler                                   to -1f,
+            emptyText                                  to  1f
+        )
+        addElems = listOf(
+            findViewById<View>(R.id.addTitleText)       to -1f,
+            findViewById<View>(R.id.addSubText)         to  1f,
+            findViewById<View>(R.id.addDeckNameLayout)  to -1f,
+            findViewById<View>(R.id.addSubjectLabel)    to  1f,
+            findViewById<View>(R.id.addSubjectScroll)   to -1f,
+            addConfirmBtn                                to  1f,
+            addCancelBtn                                 to -1f
+        )
+        editElems = listOf(
+            findViewById<View>(R.id.editTitleText)       to -1f,
+            findViewById<View>(R.id.editSubText)         to  1f,
+            findViewById<View>(R.id.editDeckNameLayout)  to -1f,
+            findViewById<View>(R.id.editSubjectLabel)    to  1f,
+            findViewById<View>(R.id.editSubjectScroll)   to -1f,
+            editConfirmBtn                                to  1f,
+            editCancelBtn                                 to -1f
+        )
+    }
+
+    private fun setupRecycler() {
+        adapter = DeckListAdapter(
+            items = emptyList(),
+            onTap = { openDeckOptions(it.deck.id, it.deck.name) },
+            onEdit = { openEditFor(it) },
+            onDelete = { confirmDelete(it) }
+        )
+        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.adapter = adapter
+    }
+
+    private fun setupClicks() {
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
+        createDeckBtn.setOnClickListener { openAddPanel() }
+        addCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
+        editCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
+
+        addConfirmBtn.setOnClickListener {
+            if (subjects.isEmpty()) {
+                Toast.makeText(this, "Add a subject before creating a deck", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            vm.createDeck(addNameInput.text?.toString().orEmpty(), addSubject)
         }
+        editConfirmBtn.setOnClickListener {
+            val original = editingDeck ?: return@setOnClickListener
+            vm.updateDeck(original, editNameInput.text?.toString().orEmpty(), editSubject)
+        }
+    }
 
-        emptyText.visibility = android.view.View.GONE
-
-        groups.forEach { group ->
-            // Add a subject heading.
-            decksListContainer.addView(
-                TextView(this).apply {
-                    text = group.subject.name
-                    textSize = 18f
-                    setTypeface(null, Typeface.BOLD)
-                    setTextColor(parseSubjectColor(group.subject.color))
-                    val topPadding = (20 * resources.displayMetrics.density).toInt()
-                    setPadding(0, topPadding, 0, 0)
+    private fun setupBackHandler() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when (currentPanel) {
+                    Panel.LIST -> openHome()
+                    Panel.ADD, Panel.EDIT -> swapToPanel(Panel.LIST)
                 }
-            )
+            }
+        })
+    }
 
-            // Add a button for each deck under this subject.
-            group.decks.forEach { deck ->
-                decksListContainer.addView(
-                    Button(this).apply {
-                        text = deck.name
-                        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                            topMargin = (8 * resources.displayMetrics.density).toInt()
-                        }
-                        setOnClickListener {
-                            openDeckOptions(deck.id, deck.name)
-                        }
-                    }
-                )
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(card) { _, insets ->
+            val navBar = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            val base = (4 * resources.displayMetrics.density).toInt()
+            listPanel.setPadding(
+                listPanel.paddingLeft, listPanel.paddingTop,
+                listPanel.paddingRight, navBar + base
+            )
+            addPanel.setPadding(0, 0, 0, navBar + base)
+            editPanel.setPadding(0, 0, 0, navBar + base)
+            insets
+        }
+    }
+
+    // ─────────────────── Data ───────────────────
+
+    private fun applySummary(summary: FlashcardDecksSummary) {
+        subjects = summary.subjects
+        adapter.submit(summary.items)
+        val isEmpty = summary.items.isEmpty()
+        emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
+
+        buildSubjectSwatches(addSubjectRow) { tapped ->
+            addSubject = tapped
+            highlightSelectedSubject(addSubjectRow, tapped)
+        }
+        buildSubjectSwatches(editSubjectRow) { tapped ->
+            editSubject = tapped
+            highlightSelectedSubject(editSubjectRow, tapped)
+        }
+    }
+
+    // ─────────────────── Subject swatches ───────────────────
+
+    private fun buildSubjectSwatches(row: LinearLayout, onTap: (Subject) -> Unit) {
+        row.removeAllViews()
+        val density = resources.displayMetrics.density
+        val container = (62 * density).toInt()
+        val dot = (40 * density).toInt()
+        val margin = (8 * density).toInt()
+
+        subjects.forEach { subject ->
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(container, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    marginEnd = margin
+                }
+                tag = subject
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onTap(subject) }
+            }
+
+            val swatch = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dot, dot)
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(parseSubjectColor(subject.color))
+                    setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
+                }
+            }
+
+            val label = TextView(this).apply {
+                text = subject.name
+                textSize = 11f
+                setTextColor(Color.parseColor("#D4BC7E"))
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    container, LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (4 * density).toInt() }
+            }
+
+            item.addView(swatch)
+            item.addView(label)
+            row.addView(item)
+        }
+    }
+
+    private fun highlightSelectedSubject(row: LinearLayout, selected: Subject) {
+        val density = resources.displayMetrics.density
+        for (i in 0 until row.childCount) {
+            val item = row.getChildAt(i) as? LinearLayout ?: continue
+            val subject = item.tag as? Subject ?: continue
+            val swatch = item.getChildAt(0)
+            val bg = swatch.background as? GradientDrawable ?: continue
+            if (subject.id == selected.id) {
+                bg.setStroke((3 * density).toInt(), Color.parseColor("#FFC4A24A"))
+            } else {
+                bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
             }
         }
     }
 
-    // Show a dialog that lets the user pick a subject and name for the new deck.
-    private fun showCreateDeckDialog() {
+    // ─────────────────── Open add / edit / delete ───────────────────
+
+    private fun openAddPanel() {
         if (subjects.isEmpty()) {
-            Toast.makeText(this, getString(R.string.add_subject_first_message), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Add a subject before creating a deck", Toast.LENGTH_SHORT).show()
             return
         }
+        addNameInput.setText("")
+        addSubject = subjects.firstOrNull()
+        addSubject?.let { highlightSelectedSubject(addSubjectRow, it) }
+        swapToPanel(Panel.ADD)
+    }
 
-        val dialogLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
+    private fun openEditFor(item: DeckListItem) {
+        editingDeck = item.deck
+        editNameInput.setText(item.deck.name)
+        editSubject = subjects.firstOrNull { it.id == item.deck.subjectId }
+            ?: subjects.firstOrNull()
+        editSubject?.let { highlightSelectedSubject(editSubjectRow, it) }
+        swapToPanel(Panel.EDIT)
+    }
 
-        val nameInput = EditText(this).apply {
-            hint = getString(R.string.enter_deck_name_hint)
-        }
-
-        val subjectSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@FlashcardDecksActivity,
-                android.R.layout.simple_spinner_item,
-                subjects.map { it.name }
-            ).also { adapter ->
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-        }
-
-        dialogLayout.addView(TextView(this).apply { text = getString(R.string.deck_name_label) })
-        dialogLayout.addView(nameInput)
-        dialogLayout.addView(TextView(this).apply {
-            text = getString(R.string.subject_label)
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(0, topPadding, 0, 0)
-        })
-        dialogLayout.addView(subjectSpinner)
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.create_new_deck_title)
-            .setView(dialogLayout)
-            .setPositiveButton(R.string.create_button) { _, _ ->
-                val selectedSubject = subjects.getOrNull(subjectSpinner.selectedItemPosition)
-                decksVm.createDeck(nameInput.text.toString(), selectedSubject)
-            }
-            .setNegativeButton(R.string.cancel_button, null)
+    private fun confirmDelete(item: DeckListItem) {
+        val cardWord = if (item.cardCount == 1) "card" else "cards"
+        MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
+            .setTitle("Delete deck")
+            .setMessage("This will delete \"${item.deck.name}\" and its ${item.cardCount} $cardWord. Continue?")
+            .setPositiveButton("Delete") { _, _ -> vm.deleteDeck(item.deck) }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
-    // Read the saved subject color, or fall back to a safe dark color when it is missing.
-    private fun parseSubjectColor(colorHex: String?): Int {
-        return try {
-            if (colorHex.isNullOrBlank()) "#444444".toColorInt() else colorHex.toColorInt()
-        } catch (_: Exception) {
-            "#444444".toColorInt()
+    // ─────────────────── Panel swap ───────────────────
+
+    private fun swapToPanel(target: Panel) {
+        if (isAnimating || target == currentPanel) return
+
+        val outgoingPanel = panelView(currentPanel)
+        val incomingPanel = panelView(target)
+        val outgoingElems = panelElems(currentPanel)
+        val incomingElems = panelElems(target)
+
+        val goingForward = currentPanel == Panel.LIST
+        val sign = if (goingForward) 1f else -1f
+
+        val w = outgoingPanel.width.toFloat()
+        val stagger = 72L
+        val exitDur = 420L
+        val enterDur = 440L
+        val enterStart = (outgoingElems.size - 1) * stagger + exitDur
+        val exitEase = AccelerateInterpolator(1.3f)
+        val enterEase = DecelerateInterpolator(1.3f)
+
+        isAnimating = true
+
+        incomingElems.forEach { (v, dir) -> v.translationX = w * dir * sign }
+        incomingPanel.visibility = View.VISIBLE
+
+        outgoingElems.forEachIndexed { i, (v, dir) ->
+            v.animate()
+                .translationX(w * dir * sign)
+                .setDuration(exitDur)
+                .setStartDelay(i * stagger)
+                .setInterpolator(exitEase)
+                .start()
+        }
+        incomingElems.forEachIndexed { i, (v, _) ->
+            v.animate()
+                .translationX(0f)
+                .setDuration(enterDur)
+                .setStartDelay(enterStart + i * stagger)
+                .setInterpolator(enterEase)
+                .start()
+        }
+
+        val hideDelay = (outgoingElems.size - 1) * stagger + exitDur + 50L
+        outgoingPanel.postDelayed({
+            outgoingPanel.visibility = View.INVISIBLE
+            outgoingElems.forEach { (v, _) -> v.translationX = 0f }
+            isAnimating = false
+        }, hideDelay)
+
+        currentPanel = target
+    }
+
+    private fun panelView(p: Panel): View = when (p) {
+        Panel.LIST -> listPanel
+        Panel.ADD -> addPanel
+        Panel.EDIT -> editPanel
+    }
+
+    private fun panelElems(p: Panel): List<Pair<View, Float>> = when (p) {
+        Panel.LIST -> listElems
+        Panel.ADD -> addElems
+        Panel.EDIT -> editElems
+    }
+
+    // ─────────────────── Entrance + orbs ───────────────────
+
+    private fun setupFloatingOrbs() {
+        floatOrb(findViewById(R.id.orb1), 14f, 3800L, 0L)
+        floatOrb(findViewById(R.id.orb2), 17f, 4200L, 500L)
+        floatOrb(findViewById(R.id.orb3), 12f, 3600L, 1000L)
+        floatOrb(findViewById(R.id.orb4), 15f, 4000L, 300L)
+    }
+
+    private fun floatOrb(view: View, amplitude: Float, duration: Long, delay: Long) {
+        view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, -amplitude, amplitude).apply {
+            this.duration = duration
+            startDelay = delay
+            repeatMode = ObjectAnimator.REVERSE
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
         }
     }
 
-    // Replace this screen with the login screen when the session ends.
+    private fun runEntranceAnimation() {
+        val d = resources.displayMetrics.density
+        card.translationY = 200f * d
+        card.alpha = 0f
+        card.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        card.animate()
+            .translationY(0f)
+            .alpha(1f)
+            .setDuration(540)
+            .setInterpolator(DecelerateInterpolator(1.5f))
+            .setStartDelay(60)
+            .withEndAction { card.setLayerType(View.LAYER_TYPE_NONE, null) }
+            .start()
+    }
+
+    // ─────────────────── Helpers ───────────────────
+
+    private fun parseSubjectColor(hex: String?): Int = try {
+        if (hex.isNullOrBlank()) Color.parseColor("#C4A24A") else Color.parseColor(hex)
+    } catch (_: IllegalArgumentException) {
+        Color.parseColor("#C4A24A")
+    }
+
     private fun openLogin() {
-        val loginIntent = Intent(this, LoginActivity::class.java).apply {
+        val i = Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        startActivity(loginIntent)
+        startActivity(i)
     }
 
-    // Return to the main home screen from the top-right button.
     private fun openHome() {
         startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
     }
 
-    // Open the deck options screen for the chosen deck.
     private fun openDeckOptions(deckId: Int, deckName: String) {
         startActivity(
-            Intent().setClassName(packageName, "$packageName.ui.DeckOptionsActivity")
+            Intent().setClassName(packageName, "$packageName.ui.DeckCardsActivity")
                 .putExtra("deck_id", deckId)
                 .putExtra("deck_name", deckName)
         )
     }
 
-    // Open the alter deck screen directly after creating a new deck.
     private fun openAlterDeck(deckId: Int) {
+        // After creating a deck, jump straight to its cards screen so the user can add cards.
         startActivity(
-            Intent().setClassName(packageName, "$packageName.ui.AlterDeckActivity")
+            Intent().setClassName(packageName, "$packageName.ui.DeckCardsActivity")
                 .putExtra("deck_id", deckId)
                 .putExtra("deck_name", "New deck")
         )
     }
 }
-

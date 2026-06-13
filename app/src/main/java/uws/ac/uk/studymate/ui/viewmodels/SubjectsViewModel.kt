@@ -94,7 +94,7 @@ class SubjectsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun addSubject(name: String, colorChoice: SubjectColorChoice?) {
-        val trimmedName = name.trim()
+        val trimmedName = sanitizeSingleLine(name)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a subject name"
             return
@@ -129,6 +129,42 @@ class SubjectsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun updateSubject(original: Subject, newName: String, colorChoice: SubjectColorChoice?) {
+        val trimmedName = sanitizeSingleLine(newName)
+        if (trimmedName.isEmpty()) {
+            _message.value = "Enter a subject name"
+            return
+        }
+
+        if (colorChoice == null) {
+            _message.value = "Choose a subject color"
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+
+            val userId = session.userId
+
+            // Block the save when another subject already uses the new name.
+            val existing = subjectRepo.getSubjectByName(userId, trimmedName)
+            if (existing != null && existing.id != original.id) {
+                _message.postValue("That subject name is already in use")
+                return@launch
+            }
+
+            subjectRepo.updateSubject(
+                original.copy(name = trimmedName, color = colorChoice.hex)
+            )
+            _message.postValue("Subject updated")
+            loadScreen()
+        }
+    }
+
     fun deleteSubject(subject: Subject?) {
         if (subject == null) {
             _message.value = "Choose a subject first"
@@ -148,6 +184,14 @@ class SubjectsViewModel(application: Application) : AndroidViewModel(application
             _message.postValue("Subject deleted")
             loadScreen()
         }
+    }
+
+    // Collapse newlines and any control whitespace into a single space, then trim.
+    // Defends against paste of multi-line content into a "single line" field.
+    private fun sanitizeSingleLine(raw: String): String {
+        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
+            .replace(Regex("\\s{2,}"), " ")
+            .trim()
     }
 
     // Build the small fixed list of color names that the add subject form can use.
