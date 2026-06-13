@@ -18,6 +18,7 @@ import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.AssignmentIcons
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.TextSanitizer
+import java.time.Instant
 import java.time.LocalDateTime
 /*//////////////////////
 Coded by Jamie Coleman
@@ -29,7 +30,8 @@ data class AssignmentsItem(
     val dueAt: LocalDateTime,
     val subjectName: String,
     val subjectColorHex: String?,
-    val iconKey: String
+    val iconKey: String,
+    val isCompleted: Boolean
 )
 
 data class AssignmentsSummary(
@@ -182,6 +184,33 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    // Toggle an assignment's done state. Completing it stamps completed_at and
+    // cancels its reminders (no nagging about finished work); un-completing it
+    // clears the stamp and re-schedules the reminders.
+    fun toggleComplete(item: AssignmentsItem) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            val markDone = item.assignment.completedAt == null
+            val completedAt = if (markDone) Instant.now().toString() else null
+            assignmentRepo.setCompleted(item.assignment, completedAt)
+            if (markDone) {
+                AssignmentReminderScheduler.cancelForAssignment(getApplication(), item.assignment.id)
+            } else {
+                AssignmentReminderScheduler.scheduleForAssignment(
+                    getApplication(),
+                    item.assignment.copy(completedAt = null),
+                    session.value
+                )
+            }
+            _message.postValue(if (markDone) "Marked done" else "Marked not done")
+            loadAssignments()
+        }
+    }
+
     private fun buildUpcomingAssignments(
         assignments: List<Assignment>,
         subjectsById: Map<Int, Subject>
@@ -198,11 +227,14 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                     dueAt = dueAt,
                     subjectName = subject?.name ?: "Unknown subject",
                     subjectColorHex = subject?.color,
-                    iconKey = assignment.icon
+                    iconKey = assignment.icon,
+                    isCompleted = assignment.completedAt != null
                 )
             }
             .sortedWith(
-                compareBy<AssignmentsItem> { it.dueAt }
+                // Completed assignments sink to the bottom; otherwise by due date.
+                compareBy<AssignmentsItem> { it.isCompleted }
+                    .thenBy { it.dueAt }
                     .thenBy { it.subjectName.lowercase() }
                     .thenBy { it.assignment.title.lowercase() }
             )

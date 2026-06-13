@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 An Android study-companion app for students. Core features:
 - **Subjects** — create named subject groups
 - **Assignments** — track due dates and completion per subject
-- **Flashcards** — create decks of question/answer cards per subject
+- **Flashcards** — create decks of question/answer cards per subject; review with **SM-2 spaced repetition** (Again/Hard/Good/Easy)
+- **Statistics** — study dashboard: cards due/reviewed, study streak, mature cards, and assignment completion (all computed live)
 - **Calendar** — view assignments by date
 - **Sign-in** — multi-user accounts (unique username), with optional one-device biometric / screen-lock quick sign-in (see "Authentication & Sign-in")
 - **Reminders** — per-assignment local notifications (T-7d, T-1d, day-of) via WorkManager (see "Notifications")
@@ -50,7 +51,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
                                           ↓
                               Repositories (UserRepo, SubjectRepo, ...)
                                           ↓
-                                  Room DAOs → StudyMateDatabase (v8)
+                                  Room DAOs → StudyMateDatabase (v9)
 ```
 
 **Session flow:** `LoginActivity` writes a session via `SessionManager` (SharedPreferences). Every ViewModel that needs the current user calls `SessionUserResolver.resolveUser()` to load the `User` entity — do not read SharedPreferences directly in ViewModels.
@@ -61,7 +62,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 | Path | Purpose |
 |------|---------|
-| `data/StudyMateDatabase.kt` | Room singleton, v8, exposes all DAOs; migrations `MIGRATION_4_5` … `MIGRATION_7_8` and the `MIGRATIONS` array live here |
+| `data/StudyMateDatabase.kt` | Room singleton, v9, exposes all DAOs; migrations `MIGRATION_4_5` … `MIGRATION_8_9` and the `MIGRATIONS` array live here |
+| `util/SpacedRepetition.kt` | Pure-Kotlin SM-2 scheduler (ease/interval/repetitions → next due date); maps the 4 review buttons to SM-2 quality. Unit-tested |
 | `data/entities/` | Room `@Entity` classes — one file per table |
 | `data/relations/` | `@Relation` data classes for one-to-many queries (e.g. `SubjectWithAssignments`) |
 | `data/repositories/` | All DB access goes through repos; methods are `suspend` functions |
@@ -78,8 +80,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 ## Database Conventions
 
-- Database version is **8**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
-- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions).
+- Database version is **9**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
+- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved).
 - The `User` table's user-facing identifier is **`name`** (unique). `email` is now an internal placeholder, not user-visible. `auth_mode` is `password` or `biometric_only`.
 - Foreign keys use `CASCADE` delete — deleting a `User` removes all their subjects, assignments, flashcards, etc.
 - DAOs use `LOWER()` for case-insensitive lookups.
@@ -478,9 +480,9 @@ The login screen is the established reference. Every other screen should be brou
 - [x] **Assignments list** — RecyclerView of upcoming assignments (subject-coloured icon badge + title + subject + due), inline add + edit + icon-picker panel-swap, "Choose icon" gated behind title+subject+due completion, icon tiles tinted with the selected subject's colour
 - [x] **Assignment detail / edit** — folded into the Assignments screen as the edit panel (no separate activity); old `AddAssignmentActivity` and `AddAssignmentViewModel` deleted
 - [x] **Flashcard decks list** — RecyclerView of glass-row decks (subject dot + deck name + "Subject • N cards" subtitle + edit/delete), gold "Create new deck" primary button, inline add + edit panel-swap, tapping a deck still opens `DeckOptionsActivity`, back-arrow icon outside card top-right
-- [x] **Flashcard study / flip view** — `ReviewDeckActivity` restyled to wood-glass; cream flip card with gold stroke, gold Flip button + outlined Prev/Next with chevron icons, deck title + "Card N of M" pill
+- [x] **Flashcard study / flip view** — `ReviewDeckActivity` (now backed by `ReviewDeckViewModel`) runs an **SM-2 review session**: walks the deck's *due* cards one at a time, "Show answer" flips to the back, then four grade buttons (Again = muted red, Hard/Good/Easy = gold variants) schedule the card via `CardRepo.reviewCard` and advance. "All caught up" state when nothing is due, with a "Review all cards anyway" fallback. Each grade writes a `Review_Logs` row for stats. (Replaced the old Prev/Next browse flow.)
 - [x] **Deck detail + manage cards** — consolidated 7 old activities (`DeckOptions`, `AlterDeck`, `AddCard`, `EditCard`, `ModifyCards`, `RemoveCards`, `ReviewDeck`) into 3: `DeckDetailActivity` (Review + Manage Cards), `DeckCardsActivity` (RecyclerView of cards with inline add/edit panel-swap), `ReviewDeckActivity` (restyled). Delete-deck stays on the main Flashcards list only.
-- [~] **Statistics** — **dropped**. The previous screen displayed `SubjectProgress` data nothing in the app actually wrote, plus trivial counts the user could see by browsing. A small "AT A GLANCE" panel (subject/deck/card/assignment counts + due-this-week) now lives in `UserSettingsActivity` instead. To bring it back as a real screen would require tracking assignment completions and review sessions (see deferred Proposal B notes in chat history).
+- [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), assignment completed/pending/overdue/due-this-week, and per-subject completed/total. Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
 - [x] **Calendar** — wood bg, glass card with month grid + day-detail panel-swap; always 6-row grid (consistent height), today gets a gold ring, past days at 50% alpha, days with assignments show up to 3 subject-coloured dots; tap → swaps to read-only day list (max 9 rows, "+N more" footer), no edit/delete (jump to Assignments)
 - [x] **Settings / Profile** — wood-glass card with three sections (ACCOUNT, AT A GLANCE, PREFERENCES) using mini glass-card rows; muted-red outlined "Sign out" button with themed confirm dialog; absorbed the small library/assignment counts that used to be on the Statistics screen
 

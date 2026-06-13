@@ -23,10 +23,11 @@ Coded by Jamie Coleman
         SubjectProgress::class,
         Assignment::class,
         FlashcardDeck::class,
-        FlashCard::class
+        FlashCard::class,
+        ReviewLog::class
     ],
     exportSchema = false,
-    version = 8
+    version = 9
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -39,6 +40,7 @@ abstract class StudyMateDatabase : RoomDatabase() {
     abstract fun assignmentDao(): AssignmentDao
     abstract fun deckDao(): FlashcardDeckDao
     abstract fun cardDao(): FlashCardDao
+    abstract fun reviewLogDao(): ReviewLogDao
 
     companion object {
         // Move the notification choice onto the user row and keep the other settings in User_Settings.
@@ -104,7 +106,40 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+        // Spaced repetition + assignment completion + review history:
+        //   - add SM-2 scheduling columns to Flash_Cards
+        //   - add completed_at to Assignments
+        //   - create the Review_Logs table (+ its indices)
+        // Only additive (new columns / new table), so existing rows are preserved.
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `Flash_Cards` ADD COLUMN `ease_factor` REAL NOT NULL DEFAULT 2.5")
+                db.execSQL("ALTER TABLE `Flash_Cards` ADD COLUMN `interval_days` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `Flash_Cards` ADD COLUMN `repetitions` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `Flash_Cards` ADD COLUMN `due_at` TEXT")
+                db.execSQL("ALTER TABLE `Flash_Cards` ADD COLUMN `last_reviewed_at` TEXT")
+
+                db.execSQL("ALTER TABLE `Assignments` ADD COLUMN `completed_at` TEXT")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `Review_Logs` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL,
+                        `card_id` INTEGER,
+                        `reviewed_at` TEXT NOT NULL,
+                        `grade` INTEGER NOT NULL,
+                        FOREIGN KEY(`user_id`) REFERENCES `User`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`card_id`) REFERENCES `Flash_Cards`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Review_Logs_user_id` ON `Review_Logs` (`user_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Review_Logs_card_id` ON `Review_Logs` (`card_id`)")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile

@@ -110,6 +110,53 @@ class StudyMateDatabaseMigrationTest {
         context.getDatabasePath(dbName).delete()
     }
 
+    // 8 -> 9 adds spaced-repetition columns to Flash_Cards, completed_at to
+    // Assignments, and the Review_Logs table (+ its indices). Additive only.
+    @Test
+    fun migration8To9_addsSrColumns_completedAt_andReviewLogs() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbName = "migration-test-${System.currentTimeMillis()}.db"
+
+        val helper = createHelper(dbName)
+        helper.writableDatabase.use { db ->
+            createVersion8Schema(db)
+            applyMigrations(db, from = 8, to = 9)
+
+            val cardColumns = readColumnNames(db, "Flash_Cards")
+            assertTrue(cardColumns.contains("ease_factor"))
+            assertTrue(cardColumns.contains("interval_days"))
+            assertTrue(cardColumns.contains("repetitions"))
+            assertTrue(cardColumns.contains("due_at"))
+            assertTrue(cardColumns.contains("last_reviewed_at"))
+
+            assertTrue(readColumnNames(db, "Assignments").contains("completed_at"))
+
+            val logColumns = readColumnNames(db, "Review_Logs")
+            assertEquals(
+                listOf("id", "user_id", "card_id", "reviewed_at", "grade"),
+                logColumns
+            )
+            val logIndices = readIndexNames(db, "Review_Logs")
+            assertTrue(logIndices.contains("index_Review_Logs_user_id"))
+            assertTrue(logIndices.contains("index_Review_Logs_card_id"))
+
+            // ease_factor defaults to 2.5 for inserts that omit the SR columns.
+            db.execSQL(
+                """
+                INSERT INTO `Flash_Cards` (`user_id`, `deck_id`, `front`, `back`)
+                VALUES (1, NULL, 'Q', 'A')
+                """.trimIndent()
+            )
+            db.query("SELECT ease_factor, interval_days FROM `Flash_Cards` LIMIT 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(2.5, cursor.getDouble(0), 0.0001)
+                assertEquals(0, cursor.getInt(1))
+            }
+        }
+
+        context.getDatabasePath(dbName).delete()
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     // Apply each migration in the production MIGRATIONS array, in order, from
@@ -209,6 +256,53 @@ class StudyMateDatabaseMigrationTest {
             """
             INSERT INTO `User` (`id`, `name`, `email`, `password_hash`, `password_salt`, `created_at`)
             VALUES (1, 'Migration User', 'migration@example.com', 'hash', 'salt', CURRENT_TIMESTAMP)
+            """.trimIndent()
+        )
+    }
+
+    // The Flash_Cards / Assignments tables as they stood at v8 (pre spaced
+    // repetition), plus a User table so the Review_Logs FK target exists.
+    // FK clauses are omitted — the migration only ALTERs/creates by name.
+    private fun createVersion8Schema(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS `Flash_Cards`")
+        db.execSQL("DROP TABLE IF EXISTS `Assignments`")
+        db.execSQL("DROP TABLE IF EXISTS `User`")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `User` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL,
+                `email` TEXT NOT NULL,
+                `password_hash` TEXT NOT NULL,
+                `password_salt` TEXT NOT NULL,
+                `push_notifications_enabled` INTEGER,
+                `created_at` TEXT,
+                `auth_mode` TEXT NOT NULL DEFAULT 'password'
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Flash_Cards` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `deck_id` INTEGER,
+                `front` TEXT NOT NULL,
+                `back` TEXT NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Assignments` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `subject_id` INTEGER NOT NULL,
+                `title` TEXT NOT NULL,
+                `due_date` TEXT,
+                `icon` TEXT NOT NULL DEFAULT 'assignment'
+            )
             """.trimIndent()
         )
     }

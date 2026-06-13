@@ -61,6 +61,22 @@
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/doneBtn"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:contentDescription="Mark assignment done"
+        app:icon="@drawable/ic_circle_outline"
+        app:iconTint="@color/gold_light"
+        app:iconSize="22dp"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        android:backgroundTint="#00000000"
+        app:rippleColor="#33D4BC7E" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/editBtn"
         style="@style/Widget.Material3.Button.IconButton"
         android:layout_width="38dp"

@@ -1,6 +1,7 @@
 package uws.ac.uk.studymate.ui
 
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +19,8 @@ import uws.ac.uk.studymate.util.ColorUtils
 class AssignmentListAdapter(
     private var items: List<AssignmentsItem>,
     private val onEdit: (AssignmentsItem) -> Unit,
-    private val onDelete: (AssignmentsItem) -> Unit
+    private val onDelete: (AssignmentsItem) -> Unit,
+    private val onToggleDone: (AssignmentsItem) -> Unit
 ) : RecyclerView.Adapter<AssignmentListAdapter.Row>() {
 
     class Row(view: View) : RecyclerView.ViewHolder(view) {
@@ -27,6 +29,7 @@ class AssignmentListAdapter(
         val title: TextView = view.findViewById(R.id.assignmentTitleText)
         val subject: TextView = view.findViewById(R.id.assignmentSubjectText)
         val due: TextView = view.findViewById(R.id.assignmentDueText)
+        val doneBtn: MaterialButton = view.findViewById(R.id.doneBtn)
         val editBtn: MaterialButton = view.findViewById(R.id.editBtn)
         val deleteBtn: MaterialButton = view.findViewById(R.id.deleteBtn)
     }
@@ -53,6 +56,18 @@ class AssignmentListAdapter(
         holder.icon.setImageResource(AssignmentIcons.drawableForKey(item.iconKey))
         holder.icon.setColorFilter(Color.WHITE)
 
+        // Completed assignments: filled check, struck-through title, dimmed row.
+        if (item.isCompleted) {
+            holder.doneBtn.setIconResource(R.drawable.ic_check_circle)
+            holder.title.paintFlags = holder.title.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.itemView.alpha = 0.55f
+        } else {
+            holder.doneBtn.setIconResource(R.drawable.ic_circle_outline)
+            holder.title.paintFlags = holder.title.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.itemView.alpha = 1f
+        }
+
+        holder.doneBtn.setOnClickListener { onToggleDone(item) }
         holder.editBtn.setOnClickListener { onEdit(item) }
         holder.deleteBtn.setOnClickListener { onDelete(item) }
     }

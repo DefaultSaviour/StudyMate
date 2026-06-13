@@ -252,7 +252,8 @@ class AssignmentsActivity : AppCompatActivity() {
         adapter = AssignmentListAdapter(
             items = emptyList(),
             onEdit = { openEditFor(it) },
-            onDelete = { confirmDelete(it) }
+            onDelete = { confirmDelete(it) },
+            onToggleDone = { vm.toggleComplete(it) }
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
