@@ -16,61 +16,42 @@ import uws.ac.uk.studymate.util.SessionUserResolver
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
+redesigned 18/04/26 — flat list + add/edit panel-swap to match Subjects/Assignments
 *//////////////////////
-// One subject heading with the decks that belong to it.
-data class SubjectDecksGroup(
-    val subject: Subject,
-    val decks: List<FlashcardDeck>
+data class DeckListItem(
+    val deck: FlashcardDeck,
+    val subjectName: String,
+    val subjectColorHex: String?,
+    val cardCount: Int
 )
 
-// Holds the data the flashcard decks screen needs to display.
 data class FlashcardDecksSummary(
     val titleText: String,
-    val groups: List<SubjectDecksGroup>,
+    val items: List<DeckListItem>,
     val subjects: List<Subject>
 )
 
 class FlashcardDecksViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Get the app database once so this ViewModel can load deck data.
     private val db = StudyMateDatabase.getInstance(application)
-
-    // Use repositories to keep database logic out of the ViewModel.
     private val userRepo = UserRepo(db)
     private val deckRepo = DeckRepo(db)
-
-    // Use the shared session resolver so login validation stays consistent with other screens.
     private val sessionResolver = SessionUserResolver(application, userRepo)
 
-    // This private value stores the latest decks screen data.
     private val _screenSummary = MutableLiveData<FlashcardDecksSummary>()
-
-    // This public version lets the UI observe the latest decks screen data.
     val screenSummary: LiveData<FlashcardDecksSummary> = _screenSummary
 
-    // This private value stores whether the session is missing or no longer valid.
     private val _sessionExpired = MutableLiveData<Boolean>()
-
-    // This public version lets the UI react when it needs to send the user back to login.
     val sessionExpired: LiveData<Boolean> = _sessionExpired
 
-    // This private value stores the latest validation or save message.
     private val _message = MutableLiveData<String?>()
-
-    // This public version lets the UI show validation and save messages.
     val message: LiveData<String?> = _message
 
-    // This private value stores the ID of a newly created deck so the UI can navigate to it.
     private val _createdDeckId = MutableLiveData<Int?>()
-
-    // This public version lets the UI navigate after a new deck is created.
     val createdDeckId: LiveData<Int?> = _createdDeckId
 
     fun loadScreen() {
-        // Run the database work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
-
-            // Stop early when there is no valid logged-in user.
             val session = sessionResolver.requireUser()
             if (session == null) {
                 _sessionExpired.postValue(true)
@@ -78,26 +59,29 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             }
 
             val userId = session.userId
-
-            // Load subjects and decks, then group decks under their subject.
             val subjects = db.subjectDao().getSubjects(userId).sortedBy { it.name.lowercase() }
-            val decks = deckRepo.getDecks(userId)
-            val decksBySubject = decks.groupBy { it.subjectId }
+            val subjectsById = subjects.associateBy { it.id }
+            val decksWithCards = db.deckDao().getDecksWithCards(userId)
 
-            val groups = subjects
-                .filter { decksBySubject.containsKey(it.id) }
-                .map { subject ->
-                    SubjectDecksGroup(
-                        subject = subject,
-                        decks = decksBySubject[subject.id]!!.sortedBy { it.name.lowercase() }
+            val items = decksWithCards
+                .map { dwc ->
+                    val subject = subjectsById[dwc.deck.subjectId]
+                    DeckListItem(
+                        deck = dwc.deck,
+                        subjectName = subject?.name ?: "Unknown subject",
+                        subjectColorHex = subject?.color,
+                        cardCount = dwc.cards.size
                     )
                 }
+                .sortedWith(
+                    compareBy<DeckListItem> { it.subjectName.lowercase() }
+                        .thenBy { it.deck.name.lowercase() }
+                )
 
-            // Send the finished screen data back to the UI.
             _screenSummary.postValue(
                 FlashcardDecksSummary(
                     titleText = "Flashcards",
-                    groups = groups,
+                    items = items,
                     subjects = subjects
                 )
             )
@@ -106,18 +90,16 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun createDeck(name: String, subject: Subject?) {
-        val trimmedName = name.trim()
+        val trimmedName = sanitizeSingleLine(name)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
         }
-
         if (subject == null) {
             _message.value = "Choose a subject first"
             return
         }
 
-        // Run the save work on a background thread.
         viewModelScope.launch(Dispatchers.IO) {
             val session = sessionResolver.requireUser()
             if (session == null) {
@@ -125,11 +107,9 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
                 return@launch
             }
 
-            val userId = session.userId
-
             val newId = deckRepo.addDeck(
                 FlashcardDeck(
-                    userId = userId,
+                    userId = session.userId,
                     subjectId = subject.id,
                     name = trimmedName
                 )
@@ -139,9 +119,49 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    // Clear the created deck ID after the UI has navigated.
+    fun updateDeck(original: FlashcardDeck, newName: String, subject: Subject?) {
+        val trimmedName = sanitizeSingleLine(newName)
+        if (trimmedName.isEmpty()) {
+            _message.value = "Enter a deck name"
+            return
+        }
+        if (subject == null) {
+            _message.value = "Choose a subject first"
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            deckRepo.updateDeck(original.copy(name = trimmedName, subjectId = subject.id))
+            _message.postValue("Deck updated")
+            loadScreen()
+        }
+    }
+
+    fun deleteDeck(deck: FlashcardDeck) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            deckRepo.deleteDeck(deck)
+            _message.postValue("Deck deleted")
+            loadScreen()
+        }
+    }
+
     fun clearCreatedDeckId() {
         _createdDeckId.value = null
     }
-}
 
+    private fun sanitizeSingleLine(raw: String): String {
+        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
+            .replace(Regex("\\s{2,}"), " ")
+            .trim()
+    }
+}

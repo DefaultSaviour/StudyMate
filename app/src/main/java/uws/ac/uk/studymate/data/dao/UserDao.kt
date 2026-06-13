@@ -41,6 +41,14 @@ interface UserDao {
     @Query("SELECT * FROM User WHERE email = :email LIMIT 1")
     suspend fun getByEmail(email: String): User?
 
+    // Find a single user by their username (case-insensitive).
+    @Query("SELECT * FROM User WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+    suspend fun getByName(name: String): User?
+
+    // Return the (at most one) user holding biometric-only mode, or null.
+    @Query("SELECT * FROM User WHERE auth_mode = 'biometric_only' LIMIT 1")
+    suspend fun getBiometricOnlyUser(): User?
+
     // Get a user together with their settings and stats in one query.
     @Transaction
     @Query("SELECT * FROM User WHERE id = :id")

@@ -21,7 +21,12 @@ class UserRepo(private val db: StudyMateDatabase) {
     // Return the new user ID so the app can log that user in straight away - this
     // is a workaround im sure this isnt the idiomatic was of doing, it but it works.
     @Transaction
-    suspend fun createUserWithDefaults(name: String, email: String, password: String): Int {
+    suspend fun createUserWithDefaults(
+        name: String,
+        email: String,
+        password: String,
+        authMode: String = "password"
+    ): Int {
 
         // Generate a random salt and hash the password before saving.
         val salt = PasswordUtils.generateSalt()
@@ -34,6 +39,7 @@ class UserRepo(private val db: StudyMateDatabase) {
                 email = email,
                 passwordHash = hash,   // Store the hash, not the plain password.
                 passwordSalt = salt,   // Store the salt so we can verify later.
+                authMode = authMode,
                 createdAt = Instant.now().toString()
             )
         )
@@ -65,6 +71,15 @@ class UserRepo(private val db: StudyMateDatabase) {
     suspend fun getUserByEmail(email: String): User? {
         return db.userDao().getByEmail(email)
     }
+
+    // Find a user by their username (case-insensitive).
+    suspend fun getUserByName(name: String): User? = db.userDao().getByName(name)
+
+    // Return the (at most one) user holding biometric-only auth, or null.
+    suspend fun getBiometricOnlyUser(): User? = db.userDao().getBiometricOnlyUser()
+
+    // True if at least one user already exists on this device.
+    suspend fun hasAnyUsers(): Boolean = db.userDao().getAll().isNotEmpty()
 
     // Check whether the email and password match a saved account.
     // Return the user when the login details are correct, or null when they are not.
@@ -103,6 +118,18 @@ class UserRepo(private val db: StudyMateDatabase) {
         db.userDao().delete(user)
     }
 
+    // Update a user's display name and email address. Re-uses the stored hash + salt.
+    suspend fun updateUserNameEmail(original: User, newName: String, newEmail: String) {
+        db.userDao().update(original.copy(name = newName, email = newEmail))
+    }
+
+    // Set a brand-new password — fresh salt + hash so a leaked old salt can't crack the new one.
+    suspend fun updatePassword(original: User, newPassword: String) {
+        val salt = PasswordUtils.generateSalt()
+        val hash = PasswordUtils.hashPassword(newPassword, salt)
+        db.userDao().update(original.copy(passwordHash = hash, passwordSalt = salt))
+    }
+
     // Find a user by their ID, or return null if they do not exist.
     suspend fun getUser(id: Int) = db.userDao().getById(id)
 
@@ -113,5 +140,13 @@ class UserRepo(private val db: StudyMateDatabase) {
 
     // Get every user in the database (used for testing only).
     suspend fun getAllUsers() = db.userDao().getAll()
+
+    // One-account-per-device model: return the single user if one exists.
+    suspend fun getSingleUser(): User? = db.userDao().getAll().firstOrNull()
+
+    // Wipe the user table — cascading FKs take subjects, assignments, decks, cards with them.
+    suspend fun deleteAllUsers() {
+        db.userDao().getAll().forEach { db.userDao().delete(it) }
+    }
 
 }

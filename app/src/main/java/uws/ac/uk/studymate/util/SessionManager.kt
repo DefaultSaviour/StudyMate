@@ -41,6 +41,43 @@ class SessionManager(context: Context) {
             .apply()
     }
 
+    // ── Last signed-in user (persists across closes) ─────────────────────────
+    //
+    // The current session is cleared on every cold start so the user always
+    // re-authenticates, but we keep the *id* of whoever last signed in so the
+    // login screen can fast-path straight to their prompt. Explicit sign-out
+    // and account deletion clear it.
+
+    fun getLastUserId(): Int? {
+        val id = prefs.getInt(KEY_LAST_USER_ID, NO_USER_ID)
+        return if (id == NO_USER_ID) null else id
+    }
+
+    fun setLastUserId(userId: Int) {
+        prefs.edit().putInt(KEY_LAST_USER_ID, userId).apply()
+    }
+
+    fun clearLastUserId() {
+        prefs.edit().remove(KEY_LAST_USER_ID).apply()
+    }
+
+    // ── Auth mode (one account per device model) ─────────────────────────────
+    //
+    // PASSWORD       : user signs in with a typed password every launch; may
+    //                  also have biometric saved as a quick-sign-in shortcut.
+    // BIOMETRIC_ONLY : user signs in only with fingerprint / face / screen
+    //                  lock. No typed password exists for them to remember.
+
+    fun getAuthMode(): String? = prefs.getString(KEY_AUTH_MODE, null)
+
+    fun setAuthMode(mode: String) {
+        prefs.edit().putString(KEY_AUTH_MODE, mode).apply()
+    }
+
+    fun clearAuthMode() {
+        prefs.edit().remove(KEY_AUTH_MODE).apply()
+    }
+
     companion object {
         // Keep the preference file name in one place so every screen uses the same session.
         // im not 100% sure this works the way i want it too, and im not sure if it is a good idea
@@ -55,6 +92,12 @@ class SessionManager(context: Context) {
         // Use -1 as the default value when no user is logged in.
         // ROOM shouldn't ever return a user with an ID of -1.
         private const val NO_USER_ID = -1
+
+        private const val KEY_AUTH_MODE = "auth_mode"
+        private const val KEY_LAST_USER_ID = "last_user_id"
+
+        const val AUTH_MODE_PASSWORD = "password"
+        const val AUTH_MODE_BIOMETRIC_ONLY = "biometric_only"
     }
 }
 

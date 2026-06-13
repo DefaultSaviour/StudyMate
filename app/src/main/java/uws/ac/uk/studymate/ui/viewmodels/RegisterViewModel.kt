@@ -10,69 +10,127 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
+import java.security.SecureRandom
+import java.util.UUID
+
 /*//////////////////////
-Coded by Jamie Coleman
-15/03/26
-fixed 06/04/24
-updated 16/04/26
+Multi-user signup with the one-bio rule:
+  - createPasswordUser(name, pw) : adds a new account with a typed password.
+  - createBiometricUser(name)    : adds the device's biometric-only account.
+                                   Blocked if one already exists.
+Usernames are unique (case-insensitive).
  *//////////////////////
 class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Get the app database once so this ViewModel can work with saved user data.
     private val db = StudyMateDatabase.getInstance(application)
-
-    // Use the repository to keep database logic out of the ViewModel.
     private val repo = UserRepo(db)
-
-    // Use the session manager so a new account is logged in as soon as it is created.
     private val sessionManager = SessionManager(application)
 
-
-    // This private value stores whether registration worked.
-    // It is mutable here so only the ViewModel can change it.
     private val _registrationSuccess = MutableLiveData<Boolean>()
-
-    // This public version lets the UI observe the result without changing it.
     val registrationSuccess: LiveData<Boolean> = _registrationSuccess
 
-    // This private value stores any registration error message.
-    // It is mutable here so only the ViewModel can update it.
     private val _errorMessage = MutableLiveData<String?>()
-
-    // This public version lets the UI show the latest error message.
     val errorMessage: LiveData<String?> = _errorMessage
 
+    data class BiometricCredentials(
+        val userId: Int,
+        val email: String,
+        val password: String
+    )
 
-    fun register(name: String, email: String, password: String) {
-        // Run the registration work on a background thread.
+    private val _biometricCredentials = MutableLiveData<BiometricCredentials?>()
+    val biometricCredentials: LiveData<BiometricCredentials?> = _biometricCredentials
+
+    fun consumeBiometricCredentials() { _biometricCredentials.value = null }
+
+    fun createPasswordUser(name: String, password: String, confirmPassword: String) {
+        val cleanName = sanitizeSingleLine(name)
+        if (cleanName.isBlank()) {
+            _errorMessage.value = "Please enter a username"
+            _registrationSuccess.value = false
+            return
+        }
+        if (password.length < 6) {
+            _errorMessage.value = "Password must be at least 6 characters"
+            _registrationSuccess.value = false
+            return
+        }
+        if (password != confirmPassword) {
+            _errorMessage.value = "Passwords don't match"
+            _registrationSuccess.value = false
+            return
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
-
-            // Clean up the entered values first so extra spaces do not create bad data.
-            val trimmedName = name.trim()
-            val trimmedEmail = email.trim()
-
-            // Stop early if any required field is empty.
-            if (trimmedName.isBlank() || trimmedEmail.isBlank() || password.isBlank()) {
-                _errorMessage.postValue("Please fill in all fields")
+            if (repo.getUserByName(cleanName) != null) {
+                _errorMessage.postValue("That username is already taken")
                 _registrationSuccess.postValue(false)
                 return@launch
             }
 
-            // Check whether another account already uses this email.
-            val existingUser = repo.getUserByEmail(trimmedEmail)
-            if (existingUser != null) {
-                _errorMessage.postValue("An account with that email already exists")
-                _registrationSuccess.postValue(false)
-                return@launch
-            }
-
-            // Create the new user, save their session, and clear any previous error.
-            val newUserId = repo.createUserWithDefaults(trimmedName, trimmedEmail, password)
+            val newUserId = repo.createUserWithDefaults(
+                name = cleanName,
+                email = placeholderEmail(),
+                password = password,
+                authMode = "password"
+            )
             sessionManager.login(newUserId)
+            sessionManager.setLastUserId(newUserId)
             _errorMessage.postValue(null)
-
-            // Tell the UI that registration finished successfully.
             _registrationSuccess.postValue(true)
         }
+    }
+
+    fun createBiometricUser(name: String) {
+        val cleanName = sanitizeSingleLine(name)
+        if (cleanName.isBlank()) {
+            _errorMessage.value = "Please enter a username"
+            _registrationSuccess.value = false
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            if (repo.getUserByName(cleanName) != null) {
+                _errorMessage.postValue("That username is already taken")
+                _registrationSuccess.postValue(false)
+                return@launch
+            }
+            if (repo.getBiometricOnlyUser() != null) {
+                _errorMessage.postValue("Another account on this device already uses fingerprint/screen-lock sign-in")
+                _registrationSuccess.postValue(false)
+                return@launch
+            }
+
+            val email = placeholderEmail()
+            val password = generateRandomPassword()
+            val newUserId = repo.createUserWithDefaults(
+                name = cleanName,
+                email = email,
+                password = password,
+                authMode = "biometric_only"
+            )
+            sessionManager.login(newUserId)
+            sessionManager.setLastUserId(newUserId)
+            _errorMessage.postValue(null)
+            _biometricCredentials.postValue(BiometricCredentials(newUserId, email, password))
+            _registrationSuccess.postValue(true)
+        }
+    }
+
+    // Email column still exists in the schema — give every multi-user account a
+    // unique placeholder so no two collide if the column ever gains constraints.
+    private fun placeholderEmail(): String =
+        "local-${UUID.randomUUID().toString().take(12)}@studymate.local"
+
+    private fun generateRandomPassword(): String {
+        val bytes = ByteArray(24)
+        SecureRandom().nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun sanitizeSingleLine(raw: String): String {
+        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
+            .replace(Regex("\\s{2,}"), " ")
+            .trim()
     }
 }

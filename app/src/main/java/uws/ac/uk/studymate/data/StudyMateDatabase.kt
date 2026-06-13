@@ -26,7 +26,7 @@ Coded by Jamie Coleman
         FlashCard::class
     ],
     exportSchema = false,
-    version = 6
+    version = 8
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -79,7 +79,32 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6)
+        // Icon set replaced with 30 subject icons — wipe all user data so no
+        // assignments are left with stale icon keys that no longer exist.
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DELETE FROM `User`")
+            }
+        }
+
+        // Switch to the multi-user / one-bio auth model:
+        //   - drop the email unique index (email is now an internal placeholder)
+        //   - add the auth_mode column (password | biometric_only)
+        //   - add a unique index on name (the user-facing identifier)
+        // Existing users are wiped first to avoid name collisions on the new
+        // index and because the old accounts predate the new model anyway.
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DELETE FROM `User`")
+                db.execSQL("DROP INDEX IF EXISTS `index_User_email`")
+                db.execSQL(
+                    "ALTER TABLE `User` ADD COLUMN `auth_mode` TEXT NOT NULL DEFAULT 'password'"
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_User_name` ON `User` (`name`)")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile

@@ -1,13 +1,21 @@
 package uws.ac.uk.studymate.ui
 
+import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,26 +46,32 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
+        // Pad the scroll view so the last nav button clears the system nav bar on any device.
+        val scrollView = findViewById<NestedScrollView>(R.id.homeScrollView)
+        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
+            val navBar = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            val base = (4 * resources.displayMetrics.density).toInt()
+            view.setPadding(0, 0, 0, navBar + base)
+            insets
+        }
+
         // Set up the ViewModel used by this screen.
         homeVm = ViewModelProvider(this)[HomeViewModel::class.java]
 
         // Get the views used on this screen.
         val userSettingsBtn = findViewById<Button>(R.id.userSettingsBtn)
-        val welcomeText = findViewById<TextView>(R.id.welcomeText)
         val nextDueCountdownText = findViewById<TextView>(R.id.nextDueCountdownText)
         val nextDueDetailsText = findViewById<TextView>(R.id.nextDueDetailsText)
         val assignmentsBtn = findViewById<Button>(R.id.assignmentsBtn)
         val flashcardsBtn = findViewById<Button>(R.id.flashcardsBtn)
         val subjectsBtn = findViewById<Button>(R.id.subjectsBtn)
         val calendarBtn = findViewById<Button>(R.id.calendarBtn)
-        val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
         // Disabled for now: this testing-only ClearAllData button used to wipe every table.
         // It is commented out so it can be re-enabled later.
 //        val clearDataBtn = findViewById<Button>(R.id.clearDataBtn)
 
         // Show the latest dashboard data when the ViewModel finishes loading it.
         homeVm.homeSummary.observe(this) { summary ->
-            welcomeText.text = summary.welcomeText
             nextDueCountdownText.text = summary.nextDueCountdown
             nextDueDetailsText.text = summary.nextDueDetails
         }
@@ -113,17 +127,58 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.CalendarActivity"))
         }
 
-
-        // Open the full statistics screen because stats no longer live on home.
-        statisticsBtn.setOnClickListener {
-            startActivity(Intent().setClassName(packageName, "$packageName.ui.StatisticsActivity"))
-        }
-
         // Disabled for now: this testing-only click handler used to wipe every table.
         // It is commented out so it can be re-enabled later.
 //        clearDataBtn.setOnClickListener {
 //            homeVm.clearAllData()
 //        }
+
+        // Start floating orb animations.
+        floatOrb(findViewById(R.id.orb1), 14f, 3800L,    0L)
+        floatOrb(findViewById(R.id.orb2), 18f, 4200L,  600L)
+        floatOrb(findViewById(R.id.orb3), 12f, 3600L, 1200L)
+        floatOrb(findViewById(R.id.orb4), 16f, 4400L,  300L)
+        floatOrb(findViewById(R.id.orb5), 13f, 3900L,  900L)
+        floatOrb(findViewById(R.id.orb7), 15f, 3700L,  400L)
+
+        // Entrance animation: card slides up, then content staggers in.
+        val density = resources.displayMetrics.density
+        val homeCard = findViewById<MaterialCardView>(R.id.homeCard)
+        val nextDueContainer = findViewById<View>(R.id.nextDueContainer)
+        val navDivider = findViewById<View>(R.id.navDivider)
+        val navSectionLabel = findViewById<View>(R.id.navSectionLabel)
+
+        homeCard.translationY = 200f * density
+        homeCard.alpha = 0f
+        homeCard.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+
+        val staggerViews = listOf(
+            nextDueContainer, navDivider, navSectionLabel,
+            assignmentsBtn, flashcardsBtn, subjectsBtn, calendarBtn
+        )
+        staggerViews.forEach { v ->
+            v.alpha = 0f
+            v.translationY = 28f * density
+        }
+
+        homeCard.animate()
+            .translationY(0f)
+            .alpha(1f)
+            .setDuration(540)
+            .setInterpolator(DecelerateInterpolator(1.5f))
+            .setStartDelay(60)
+            .withEndAction { homeCard.setLayerType(View.LAYER_TYPE_NONE, null) }
+            .start()
+
+        staggerViews.forEachIndexed { i, v ->
+            v.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(420)
+                .setInterpolator(DecelerateInterpolator(1.3f))
+                .setStartDelay(260 + i * 65L)
+                .start()
+        }
     }
 
     override fun onResume() {
@@ -167,5 +222,16 @@ class HomeActivity : AppCompatActivity() {
             isPushNotificationsDialogShowing = false
         }
     }
-}
 
+    private fun floatOrb(view: View, amplitude: Float, duration: Long, delay: Long) {
+        view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, -amplitude, amplitude).apply {
+            this.duration = duration
+            startDelay = delay
+            repeatMode = ObjectAnimator.REVERSE
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+    }
+}

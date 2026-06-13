@@ -8,8 +8,8 @@ Coded by Jamie Coleman
 // Provides database operations for the Assignments table.
 @Dao
 interface AssignmentDao {
-    // Save a new assignment to the database.
-    @Insert suspend fun insert(assignment: Assignment)
+    // Save a new assignment and return the generated row id.
+    @Insert suspend fun insert(assignment: Assignment): Long
     // Update an existing assignment's details.
     @Update suspend fun update(assignment: Assignment)
     // Remove an assignment from the database.
@@ -18,4 +18,9 @@ interface AssignmentDao {
     // Get all assignments for a user, sorted by the earliest due date first.
     @Query("SELECT * FROM Assignments WHERE user_id = :userId ORDER BY due_date ASC")
     suspend fun getAssignments(userId: Int): List<Assignment>
+
+    // Look up a single assignment by ID. Used by the notification worker to
+    // verify the assignment still exists at fire time.
+    @Query("SELECT * FROM Assignments WHERE id = :id")
+    suspend fun getById(id: Int): Assignment?
 }

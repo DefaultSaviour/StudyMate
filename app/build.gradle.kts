@@ -31,6 +31,9 @@ android {
             )
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -52,6 +55,14 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Biometric login + encrypted credential storage
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.security.crypto)
+
+    // Background scheduling for assignment notifications
+    implementation(libs.androidx.work.runtime.ktx)
     
     // Lifecycle
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
