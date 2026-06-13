@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
+import uws.ac.uk.studymate.util.TextSanitizer
 import java.security.SecureRandom
 import java.util.UUID
 
@@ -44,7 +45,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
     fun consumeBiometricCredentials() { _biometricCredentials.value = null }
 
     fun createPasswordUser(name: String, password: String, confirmPassword: String) {
-        val cleanName = sanitizeSingleLine(name)
+        val cleanName = TextSanitizer.singleLine(name)
         if (cleanName.isBlank()) {
             _errorMessage.value = "Please enter a username"
             _registrationSuccess.value = false
@@ -82,7 +83,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun createBiometricUser(name: String) {
-        val cleanName = sanitizeSingleLine(name)
+        val cleanName = TextSanitizer.singleLine(name)
         if (cleanName.isBlank()) {
             _errorMessage.value = "Please enter a username"
             _registrationSuccess.value = false
@@ -107,7 +108,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                 name = cleanName,
                 email = email,
                 password = password,
-                authMode = "biometric_only"
+                authMode = SessionManager.AUTH_MODE_BIOMETRIC_ONLY
             )
             sessionManager.login(newUserId)
             sessionManager.setLastUserId(newUserId)
@@ -128,9 +129,4 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
-    private fun sanitizeSingleLine(raw: String): String {
-        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
-            .replace(Regex("\\s{2,}"), " ")
-            .trim()
-    }
 }

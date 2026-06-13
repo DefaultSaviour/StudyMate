@@ -13,6 +13,7 @@ import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.AssignmentsItem
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.AssignmentIcons
+import uws.ac.uk.studymate.util.ColorUtils
 
 class AssignmentListAdapter(
     private var items: List<AssignmentsItem>,
@@ -47,7 +48,7 @@ class AssignmentListAdapter(
         holder.subject.text = item.subjectName
         holder.due.text = "Due: ${AssignmentDateTimeUtils.formatDueDate(item.dueAt)}"
 
-        val color = parseColorOrDefault(item.subjectColorHex)
+        val color = ColorUtils.parseOrDefault(item.subjectColorHex)
         (holder.badge.background as? GradientDrawable)?.setColor(color)
         holder.icon.setImageResource(AssignmentIcons.drawableForKey(item.iconKey))
         holder.icon.setColorFilter(Color.WHITE)
@@ -57,13 +58,4 @@ class AssignmentListAdapter(
     }
 
     override fun getItemCount(): Int = items.size
-
-    private fun parseColorOrDefault(hex: String?): Int {
-        if (hex.isNullOrBlank()) return Color.parseColor("#C4A24A")
-        return try {
-            Color.parseColor(hex)
-        } catch (_: IllegalArgumentException) {
-            Color.parseColor("#C4A24A")
-        }
-    }
 }

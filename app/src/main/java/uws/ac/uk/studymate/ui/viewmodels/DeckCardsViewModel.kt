@@ -12,6 +12,7 @@ import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.repositories.CardRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
 
 data class DeckCardsSummary(
     val deckName: String,
@@ -62,8 +63,8 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun addCard(front: String, back: String) {
-        val cleanFront = sanitizeMultiLine(front)
-        val cleanBack = sanitizeMultiLine(back)
+        val cleanFront = TextSanitizer.multiLine(front)
+        val cleanBack = TextSanitizer.multiLine(back)
         if (cleanFront.isEmpty()) {
             _message.value = "Enter the front text"
             return
@@ -93,8 +94,8 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun updateCard(original: FlashCard, front: String, back: String) {
-        val cleanFront = sanitizeMultiLine(front)
-        val cleanBack = sanitizeMultiLine(back)
+        val cleanFront = TextSanitizer.multiLine(front)
+        val cleanBack = TextSanitizer.multiLine(back)
         if (cleanFront.isEmpty()) {
             _message.value = "Enter the front text"
             return
@@ -131,9 +132,4 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
 
     // Cards allow multi-line content (questions/answers may span lines), so we
     // only collapse runs of whitespace inside each line and trim. Newlines OK.
-    private fun sanitizeMultiLine(raw: String): String {
-        return raw.replace(Regex("[\\t]+"), " ")
-            .replace(Regex(" {2,}"), " ")
-            .trim()
-    }
 }

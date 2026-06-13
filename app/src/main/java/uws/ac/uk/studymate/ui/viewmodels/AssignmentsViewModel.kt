@@ -17,6 +17,7 @@ import uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.AssignmentIcons
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
 import java.time.LocalDateTime
 /*//////////////////////
 Coded by Jamie Coleman
@@ -79,7 +80,7 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun addAssignment(title: String, subject: Subject?, dueDate: String?, iconKey: String?) {
-        val trimmedTitle = sanitizeSingleLine(title)
+        val trimmedTitle = TextSanitizer.singleLine(title)
         if (trimmedTitle.isEmpty()) {
             _message.value = "Enter an assignment title"
             return
@@ -127,7 +128,7 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
         dueDate: String?,
         iconKey: String?
     ) {
-        val trimmedTitle = sanitizeSingleLine(title)
+        val trimmedTitle = TextSanitizer.singleLine(title)
         if (trimmedTitle.isEmpty()) {
             _message.value = "Enter an assignment title"
             return
@@ -179,12 +180,6 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
             _message.postValue("Assignment deleted")
             loadAssignments()
         }
-    }
-
-    private fun sanitizeSingleLine(raw: String): String {
-        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
-            .replace(Regex("\\s{2,}"), " ")
-            .trim()
     }
 
     private fun buildUpcomingAssignments(

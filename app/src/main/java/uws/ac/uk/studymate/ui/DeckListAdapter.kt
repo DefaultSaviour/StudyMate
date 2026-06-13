@@ -1,6 +1,5 @@
 package uws.ac.uk.studymate.ui
 
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.DeckListItem
+import uws.ac.uk.studymate.util.ColorUtils
 
 class DeckListAdapter(
     private var items: List<DeckListItem>,
@@ -48,7 +48,7 @@ class DeckListAdapter(
         }
         holder.subtitle.text = "${item.subjectName} • $cardLabel"
 
-        val color = parseColorOrDefault(item.subjectColorHex)
+        val color = ColorUtils.parseOrDefault(item.subjectColorHex)
         (holder.colorDot.background as? GradientDrawable)?.setColor(color)
 
         holder.root.setOnClickListener { onTap(item) }
@@ -57,13 +57,4 @@ class DeckListAdapter(
     }
 
     override fun getItemCount(): Int = items.size
-
-    private fun parseColorOrDefault(hex: String?): Int {
-        if (hex.isNullOrBlank()) return Color.parseColor("#C4A24A")
-        return try {
-            Color.parseColor(hex)
-        } catch (_: IllegalArgumentException) {
-            Color.parseColor("#C4A24A")
-        }
-    }
 }

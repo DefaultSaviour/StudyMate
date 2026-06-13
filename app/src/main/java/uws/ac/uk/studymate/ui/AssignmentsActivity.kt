@@ -1,5 +1,7 @@
 package uws.ac.uk.studymate.ui
 
+import uws.ac.uk.studymate.util.ColorUtils
+
 import android.animation.ObjectAnimator
 import android.content.Intent
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -721,11 +723,7 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // ─────────────────── Helpers ───────────────────
 
-    private fun parseSubjectColor(hex: String?): Int = try {
-        if (hex.isNullOrBlank()) Color.parseColor("#C4A24A") else Color.parseColor(hex)
-    } catch (_: IllegalArgumentException) {
-        Color.parseColor("#C4A24A")
-    }
+    private fun parseSubjectColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
 
     private fun simpleWatcher(onChanged: () -> Unit): android.text.TextWatcher {
         return object : android.text.TextWatcher {

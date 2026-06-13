@@ -1,6 +1,5 @@
 package uws.ac.uk.studymate.ui
 
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
+import uws.ac.uk.studymate.util.ColorUtils
 
 class SubjectListAdapter(
     private var items: List<SubjectWithAssignments>,
@@ -46,7 +46,7 @@ class SubjectListAdapter(
             else -> "$count assignments"
         }
 
-        val colorInt = parseColorOrDefault(item.subject.color)
+        val colorInt = ColorUtils.parseOrDefault(item.subject.color)
         (holder.colorDot.background as? GradientDrawable)?.setColor(colorInt)
 
         holder.editBtn.setOnClickListener { onEdit(item) }
@@ -54,13 +54,4 @@ class SubjectListAdapter(
     }
 
     override fun getItemCount(): Int = items.size
-
-    private fun parseColorOrDefault(hex: String?): Int {
-        if (hex.isNullOrBlank()) return Color.parseColor("#C4A24A")
-        return try {
-            Color.parseColor(hex)
-        } catch (_: IllegalArgumentException) {
-            Color.parseColor("#C4A24A")
-        }
-    }
 }

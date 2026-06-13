@@ -1,5 +1,7 @@
 package uws.ac.uk.studymate.ui
 
+import uws.ac.uk.studymate.util.ColorUtils
+
 import android.animation.ObjectAnimator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Intent
@@ -422,11 +424,7 @@ class SubjectsActivity : AppCompatActivity() {
             .start()
     }
 
-    private fun parseHex(hex: String): Int = try {
-        Color.parseColor(hex)
-    } catch (_: IllegalArgumentException) {
-        Color.parseColor("#C4A24A")
-    }
+    private fun parseHex(hex: String): Int = ColorUtils.parseOrDefault(hex)
 
     private fun openLogin() {
         val intent = Intent(this, LoginActivity::class.java).apply {

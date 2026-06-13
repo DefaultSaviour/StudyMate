@@ -13,6 +13,7 @@ import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.DeckRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
@@ -90,7 +91,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun createDeck(name: String, subject: Subject?) {
-        val trimmedName = sanitizeSingleLine(name)
+        val trimmedName = TextSanitizer.singleLine(name)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
@@ -120,7 +121,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun updateDeck(original: FlashcardDeck, newName: String, subject: Subject?) {
-        val trimmedName = sanitizeSingleLine(newName)
+        val trimmedName = TextSanitizer.singleLine(newName)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
@@ -159,9 +160,4 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
         _createdDeckId.value = null
     }
 
-    private fun sanitizeSingleLine(raw: String): String {
-        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
-            .replace(Regex("\\s{2,}"), " ")
-            .trim()
-    }
 }

@@ -44,7 +44,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 _loginSuccess.postValue(false)
                 return@launch
             }
-            if (user.authMode == "biometric_only") {
+            if (user.authMode == SessionManager.AUTH_MODE_BIOMETRIC_ONLY) {
                 _errorMessage.postValue("This account signs in with fingerprint or screen lock")
                 _loginSuccess.postValue(false)
                 return@launch

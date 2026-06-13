@@ -7,6 +7,7 @@ import uws.ac.uk.studymate.data.entities.UserSettings
 import uws.ac.uk.studymate.data.entities.UserStats
 import uws.ac.uk.studymate.data.relations.UserWithSettingsAndStats
 import uws.ac.uk.studymate.util.PasswordUtils
+import uws.ac.uk.studymate.util.SessionManager
 import java.time.Instant
 
 // Handles user-related database operations through the DAOs.
@@ -25,7 +26,7 @@ class UserRepo(private val db: StudyMateDatabase) {
         name: String,
         email: String,
         password: String,
-        authMode: String = "password"
+        authMode: String = SessionManager.AUTH_MODE_PASSWORD
     ): Int {
 
         // Generate a random salt and hash the password before saving.
@@ -140,13 +141,5 @@ class UserRepo(private val db: StudyMateDatabase) {
 
     // Get every user in the database (used for testing only).
     suspend fun getAllUsers() = db.userDao().getAll()
-
-    // One-account-per-device model: return the single user if one exists.
-    suspend fun getSingleUser(): User? = db.userDao().getAll().firstOrNull()
-
-    // Wipe the user table — cascading FKs take subjects, assignments, decks, cards with them.
-    suspend fun deleteAllUsers() {
-        db.userDao().getAll().forEach { db.userDao().delete(it) }
-    }
 
 }
