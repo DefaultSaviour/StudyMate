@@ -12,11 +12,15 @@ import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.repositories.CardRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 data class DeckCardsSummary(
     val deckName: String,
     val subjectName: String,
-    val cards: List<FlashCard>
+    val cards: List<FlashCard>,
+    val dueText: String   // "6 cards due now" / "Next review tomorrow" / "Next review in 3 days" / ""
 )
 
 class DeckCardsViewModel(application: Application) : AndroidViewModel(application) {
@@ -56,14 +60,16 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
             val subjectName = deck?.let {
                 db.subjectDao().getSubjects(session.userId).firstOrNull { s -> s.id == it.subjectId }?.name
             } ?: "Unassigned"
-            _summary.postValue(DeckCardsSummary(deck?.name ?: deckName, subjectName, cards))
+            val today = LocalDate.now()
+            val dueText = dueTextFor(cards.map { it.dueAt }, today, today.toString())
+            _summary.postValue(DeckCardsSummary(deck?.name ?: deckName, subjectName, cards, dueText))
             _sessionExpired.postValue(false)
         }
     }
 
     fun addCard(front: String, back: String) {
-        val cleanFront = sanitizeMultiLine(front)
-        val cleanBack = sanitizeMultiLine(back)
+        val cleanFront = TextSanitizer.multiLine(front)
+        val cleanBack = TextSanitizer.multiLine(back)
         if (cleanFront.isEmpty()) {
             _message.value = "Enter the front text"
             return
@@ -93,8 +99,8 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun updateCard(original: FlashCard, front: String, back: String) {
-        val cleanFront = sanitizeMultiLine(front)
-        val cleanBack = sanitizeMultiLine(back)
+        val cleanFront = TextSanitizer.multiLine(front)
+        val cleanBack = TextSanitizer.multiLine(back)
         if (cleanFront.isEmpty()) {
             _message.value = "Enter the front text"
             return
@@ -131,9 +137,26 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
 
     // Cards allow multi-line content (questions/answers may span lines), so we
     // only collapse runs of whitespace inside each line and trim. Newlines OK.
-    private fun sanitizeMultiLine(raw: String): String {
-        return raw.replace(Regex("[\\t]+"), " ")
-            .replace(Regex(" {2,}"), " ")
-            .trim()
+
+    // Deck-screen review summary. If cards are due now, report the count. Otherwise
+    // look at the *actual* earliest future due date (SM-2 schedules cards days/weeks
+    // out) and word it from that real gap — so a card due in 3 days reads
+    // "Next review in 3 days", never falsely "tomorrow".
+    private fun dueTextFor(dueDates: List<String?>, today: LocalDate, todayStr: String): String {
+        if (dueDates.isEmpty()) return ""
+        val dueNow = dueDates.count { it == null || it <= todayStr }
+        if (dueNow > 0) {
+            return if (dueNow == 1) "1 card due now" else "$dueNow cards due now"
+        }
+        val nextStr = dueDates.filterNotNull().filter { it > todayStr }.minOrNull() ?: return ""
+        val days = ChronoUnit.DAYS.between(today, LocalDate.parse(nextStr))
+        return when {
+            days <= 1 -> "Next review tomorrow"
+            days < 7 -> "Next review in $days days"
+            else -> {
+                val weeks = days / 7
+                if (weeks == 1L) "Next review in 1 week" else "Next review in $weeks weeks"
+            }
+        }
     }
 }

@@ -1,5 +1,7 @@
 package uws.ac.uk.studymate.ui
 
+import uws.ac.uk.studymate.util.ColorUtils
+
 import android.animation.ObjectAnimator
 import android.content.Intent
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -250,7 +252,8 @@ class AssignmentsActivity : AppCompatActivity() {
         adapter = AssignmentListAdapter(
             items = emptyList(),
             onEdit = { openEditFor(it) },
-            onDelete = { confirmDelete(it) }
+            onDelete = { confirmDelete(it) },
+            onToggleDone = { confirmToggleDone(it) }
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
@@ -583,6 +586,25 @@ class AssignmentsActivity : AppCompatActivity() {
             .show()
     }
 
+    // Tapping the done circle. If it's already done, just un-mark it. If not,
+    // show a themed pop-up explaining what marking-done does before confirming.
+    private fun confirmToggleDone(item: AssignmentsItem) {
+        if (item.isCompleted) {
+            vm.toggleComplete(item)
+            return
+        }
+        MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
+            .setTitle("Mark as done?")
+            .setMessage(
+                "Finishing an assignment early clears it from your list, stops its " +
+                    "reminders, and counts it as complete in your statistics.\n\n" +
+                    "Assignments are also counted as done automatically once their due date passes."
+            )
+            .setPositiveButton("Mark done") { _, _ -> vm.toggleComplete(item) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     // ─────────────────── Date picker ───────────────────
 
     private fun preloadDuePanels(current: LocalDateTime?) {
@@ -721,11 +743,7 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // ─────────────────── Helpers ───────────────────
 
-    private fun parseSubjectColor(hex: String?): Int = try {
-        if (hex.isNullOrBlank()) Color.parseColor("#C4A24A") else Color.parseColor(hex)
-    } catch (_: IllegalArgumentException) {
-        Color.parseColor("#C4A24A")
-    }
+    private fun parseSubjectColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
 
     private fun simpleWatcher(onChanged: () -> Unit): android.text.TextWatcher {
         return object : android.text.TextWatcher {
@@ -745,6 +763,8 @@ class AssignmentsActivity : AppCompatActivity() {
     }
 
     private fun openHome() {
-        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
+        // Return to the existing Dashboard instead of launching a new one, so the
+        // back stack stays a clean Dashboard -> screen -> sub-screen hierarchy.
+        finish()
     }
 }

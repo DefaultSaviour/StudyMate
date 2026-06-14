@@ -13,6 +13,8 @@ import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.DeckRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
+import java.time.LocalDate
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
@@ -22,7 +24,8 @@ data class DeckListItem(
     val deck: FlashcardDeck,
     val subjectName: String,
     val subjectColorHex: String?,
-    val cardCount: Int
+    val cardCount: Int,
+    val dueText: String   // short badge for the list row: "6 due" if any are due now, else ""
 )
 
 data class FlashcardDecksSummary(
@@ -62,6 +65,8 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             val subjects = db.subjectDao().getSubjects(userId).sortedBy { it.name.lowercase() }
             val subjectsById = subjects.associateBy { it.id }
             val decksWithCards = db.deckDao().getDecksWithCards(userId)
+            val today = LocalDate.now()
+            val todayStr = today.toString()
 
             val items = decksWithCards
                 .map { dwc ->
@@ -70,7 +75,8 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
                         deck = dwc.deck,
                         subjectName = subject?.name ?: "Unknown subject",
                         subjectColorHex = subject?.color,
-                        cardCount = dwc.cards.size
+                        cardCount = dwc.cards.size,
+                        dueText = dueBadgeFor(dwc.cards.map { it.dueAt }, todayStr)
                     )
                 }
                 .sortedWith(
@@ -90,7 +96,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun createDeck(name: String, subject: Subject?) {
-        val trimmedName = sanitizeSingleLine(name)
+        val trimmedName = TextSanitizer.singleLine(name)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
@@ -120,7 +126,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun updateDeck(original: FlashcardDeck, newName: String, subject: Subject?) {
-        val trimmedName = sanitizeSingleLine(newName)
+        val trimmedName = TextSanitizer.singleLine(newName)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
@@ -155,13 +161,17 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
+    // Short badge for the deck list row: "6 due" when cards are due now, else "".
+    // The fuller "next review …" wording lives inside the deck screen, where there
+    // is room for it without truncating the row subtitle.
+    private fun dueBadgeFor(dueDates: List<String?>, todayStr: String): String {
+        if (dueDates.isEmpty()) return ""
+        val dueNow = dueDates.count { it == null || it <= todayStr }
+        return if (dueNow > 0) "$dueNow due" else ""
+    }
+
     fun clearCreatedDeckId() {
         _createdDeckId.value = null
     }
 
-    private fun sanitizeSingleLine(raw: String): String {
-        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
-            .replace(Regex("\\s{2,}"), " ")
-            .trim()
-    }
 }

@@ -11,7 +11,12 @@ import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
+import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 /*//////////////////////
@@ -47,8 +52,11 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
     private val _message = MutableLiveData<String?>()
     val message: LiveData<String?> = _message
 
-    private val _accountDeleted = MutableLiveData<Boolean>()
-    val accountDeleted: LiveData<Boolean> = _accountDeleted
+    // Carries the id of the user that was deleted (so the Activity can decide
+    // whether to clear that user's biometric credentials, since the session is
+    // already gone by the time this fires). 0 means "no deletion".
+    private val _accountDeleted = MutableLiveData<Int>()
+    val accountDeleted: LiveData<Int> = _accountDeleted
 
     data class VerifiedCredentials(val userId: Int, val email: String, val password: String)
 
@@ -130,7 +138,7 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
         newPassword: String,
         confirmPassword: String
     ) {
-        val cleanName = sanitizeSingleLine(newName)
+        val cleanName = TextSanitizer.singleLine(newName)
         if (cleanName.isEmpty()) {
             _message.value = "Enter your name"
             return
@@ -156,6 +164,15 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
             }
             val current = repo.getUser(session.userId) ?: return@launch
 
+            // Reject a rename that collides with another account. The `name`
+            // column is uniquely indexed, so without this the DB update throws
+            // SQLiteConstraintException and crashes the IO coroutine.
+            val existing = repo.getUserByName(cleanName)
+            if (existing != null && existing.id != current.id) {
+                _message.postValue("That username is already taken")
+                return@launch
+            }
+
             // Keep the existing placeholder email — single-user-per-device model
             // means it's not user-visible.
             repo.updateUserNameEmail(current, cleanName, current.email)
@@ -177,9 +194,12 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                 return@launch
             }
             val current = repo.getUser(session.userId) ?: return@launch
+            // Capture the id before logout — the Activity needs it to decide
+            // whether to clear this user's biometric credentials.
+            val deletedUserId = current.id
             repo.deleteUser(current)
             sessionResolver.logout()
-            _accountDeleted.postValue(true)
+            _accountDeleted.postValue(deletedUserId)
         }
     }
 
@@ -209,19 +229,28 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
         _biometricCredentialsToSave.value = null
     }
 
-    private fun sanitizeSingleLine(raw: String): String {
-        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
-            .replace(Regex("\\s{2,}"), " ")
-            .trim()
-    }
-
     private fun formatMemberSince(createdAt: String?): String {
         if (createdAt.isNullOrBlank()) return "Member since today"
+        val date = parseCreatedDate(createdAt) ?: return "Member since today"
+        return "Member since ${date.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
+    }
+
+    // createdAt is stored either as an ISO-8601 instant (Instant.now().toString(),
+    // e.g. "2026-06-13T10:15:30Z") for app-created users, or as a SQLite
+    // CURRENT_TIMESTAMP ("2026-06-13 10:15:30", UTC) for older migrated rows.
+    // LocalDateTime.parse handles neither, so try both explicitly.
+    private fun parseCreatedDate(createdAt: String): LocalDate? {
         return try {
-            val dt = LocalDateTime.parse(createdAt)
-            "Member since ${dt.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
+            Instant.parse(createdAt).atZone(ZoneId.systemDefault()).toLocalDate()
         } catch (_: DateTimeParseException) {
-            "Member since today"
+            try {
+                LocalDateTime.parse(createdAt, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                    .atZone(ZoneOffset.UTC)
+                    .withZoneSameInstant(ZoneId.systemDefault())
+                    .toLocalDate()
+            } catch (_: DateTimeParseException) {
+                null
+            }
         }
     }
 }

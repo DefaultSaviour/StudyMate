@@ -1,5 +1,7 @@
 package uws.ac.uk.studymate.ui
 
+import uws.ac.uk.studymate.util.ColorUtils
+
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.graphics.Color
@@ -432,11 +434,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
 
     // ─────────────────── Helpers ───────────────────
 
-    private fun parseSubjectColor(hex: String?): Int = try {
-        if (hex.isNullOrBlank()) Color.parseColor("#C4A24A") else Color.parseColor(hex)
-    } catch (_: IllegalArgumentException) {
-        Color.parseColor("#C4A24A")
-    }
+    private fun parseSubjectColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
 
     private fun openLogin() {
         val i = Intent(this, LoginActivity::class.java).apply {
@@ -446,7 +444,9 @@ class FlashcardDecksActivity : AppCompatActivity() {
     }
 
     private fun openHome() {
-        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
+        // Return to the existing Dashboard instead of launching a new one, so the
+        // back stack stays a clean Dashboard -> screen -> sub-screen hierarchy.
+        finish()
     }
 
     private fun openDeckOptions(deckId: Int, deckName: String) {

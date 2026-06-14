@@ -1,5 +1,7 @@
 package uws.ac.uk.studymate.ui
 
+import uws.ac.uk.studymate.util.ColorUtils
+
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.graphics.Color
@@ -292,9 +294,7 @@ class CalendarActivity : AppCompatActivity() {
         return container
     }
 
-    private fun parseColor(hex: String?): Int = try {
-        if (hex.isNullOrBlank()) Color.parseColor("#C4A24A") else Color.parseColor(hex)
-    } catch (_: IllegalArgumentException) { Color.parseColor("#C4A24A") }
+    private fun parseColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
 
     // ───────── Day detail ─────────
 
@@ -474,6 +474,8 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun openHome() {
-        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
+        // Return to the existing Dashboard instead of launching a new one, so the
+        // back stack stays a clean Dashboard -> screen -> sub-screen hierarchy.
+        finish()
     }
 }

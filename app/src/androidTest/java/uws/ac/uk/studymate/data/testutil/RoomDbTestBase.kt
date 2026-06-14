@@ -8,6 +8,7 @@ import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
+import uws.ac.uk.studymate.data.entities.ReviewLog
 import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.entities.SubjectProgress
 import uws.ac.uk.studymate.data.entities.User
@@ -21,6 +22,11 @@ Coded by Jamie Coleman
 abstract class RoomDbTestBase {
 
     protected lateinit var db: StudyMateDatabase
+
+    // The User table now has a unique index on `name` (v8). Tests routinely
+    // insert several users distinguished only by email, so give each one a
+    // distinct default name to avoid spurious unique-constraint failures.
+    private var userNameCounter = 0
 
     @Before
     fun setUpDatabase() {
@@ -38,18 +44,20 @@ abstract class RoomDbTestBase {
     }
 
     protected suspend fun insertUser(
-        name: String = "Test User",
+        name: String? = null,
         email: String = "test@example.com",
         passwordHash: String = "hash",
         passwordSalt: String = "salt",
+        authMode: String = "password",
         pushNotificationsEnabled: Boolean? = null
     ): Int {
         return db.userDao().insert(
             User(
-                name = name,
+                name = name ?: "Test User ${userNameCounter++}",
                 email = email,
                 passwordHash = passwordHash,
                 passwordSalt = passwordSalt,
+                authMode = authMode,
                 pushNotificationsEnabled = pushNotificationsEnabled
             )
         ).toInt()
@@ -104,17 +112,19 @@ abstract class RoomDbTestBase {
         subjectId: Int,
         title: String = "Essay",
         dueDate: String = "2026-05-01T09:00",
-        icon: String = "calculator"
-    ) {
-        db.assignmentDao().insert(
+        icon: String = "calculator",
+        completedAt: String? = null
+    ): Int {
+        return db.assignmentDao().insert(
             Assignment(
                 userId = userId,
                 subjectId = subjectId,
                 title = title,
                 dueDate = dueDate,
-                icon = icon
+                icon = icon,
+                completedAt = completedAt
             )
-        )
+        ).toInt()
     }
 
     protected suspend fun insertDeck(
@@ -136,15 +146,36 @@ abstract class RoomDbTestBase {
         userId: Int,
         deckId: Int?,
         front: String = "Question",
-        back: String = "Answer"
+        back: String = "Answer",
+        dueAt: String? = null,
+        easeFactor: Double = 2.5,
+        intervalDays: Int = 0,
+        repetitions: Int = 0,
+        lastReviewedAt: String? = null
     ) {
         db.cardDao().insert(
             FlashCard(
                 userId = userId,
                 deckId = deckId,
                 front = front,
-                back = back
+                back = back,
+                easeFactor = easeFactor,
+                intervalDays = intervalDays,
+                repetitions = repetitions,
+                dueAt = dueAt,
+                lastReviewedAt = lastReviewedAt
             )
+        )
+    }
+
+    protected suspend fun insertReviewLog(
+        userId: Int,
+        cardId: Int?,
+        reviewedAt: String,
+        grade: Int = 2
+    ) {
+        db.reviewLogDao().insert(
+            ReviewLog(userId = userId, cardId = cardId, reviewedAt = reviewedAt, grade = grade)
         )
     }
 

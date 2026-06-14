@@ -54,11 +54,6 @@ class BiometricLoginManager(private val context: Context) {
         }
     }
 
-    fun isHardwarePresent(): Boolean {
-        val a = availability()
-        return a != Availability.NO_HARDWARE && a != Availability.UNSUPPORTED
-    }
-
     fun isReadyToAuthenticate(): Boolean = availability() == Availability.AVAILABLE
 
     /** True if the user has *any* screen lock (PIN/pattern/password/biometric) set. */

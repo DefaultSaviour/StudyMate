@@ -66,6 +66,7 @@ class HomeActivity : AppCompatActivity() {
         val flashcardsBtn = findViewById<Button>(R.id.flashcardsBtn)
         val subjectsBtn = findViewById<Button>(R.id.subjectsBtn)
         val calendarBtn = findViewById<Button>(R.id.calendarBtn)
+        val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
         // Disabled for now: this testing-only ClearAllData button used to wipe every table.
         // It is commented out so it can be re-enabled later.
 //        val clearDataBtn = findViewById<Button>(R.id.clearDataBtn)
@@ -127,6 +128,11 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.CalendarActivity"))
         }
 
+        // Open the statistics screen — study streak, reviews, assignment progress.
+        statisticsBtn.setOnClickListener {
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.StatisticsActivity"))
+        }
+
         // Disabled for now: this testing-only click handler used to wipe every table.
         // It is commented out so it can be re-enabled later.
 //        clearDataBtn.setOnClickListener {
@@ -154,7 +160,7 @@ class HomeActivity : AppCompatActivity() {
 
         val staggerViews = listOf(
             nextDueContainer, navDivider, navSectionLabel,
-            assignmentsBtn, flashcardsBtn, subjectsBtn, calendarBtn
+            assignmentsBtn, flashcardsBtn, subjectsBtn, calendarBtn, statisticsBtn
         )
         staggerViews.forEach { v ->
             v.alpha = 0f

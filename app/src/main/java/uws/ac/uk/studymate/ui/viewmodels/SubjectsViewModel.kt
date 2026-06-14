@@ -13,6 +13,7 @@ import uws.ac.uk.studymate.data.relations.SubjectWithAssignments
 import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
 /*//////////////////////
 Coded by Jamie Coleman
 05/04/26
@@ -94,7 +95,7 @@ class SubjectsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun addSubject(name: String, colorChoice: SubjectColorChoice?) {
-        val trimmedName = sanitizeSingleLine(name)
+        val trimmedName = TextSanitizer.singleLine(name)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a subject name"
             return
@@ -130,7 +131,7 @@ class SubjectsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateSubject(original: Subject, newName: String, colorChoice: SubjectColorChoice?) {
-        val trimmedName = sanitizeSingleLine(newName)
+        val trimmedName = TextSanitizer.singleLine(newName)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a subject name"
             return
@@ -188,12 +189,6 @@ class SubjectsViewModel(application: Application) : AndroidViewModel(application
 
     // Collapse newlines and any control whitespace into a single space, then trim.
     // Defends against paste of multi-line content into a "single line" field.
-    private fun sanitizeSingleLine(raw: String): String {
-        return raw.replace(Regex("[\\r\\n\\t]+"), " ")
-            .replace(Regex("\\s{2,}"), " ")
-            .trim()
-    }
-
     // Build the small fixed list of color names that the add subject form can use.
     private fun buildColorChoices(): List<SubjectColorChoice> {
         return listOf(

@@ -224,8 +224,8 @@ class LoginActivity : AppCompatActivity() {
                 }
                 Quadruple(
                     anyUsers = all.isNotEmpty(),
-                    hasPasswordUsers = all.any { it.authMode == "password" },
-                    bioOwnerExists = all.any { it.authMode == "biometric_only" },
+                    hasPasswordUsers = all.any { it.authMode == SessionManager.AUTH_MODE_PASSWORD },
+                    bioOwnerExists = all.any { it.authMode == SessionManager.AUTH_MODE_BIOMETRIC_ONLY },
                     lastUser = last,
                     notificationUser = notifUser
                 )
@@ -235,13 +235,13 @@ class LoginActivity : AppCompatActivity() {
                 state.notificationUser != null -> showReturningSignIn(
                     state.notificationUser.name,
                     state.notificationUser.id,
-                    state.notificationUser.authMode == "biometric_only"
+                    state.notificationUser.authMode == SessionManager.AUTH_MODE_BIOMETRIC_ONLY
                 )
                 // Cold launch + a remembered user → straight to their prompt.
                 !skipSplash && state.lastUser != null -> showReturningSignIn(
                     state.lastUser.name,
                     state.lastUser.id,
-                    state.lastUser.authMode == "biometric_only"
+                    state.lastUser.authMode == SessionManager.AUTH_MODE_BIOMETRIC_ONLY
                 )
                 state.anyUsers -> showSignInPanel(state.hasPasswordUsers, state.bioOwnerExists)
                 else -> showSignupChoosePanel(bioTaken = false)
@@ -336,7 +336,7 @@ class LoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val state = withContext(Dispatchers.IO) {
                 val all = userRepo.getAllUsers()
-                Pair(all.any { it.authMode == "password" }, all.any { it.authMode == "biometric_only" })
+                Pair(all.any { it.authMode == SessionManager.AUTH_MODE_PASSWORD }, all.any { it.authMode == SessionManager.AUTH_MODE_BIOMETRIC_ONLY })
             }
             showSignInPanel(state.first, state.second)
         }

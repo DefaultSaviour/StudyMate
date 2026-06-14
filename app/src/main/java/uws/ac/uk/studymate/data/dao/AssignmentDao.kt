@@ -23,4 +23,8 @@ interface AssignmentDao {
     // verify the assignment still exists at fire time.
     @Query("SELECT * FROM Assignments WHERE id = :id")
     suspend fun getById(id: Int): Assignment?
+
+    // Mark an assignment done (ISO instant) or not done (null).
+    @Query("UPDATE Assignments SET completed_at = :completedAt WHERE id = :id")
+    suspend fun setCompleted(id: Int, completedAt: String?)
 }

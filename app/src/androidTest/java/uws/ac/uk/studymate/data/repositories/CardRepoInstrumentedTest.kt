@@ -3,10 +3,14 @@ package uws.ac.uk.studymate.data.repositories
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.testutil.RoomDbTestBase
+import uws.ac.uk.studymate.util.SpacedRepetition
+import java.time.LocalDate
 /*////////////////
 Coded by Jamie Coleman
  12/04/26
@@ -89,6 +93,66 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
         repo.deleteCard(saved)
 
         assertEquals(0, repo.getCards(deckId).size)
+    }
+
+    // CRDREP4
+    // Spaced repetition: only cards with no due date or a due date today/earlier
+    // are returned as due; future-dated cards are excluded.
+    @Test
+    fun getDueCardsForDeck_returnsOnlyDueOrNewCards() = runBlocking {
+        val repo = CardRepo(db)
+        val userId = insertUser(email = "card-due@example.com")
+        val subjectId = insertSubject(userId = userId)
+        val deckId = insertDeck(userId = userId, subjectId = subjectId)
+        val today = LocalDate.now()
+
+        insertCard(userId, deckId, front = "new", dueAt = null)
+        insertCard(userId, deckId, front = "overdue", dueAt = today.minusDays(1).toString())
+        insertCard(userId, deckId, front = "future", dueAt = today.plusDays(3).toString())
+
+        val due = repo.getDueCardsForDeck(deckId, today)
+
+        assertEquals(2, due.size)
+        assertTrue(due.none { it.front == "future" })
+    }
+
+    // CRDREP5
+    // Reviewing a new card with Good schedules it for tomorrow, advances the
+    // SM-2 state, and writes a review-log row.
+    @Test
+    fun reviewCard_updatesScheduleAndWritesLog() = runBlocking {
+        val repo = CardRepo(db)
+        val userId = insertUser(email = "card-review@example.com")
+        val subjectId = insertSubject(userId = userId)
+        val deckId = insertDeck(userId = userId, subjectId = subjectId)
+        insertCard(userId, deckId, front = "Q", back = "A")
+
+        val today = LocalDate.now()
+        val card = repo.getCards(deckId).first()
+        repo.reviewCard(card, SpacedRepetition.GOOD, today)
+
+        val updated = repo.getCards(deckId).first()
+        assertEquals(1, updated.intervalDays)
+        assertEquals(1, updated.repetitions)
+        assertEquals(today.plusDays(1).toString(), updated.dueAt)
+        assertNotNull(updated.lastReviewedAt)
+        assertEquals(1, db.reviewLogDao().getReviewTimestamps(userId).size)
+    }
+
+    // CRDREP6
+    // After a review, the card is no longer in today's due list.
+    @Test
+    fun reviewCard_removesCardFromTodaysDueList() = runBlocking {
+        val repo = CardRepo(db)
+        val userId = insertUser(email = "card-due-after@example.com")
+        val subjectId = insertSubject(userId = userId)
+        val deckId = insertDeck(userId = userId, subjectId = subjectId)
+        insertCard(userId, deckId, dueAt = null)
+
+        val today = LocalDate.now()
+        repo.reviewCard(repo.getCards(deckId).first(), SpacedRepetition.GOOD, today)
+
+        assertEquals(0, repo.getDueCardsForDeck(deckId, today).size)
     }
 }
 

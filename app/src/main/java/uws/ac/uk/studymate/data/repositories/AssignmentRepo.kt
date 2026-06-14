@@ -23,4 +23,8 @@ class AssignmentRepo(private val db: StudyMateDatabase) {
 
     // Get all assignments that belong to a specific user.
     suspend fun getAssignments(userId: Int) = db.assignmentDao().getAssignments(userId)
+
+    // Mark an assignment done (pass an ISO instant) or not done (pass null).
+    suspend fun setCompleted(assignment: Assignment, completedAt: String?) =
+        db.assignmentDao().setCompleted(assignment.id, completedAt)
 }

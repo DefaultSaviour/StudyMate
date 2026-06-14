@@ -151,10 +151,13 @@ class UserSettingsActivity : AppCompatActivity() {
         }
 
         vm.sessionExpired.observe(this) { if (it) openLogin() }
-        vm.accountDeleted.observe(this) {
-            if (it) {
-                // Only nuke the bio store if this user actually owned it.
-                if (biometricManager.storedUserId() == currentUserIdOrZero()) {
+        vm.accountDeleted.observe(this) { deletedUserId ->
+            if (deletedUserId > 0) {
+                // Only nuke the bio store if the *deleted* user actually owned it.
+                // The session is already cleared by now, so compare against the
+                // id the VM captured before logout — not the live session (which
+                // would read 0 and silently orphan the credentials).
+                if (biometricManager.storedUserId() == deletedUserId) {
                     biometricManager.clearCredentials()
                 }
                 uws.ac.uk.studymate.util.SessionManager(this).clearLastUserId()
@@ -172,7 +175,12 @@ class UserSettingsActivity : AppCompatActivity() {
                     val currentEmail = biometricManager.storedEmail()
                     val ownerId = biometricManager.storedUserId()
                     val newPassword = editNewPasswordInput.text?.toString().orEmpty()
-                    if (!currentEmail.isNullOrEmpty() && newPassword.isNotEmpty() && ownerId > 0) {
+                    // Only refresh the stored credentials if the signed-in user
+                    // is the one who owns the biometric slot — otherwise we'd
+                    // overwrite another account's credentials with this password.
+                    if (!currentEmail.isNullOrEmpty() && newPassword.isNotEmpty() &&
+                        ownerId > 0 && ownerId == currentUserIdOrZero()
+                    ) {
                         biometricManager.saveCredentials(ownerId, currentEmail, newPassword)
                     }
                 }
@@ -342,7 +350,6 @@ class UserSettingsActivity : AppCompatActivity() {
                 }
                 // One-bio rule: if the slot is held by someone else, refuse.
                 val owner = biometricManager.storedUserId()
-                val current = vm.settingsSummary.value?.let { /* keeps Kotlin happy */ }
                 val currentUserId = currentUserIdOrZero()
                 if (biometricManager.isEnabled() && owner != currentUserId && owner > 0) {
                     revertBiometricSwitch(false)
@@ -715,7 +722,9 @@ class UserSettingsActivity : AppCompatActivity() {
     }
 
     private fun openHome() {
-        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
+        // Return to the existing Dashboard instead of launching a new one, so the
+        // back stack stays a clean Dashboard -> screen -> sub-screen hierarchy.
+        finish()
     }
 
     companion object {
