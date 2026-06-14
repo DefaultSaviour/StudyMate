@@ -58,6 +58,8 @@ class AssignmentsActivity : AppCompatActivity() {
 
     private lateinit var recycler: RecyclerView
     private lateinit var emptyText: TextView
+    private lateinit var createAssignmentBtn: MaterialButton
+    private lateinit var subjectsBtn: MaterialButton
     private lateinit var adapter: AssignmentListAdapter
 
     private lateinit var addTitleInput: TextInputEditText
@@ -131,6 +133,18 @@ class AssignmentsActivity : AppCompatActivity() {
             subjects = summary.subjects
             adapter.submit(summary.items)
             val isEmpty = summary.items.isEmpty()
+
+            // Can't create an assignment without a subject to file it under, so
+            // gate the button until the user has made their first subject.
+            val hasSubjects = subjects.isNotEmpty()
+            createAssignmentBtn.isEnabled = hasSubjects
+            createAssignmentBtn.alpha = if (hasSubjects) 1f else 0.45f
+
+            emptyText.text = if (hasSubjects) {
+                "No assignments yet — tap Create assignment to add one."
+            } else {
+                "Tap Subjects to add your first subject, then you can create assignments."
+            }
             emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
             recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
             // Refresh swatches when subjects change so the picker stays in sync.
@@ -171,6 +185,8 @@ class AssignmentsActivity : AppCompatActivity() {
 
         recycler = findViewById(R.id.assignmentsRecycler)
         emptyText = findViewById(R.id.emptyStateText)
+        createAssignmentBtn = findViewById(R.id.createAssignmentBtn)
+        subjectsBtn = findViewById(R.id.subjectsBtn)
 
         addTitleInput = findViewById(R.id.addTitleInput)
         addSubjectRow = findViewById(R.id.addSubjectRow)
@@ -202,10 +218,11 @@ class AssignmentsActivity : AppCompatActivity() {
         listElems = listOf(
             findViewById<View>(R.id.listTitle)            to -1f,
             findViewById<View>(R.id.listSubText)          to  1f,
-            findViewById<View>(R.id.createAssignmentBtn)  to -1f,
-            findViewById<View>(R.id.listSectionLabel)     to  1f,
-            recycler                                       to -1f,
-            emptyText                                      to  1f
+            subjectsBtn                                    to -1f,
+            createAssignmentBtn                            to  1f,
+            findViewById<View>(R.id.listSectionLabel)     to -1f,
+            recycler                                       to  1f,
+            emptyText                                      to -1f
         )
         addElems = listOf(
             findViewById<View>(R.id.addTitleText)     to -1f,
@@ -262,8 +279,15 @@ class AssignmentsActivity : AppCompatActivity() {
     private fun setupClicks() {
         findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
 
-        findViewById<MaterialButton>(R.id.createAssignmentBtn).setOnClickListener {
+        createAssignmentBtn.setOnClickListener {
             openAddPanel()
+        }
+
+        // Subjects now live under Assignments — open the existing subject screen.
+        // It finish()es back here, so returning refreshes the subject list and
+        // re-enables "Create assignment" if a subject was just added.
+        subjectsBtn.setOnClickListener {
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.SubjectsActivity"))
         }
 
         addCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }

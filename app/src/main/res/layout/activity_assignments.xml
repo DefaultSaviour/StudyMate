@@ -69,11 +69,27 @@
                     android:textSize="13sp" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/subjectsBtn"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="18dp"
+                    android:gravity="center"
+                    android:text="Subjects"
+                    android:textColor="@color/gold_light"
+                    android:textSize="15sp"
+                    android:backgroundTint="#59000000"
+                    app:strokeColor="@color/gold_light"
+                    app:strokeWidth="1.5dp"
+                    app:cornerRadius="12dp"
+                    app:rippleColor="#33D4BC7E" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/createAssignmentBtn"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="18dp"
+                    android:layout_marginTop="12dp"
                     app:icon="@drawable/ic_add"
                     app:iconTint="@color/navy"
                     app:iconGravity="textStart"
