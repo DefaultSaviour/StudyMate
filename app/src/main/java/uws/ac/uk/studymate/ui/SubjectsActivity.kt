@@ -434,6 +434,8 @@ class SubjectsActivity : AppCompatActivity() {
     }
 
     private fun openHome() {
-        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
+        // Return to the existing Dashboard instead of launching a new one, so the
+        // back stack stays a clean Dashboard -> screen -> sub-screen hierarchy.
+        finish()
     }
 }

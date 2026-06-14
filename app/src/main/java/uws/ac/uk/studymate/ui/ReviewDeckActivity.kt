@@ -15,11 +15,11 @@ import com.google.android.material.card.MaterialCardView
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.ui.viewmodels.ReviewDeckViewModel
-import uws.ac.uk.studymate.util.SpacedRepetition
 
-// SM-2 review session: walk the deck's due cards one at a time. Show the front,
-// tap/"Show answer" to reveal the back, then grade Again/Hard/Good/Easy — each
-// grade schedules the card and advances to the next. Drives off ReviewDeckViewModel.
+// Review session: walk the deck's due cards one at a time. Show the front,
+// tap/"Show answer" to reveal the back, then grade Again / Wrong / Correct.
+// Again re-shows the card now, Wrong re-shows it later this session, Correct
+// advances. Drives off ReviewDeckViewModel.
 class ReviewDeckActivity : AppCompatActivity() {
 
     private lateinit var vm: ReviewDeckViewModel
@@ -73,10 +73,9 @@ class ReviewDeckActivity : AppCompatActivity() {
         cardContentText.setOnClickListener { revealAnswer() }
         flipBtn.setOnClickListener { revealAnswer() }
         reviewAllBtn.setOnClickListener { vm.reviewAll() }
-        findViewById<MaterialButton>(R.id.againBtn).setOnClickListener { grade(SpacedRepetition.AGAIN) }
-        findViewById<MaterialButton>(R.id.hardBtn).setOnClickListener { grade(SpacedRepetition.HARD) }
-        findViewById<MaterialButton>(R.id.goodBtn).setOnClickListener { grade(SpacedRepetition.GOOD) }
-        findViewById<MaterialButton>(R.id.easyBtn).setOnClickListener { grade(SpacedRepetition.EASY) }
+        findViewById<MaterialButton>(R.id.againBtn).setOnClickListener { grade(ReviewDeckViewModel.Grade.AGAIN) }
+        findViewById<MaterialButton>(R.id.wrongBtn).setOnClickListener { grade(ReviewDeckViewModel.Grade.WRONG) }
+        findViewById<MaterialButton>(R.id.correctBtn).setOnClickListener { grade(ReviewDeckViewModel.Grade.CORRECT) }
 
         val d = resources.displayMetrics.density
         card.translationY = 200f * d
@@ -112,7 +111,7 @@ class ReviewDeckActivity : AppCompatActivity() {
                 currentCard = state.card
                 showingFront = true
                 resetFlipRotation()
-                cardCountText.text = "Card ${state.position} of ${state.total}"
+                cardCountText.text = "${state.remaining} card${if (state.remaining == 1) "" else "s"} left"
                 setContent(state.card.front, bold = true)
                 showButtons(flip = true, grades = false, reviewAll = false)
                 tapHint.visibility = View.VISIBLE
@@ -160,7 +159,7 @@ class ReviewDeckActivity : AppCompatActivity() {
             .start()
     }
 
-    private fun grade(grade: Int) {
+    private fun grade(grade: ReviewDeckViewModel.Grade) {
         if (isFlipping || currentCard == null) return
         vm.grade(grade)
     }

@@ -45,4 +45,9 @@ interface FlashCardDao {
 
     @Query("SELECT COUNT(*) FROM Flash_Cards WHERE user_id = :userId AND interval_days >= :matureInterval")
     suspend fun countMature(userId: Int, matureInterval: Int): Int
+
+    // The soonest future due date across a user's cards (ISO yyyy-MM-dd), or null
+    // if nothing is scheduled ahead. Used to schedule the next review reminder.
+    @Query("SELECT MIN(due_at) FROM Flash_Cards WHERE user_id = :userId AND due_at IS NOT NULL AND due_at > :today")
+    suspend fun getNextDueDate(userId: Int, today: String): String?
 }

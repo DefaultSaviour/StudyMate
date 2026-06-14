@@ -113,7 +113,9 @@
                 android:textColor="@color/navy"
                 android:backgroundTint="@color/gold" />
 
-            <!-- BACK: SM-2 grade buttons (hidden until the answer is shown) -->
+            <!-- BACK: grade buttons (hidden until the answer is shown).
+                 Again = see it now, Wrong = see it again later this session,
+                 Correct = got it. Again/Wrong both count as a lapse for scheduling. -->
             <LinearLayout
                 android:id="@+id/gradeRow"
                 android:layout_width="match_parent"
@@ -124,12 +126,40 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/againBtn"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
-                    android:layout_height="52dp"
+                    android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    android:maxLines="1"
                     android:text="Again"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gold_light"
+                    android:backgroundTint="#59000000"
+                    app:strokeColor="@color/gold_light"
+                    app:strokeWidth="1.5dp"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/wrongBtn"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    android:maxLines="1"
+                    android:text="Wrong"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/navy"
@@ -137,44 +167,22 @@
                     app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/hardBtn"
+                    android:id="@+id/correctBtn"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="0dp"
-                    android:layout_height="52dp"
+                    android:layout_height="56dp"
                     android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:text="Hard"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/navy"
-                    android:backgroundTint="@color/gold_dark"
-                    app:cornerRadius="12dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/goodBtn"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:text="Good"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    android:maxLines="1"
+                    android:text="Correct"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/navy"
                     android:backgroundTint="@color/gold"
-                    app:cornerRadius="12dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/easyBtn"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:text="Easy"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/navy"
-                    android:backgroundTint="@color/gold_light"
                     app:cornerRadius="12dp" />
 
             </LinearLayout>

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
+import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
@@ -40,7 +41,6 @@ data class StatsSummary(
     val assignmentsCompleted: Int,
     val assignmentsCompletedThisWeek: Int,
     val assignmentsPending: Int,
-    val assignmentsOverdue: Int,
     val assignmentsDueThisWeek: Int,
     val subjectProgress: List<SubjectProgressItem>
 )
@@ -84,20 +84,31 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
             val assignments = db.assignmentDao().getAssignments(userId)
             val now = LocalDateTime.now()
             val weekFromNow = now.plusDays(7)
+            val weekAgo = now.minusDays(7)
             val weekAgoInstant = Instant.now().minus(Duration.ofDays(7))
 
-            val completed = assignments.filter { it.completedAt != null }
-            val pending = assignments.filter { it.completedAt == null }
-            val completedThisWeek = completed.count { a ->
-                val at = runCatching { Instant.parse(a.completedAt) }.getOrNull()
-                at != null && at.isAfter(weekAgoInstant)
+            // An assignment counts as complete if it was marked done OR its due
+            // date has passed (a passed deadline is treated as done, not overdue).
+            fun dueOf(a: Assignment) = AssignmentDateTimeUtils.parseDueDate(a.dueDate)
+            fun isComplete(a: Assignment): Boolean {
+                if (a.completedAt != null) return true
+                val due = dueOf(a) ?: return false
+                return due.isBefore(now)
             }
-            val overdue = pending.count { a ->
-                val due = AssignmentDateTimeUtils.parseDueDate(a.dueDate) ?: return@count false
-                due.isBefore(now)
+
+            val completedList = assignments.filter { isComplete(it) }
+            val pendingList = assignments.filter { !isComplete(it) }
+            val completedThisWeek = completedList.count { a ->
+                if (a.completedAt != null) {
+                    val at = runCatching { Instant.parse(a.completedAt) }.getOrNull()
+                    at != null && at.isAfter(weekAgoInstant)
+                } else {
+                    val due = dueOf(a)
+                    due != null && !due.isBefore(weekAgo) && due.isBefore(now)
+                }
             }
-            val dueThisWeek = pending.count { a ->
-                val due = AssignmentDateTimeUtils.parseDueDate(a.dueDate) ?: return@count false
+            val dueThisWeek = pendingList.count { a ->
+                val due = dueOf(a) ?: return@count false
                 !due.isBefore(now) && due.isBefore(weekFromNow)
             }
 
@@ -109,7 +120,7 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
                 SubjectProgressItem(
                     name = s.name,
                     colorHex = s.color,
-                    completed = list.count { it.completedAt != null },
+                    completed = list.count { isComplete(it) },
                     total = list.size
                 )
             }
@@ -122,10 +133,9 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
                     streakDays = streak,
                     matureCards = matureCards,
                     totalCards = totalCards,
-                    assignmentsCompleted = completed.size,
+                    assignmentsCompleted = completedList.size,
                     assignmentsCompletedThisWeek = completedThisWeek,
-                    assignmentsPending = pending.size,
-                    assignmentsOverdue = overdue,
+                    assignmentsPending = pendingList.size,
                     assignmentsDueThisWeek = dueThisWeek,
                     subjectProgress = subjectProgress
                 )

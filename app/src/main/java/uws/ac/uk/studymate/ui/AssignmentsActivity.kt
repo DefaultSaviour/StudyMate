@@ -253,7 +253,7 @@ class AssignmentsActivity : AppCompatActivity() {
             items = emptyList(),
             onEdit = { openEditFor(it) },
             onDelete = { confirmDelete(it) },
-            onToggleDone = { vm.toggleComplete(it) }
+            onToggleDone = { confirmToggleDone(it) }
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
@@ -586,6 +586,25 @@ class AssignmentsActivity : AppCompatActivity() {
             .show()
     }
 
+    // Tapping the done circle. If it's already done, just un-mark it. If not,
+    // show a themed pop-up explaining what marking-done does before confirming.
+    private fun confirmToggleDone(item: AssignmentsItem) {
+        if (item.isCompleted) {
+            vm.toggleComplete(item)
+            return
+        }
+        MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
+            .setTitle("Mark as done?")
+            .setMessage(
+                "Finishing an assignment early clears it from your list, stops its " +
+                    "reminders, and counts it as complete in your statistics.\n\n" +
+                    "Assignments are also counted as done automatically once their due date passes."
+            )
+            .setPositiveButton("Mark done") { _, _ -> vm.toggleComplete(item) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     // ─────────────────── Date picker ───────────────────
 
     private fun preloadDuePanels(current: LocalDateTime?) {
@@ -744,6 +763,8 @@ class AssignmentsActivity : AppCompatActivity() {
     }
 
     private fun openHome() {
-        startActivity(Intent().setClassName(packageName, "$packageName.ui.HomeActivity"))
+        // Return to the existing Dashboard instead of launching a new one, so the
+        // back stack stays a clean Dashboard -> screen -> sub-screen hierarchy.
+        finish()
     }
 }

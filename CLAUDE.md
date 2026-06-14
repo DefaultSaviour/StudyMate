@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 An Android study-companion app for students. Core features:
 - **Subjects** — create named subject groups
 - **Assignments** — track due dates and completion per subject
-- **Flashcards** — create decks of question/answer cards per subject; review with **SM-2 spaced repetition** (Again/Hard/Good/Easy)
+- **Flashcards** — create decks of question/answer cards per subject; review with **SM-2 spaced repetition** (Again / Wrong / Correct)
 - **Statistics** — study dashboard: cards due/reviewed, study streak, mature cards, and assignment completion (all computed live)
 - **Calendar** — view assignments by date
 - **Sign-in** — multi-user accounts (unique username), with optional one-device biometric / screen-lock quick sign-in (see "Authentication & Sign-in")
@@ -68,7 +68,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `data/relations/` | `@Relation` data classes for one-to-many queries (e.g. `SubjectWithAssignments`) |
 | `data/repositories/` | All DB access goes through repos; methods are `suspend` functions |
 | `ui/viewmodels/` | One ViewModel per screen; use `viewModelScope` + `Dispatchers.IO` for repo calls |
-| `StudyMateApplication.kt` | `Application` subclass — creates the `assignment_reminders` notification channel on startup; registered via `android:name` in the manifest |
+| `StudyMateApplication.kt` | `Application` subclass — creates the `assignment_reminders` and `review_reminders` notification channels on startup; registered via `android:name` in the manifest |
 | `util/SessionManager.kt` | SharedPreferences session read/write; also stores `authMode` and `lastUserId` for the cold-launch fast path |
 | `util/SessionUserResolver.kt` | Validates session ID and returns the `User` — single source of truth for "who is logged in" |
 | `util/BiometricLoginManager.kt` | BiometricPrompt wrapper + `EncryptedSharedPreferences` credential store for the one-device biometric account |
@@ -117,6 +117,15 @@ Per-assignment local reminders via **WorkManager** (`androidx.work:work-runtime-
 - **`AssignmentReminderWorker`** (`CoroutineWorker`) **re-verifies state at fire time** before posting: assignment still exists, user still exists, `pushNotificationsEnabled`, and `POST_NOTIFICATIONS` granted. Body includes the username so multi-user devices stay unambiguous. Tap opens `LoginActivity` with `EXTRA_NOTIFICATION_USERNAME`.
 - **Per-user toggle** lives in `UserSettings` (`pushNotificationsEnabled` on `User`). The worker checks it at fire time, so toggling off stops delivery even for already-scheduled work.
 - **Runtime permission:** `POST_NOTIFICATIONS` (API 33+) is requested from `UserSettingsActivity` when the toggle is switched on. The toggle reflecting "on" is necessary but not sufficient — OS-level permission and channel importance also gate delivery.
+
+### Flashcard review reminders (SM-2 due dates)
+Separate from assignment reminders. When the SM-2 schedule says cards are next due, the user gets a single reminder to review.
+
+- **Channel:** `review_reminders` (`StudyMateApplication.CHANNEL_REVIEW_REMINDERS`), created in `StudyMateApplication.onCreate()` alongside `assignment_reminders`.
+- **`ReviewReminderScheduler`** (object) schedules **one** `OneTimeWorkRequest` **per user** (not per deck) via `enqueueUniqueWork(uniqueNameFor(userId), REPLACE, …)` — unique name `review_reminder_user_<id>`, tag `review_user_<id>`. It fires at the user's *earliest* future due date (`FlashCardDao.getNextDueDate(userId, today)` = `MIN(due_at) WHERE due_at > today`) at **09:00**. No-op if `pushNotificationsEnabled != true` or there's no future due date. Because the job is keyed per user and rescheduled (REPLACE) on the global next-due date, **5 due decks still produce only 1 notification.**
+- **`ReviewReminderWorker`** (`CoroutineWorker`) re-verifies at fire time: user exists, `pushNotificationsEnabled`, and `FlashCardDao.countDue(userId, today) > 0` (user-wide across all decks). Posts one notification ("you have N cards ready to review"), `notifId = 900_000 + userId`. Tap opens `LoginActivity`.
+- **Rescheduled** from `ReviewDeckViewModel` after a review session (queue start + session done) — grading a card changes its due date, so the next-due reminder is recomputed each time.
+- **Deck due indicator (UI, not a notification):** the Flashcards **list** row shows only a short `"N due"` badge (`FlashcardDecksViewModel.dueBadgeFor`) to avoid truncation; the fuller wording — `"6 cards due now"` / `"Next review tomorrow"` / `"Next review in 3 days"` / `"Next review in 2 weeks"` — lives **inside the deck screen** (`DeckCardsViewModel.dueTextFor`, shown on a second line of the deck subtitle). Both derive the gap from the *actual* earliest future `due_at`, so a card due Wednesday reads "in 3 days", never a false "tomorrow".
 
 ## UI & Theming
 
@@ -427,6 +436,21 @@ The month grid renders 6 weighted rows × 7 weighted columns regardless of how m
 - Always 6 = predictable cell height. Days are the same size every month. No visual "jump" when nav-ing between months.
 - Cell height: `LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f)` on each row inside the weighted grid container — they auto-divide whatever the card height is on this device.
 
+### Buttons in a weighted row (no text wrapping)
+`MaterialButton` ships with ~16dp content padding per side **plus** a 6dp left/right
+inset and a non-zero `minWidth`. In a `layout_weight`-split row of 3+ buttons that
+leaves very little room for the label, so a word like "Correct" wraps to two lines
+("Correc" / "t"). For any weighted button row, zero those out and cap to one line:
+```xml
+android:maxLines="1"
+android:insetLeft="0dp"
+android:insetRight="0dp"
+android:paddingStart="0dp"
+android:paddingEnd="0dp"
+android:minWidth="0dp"
+```
+Reference: the Again / Wrong / Correct grade buttons in `activity_review_deck.xml`.
+
 ### Input sanitisation (single-line text fields)
 Two-layer defence so a user can't sneak newlines / tabs / long pastes into single-line fields:
 
@@ -479,10 +503,11 @@ The login screen is the established reference. Every other screen should be brou
 - [ ] **Subject detail** — wood bg, glass header card with subject name/icon, assignment list below
 - [x] **Assignments list** — RecyclerView of upcoming assignments (subject-coloured icon badge + title + subject + due), inline add + edit + icon-picker panel-swap, "Choose icon" gated behind title+subject+due completion, icon tiles tinted with the selected subject's colour
 - [x] **Assignment detail / edit** — folded into the Assignments screen as the edit panel (no separate activity); old `AddAssignmentActivity` and `AddAssignmentViewModel` deleted
-- [x] **Flashcard decks list** — RecyclerView of glass-row decks (subject dot + deck name + "Subject • N cards" subtitle + edit/delete), gold "Create new deck" primary button, inline add + edit panel-swap, tapping a deck still opens `DeckOptionsActivity`, back-arrow icon outside card top-right
-- [x] **Flashcard study / flip view** — `ReviewDeckActivity` (now backed by `ReviewDeckViewModel`) runs an **SM-2 review session**: walks the deck's *due* cards one at a time, "Show answer" flips to the back, then four grade buttons (Again = muted red, Hard/Good/Easy = gold variants) schedule the card via `CardRepo.reviewCard` and advance. "All caught up" state when nothing is due, with a "Review all cards anyway" fallback. Each grade writes a `Review_Logs` row for stats. (Replaced the old Prev/Next browse flow.)
+- [x] **Flashcard decks list** — RecyclerView of glass-row decks (subject dot + deck name + "Subject • N cards • N due" subtitle + edit/delete), gold "Create new deck" primary button, inline add + edit panel-swap, tapping a deck opens `DeckCardsActivity`, back-arrow icon outside card top-right. The row shows only a short "N due" badge; the "Next review …" wording lives inside the deck screen (see Notifications → deck due indicator)
+- [x] **Flashcard study / flip view** — `ReviewDeckActivity` (backed by `ReviewDeckViewModel`) runs an **SM-2 review session**: walks the deck's *due* cards one at a time, "Show answer" flips to the back, then **three grade buttons — Again / Wrong / Correct**. **Correct** schedules the card further out (SM-2 Good) and it leaves the session; **Again** re-shows the card immediately (front of the session queue); **Wrong** re-shows it later (back of the queue). Both Again and Wrong count as a lapse for the SM-2 schedule (reset, due tomorrow). The session runs on an `ArrayDeque`, so a missed card keeps coming back until graded Correct. Each grade writes a `Review_Logs` row via `CardRepo.reviewCard`. "All caught up" state when nothing is due, with a "Review all cards anyway" fallback. (Replaced the old Prev/Next browse flow.)
 - [x] **Deck detail + manage cards** — consolidated 7 old activities (`DeckOptions`, `AlterDeck`, `AddCard`, `EditCard`, `ModifyCards`, `RemoveCards`, `ReviewDeck`) into 3: `DeckDetailActivity` (Review + Manage Cards), `DeckCardsActivity` (RecyclerView of cards with inline add/edit panel-swap), `ReviewDeckActivity` (restyled). Delete-deck stays on the main Flashcards list only.
-- [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), assignment completed/pending/overdue/due-this-week, and per-subject completed/total. Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
+- [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), assignment completed/pending/due-this-week, and per-subject completed/total. Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
+  - **No "overdue" concept.** An assignment counts as **complete** when `completedAt != null` **OR its due date has passed** (`StatisticsViewModel.isComplete`). A passed deadline is treated as done, not overdue — there is no overdue row/state anywhere. "Completed this week" covers both manual completion (within 7d of `completedAt`) and auto-completion (due date within the last 7d).
 - [x] **Calendar** — wood bg, glass card with month grid + day-detail panel-swap; always 6-row grid (consistent height), today gets a gold ring, past days at 50% alpha, days with assignments show up to 3 subject-coloured dots; tap → swaps to read-only day list (max 9 rows, "+N more" footer), no edit/delete (jump to Assignments)
 - [x] **Settings / Profile** — wood-glass card with three sections (ACCOUNT, AT A GLANCE, PREFERENCES) using mini glass-card rows; muted-red outlined "Sign out" button with themed confirm dialog; absorbed the small library/assignment counts that used to be on the Statistics screen
 

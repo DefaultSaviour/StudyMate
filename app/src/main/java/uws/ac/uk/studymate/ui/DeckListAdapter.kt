@@ -46,7 +46,8 @@ class DeckListAdapter(
             1 -> "1 card"
             else -> "${item.cardCount} cards"
         }
-        holder.subtitle.text = "${item.subjectName} • $cardLabel"
+        val base = "${item.subjectName} • $cardLabel"
+        holder.subtitle.text = if (item.dueText.isNotEmpty()) "$base • ${item.dueText}" else base
 
         val color = ColorUtils.parseOrDefault(item.subjectColorHex)
         (holder.colorDot.background as? GradientDrawable)?.setColor(color)

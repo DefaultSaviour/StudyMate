@@ -86,7 +86,6 @@ class StatisticsActivity : AppCompatActivity() {
         addStatRow(assignmentStatsContainer, "Completed", s.assignmentsCompleted.toString())
         addStatRow(assignmentStatsContainer, "Completed this week", s.assignmentsCompletedThisWeek.toString())
         addStatRow(assignmentStatsContainer, "Still to do", s.assignmentsPending.toString())
-        addStatRow(assignmentStatsContainer, "Overdue", s.assignmentsOverdue.toString())
         addStatRow(assignmentStatsContainer, "Due this week", s.assignmentsDueThisWeek.toString())
 
         subjectProgressContainer.removeAllViews()
