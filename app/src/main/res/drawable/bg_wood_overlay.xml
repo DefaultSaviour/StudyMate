@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Veil + gradient overlay, drawn on top of a centerCrop wood ImageView so the
+  photo keeps its aspect ratio (no stretch) while still getting the dark veil
+  and bottom navy fade. Pair with an ImageView (scaleType="centerCrop") below it.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Subtle dark veil so light text stays readable over the grain -->
+    <item>
+        <color android:color="#1A000000" />
+    </item>
+
+    <!-- Top-to-bottom fade: wood fully visible at top, 75% navy at bottom -->
+    <item>
+        <shape>
+            <gradient
+                android:angle="270"
+                android:startColor="#000F172A"
+                android:endColor="#BF0F172A" />
+        </shape>
+    </item>
+
+</layer-list>

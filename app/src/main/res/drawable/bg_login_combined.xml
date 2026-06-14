@@ -9,7 +9,7 @@
     <!-- Wood photo — scales to fill the screen -->
     <item>
         <bitmap
-            android:src="@drawable/bg_wood"
+            android:src="@drawable/bg_login"
             android:gravity="fill"
             android:tileMode="disabled" />
     </item>
