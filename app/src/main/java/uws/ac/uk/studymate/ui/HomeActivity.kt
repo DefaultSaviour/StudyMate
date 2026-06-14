@@ -64,7 +64,6 @@ class HomeActivity : AppCompatActivity() {
         val nextDueDetailsText = findViewById<TextView>(R.id.nextDueDetailsText)
         val assignmentsBtn = findViewById<Button>(R.id.assignmentsBtn)
         val flashcardsBtn = findViewById<Button>(R.id.flashcardsBtn)
-        val subjectsBtn = findViewById<Button>(R.id.subjectsBtn)
         val calendarBtn = findViewById<Button>(R.id.calendarBtn)
         val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
         // Disabled for now: this testing-only ClearAllData button used to wipe every table.
@@ -118,10 +117,8 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity"))
         }
 
-        // Open the subjects screen so the user can add or remove subjects.
-        subjectsBtn.setOnClickListener {
-            startActivity(Intent().setClassName(packageName, "$packageName.ui.SubjectsActivity"))
-        }
+        // Subjects now live inside the Assignments screen (reached via its "Subjects"
+        // button), so there is no longer a dashboard button for them here.
 
         // Open the calendar screen so the user can see assignment dates in a month view.
         calendarBtn.setOnClickListener {
@@ -160,7 +157,7 @@ class HomeActivity : AppCompatActivity() {
 
         val staggerViews = listOf(
             nextDueContainer, navDivider, navSectionLabel,
-            assignmentsBtn, flashcardsBtn, subjectsBtn, calendarBtn, statisticsBtn
+            assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn
         )
         staggerViews.forEach { v ->
             v.alpha = 0f
