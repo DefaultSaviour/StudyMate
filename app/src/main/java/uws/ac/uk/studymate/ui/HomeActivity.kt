@@ -37,6 +37,11 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var homeVm: HomeViewModel
     private var isPushNotificationsDialogShowing = false
 
+    // Cached from the latest dashboard load so the "Review due decks" button knows
+    // which decks (in order) to walk through when tapped.
+    private var dueDeckIds: List<Int> = emptyList()
+    private var dueDeckNames: List<String> = emptyList()
+
     /**
      This screen is the main hub that sends the user to the rest of the app.
      it started as a small home page, and later got more buttons as the other screens were added.
@@ -66,6 +71,8 @@ class HomeActivity : AppCompatActivity() {
         val flashcardsBtn = findViewById<Button>(R.id.flashcardsBtn)
         val calendarBtn = findViewById<Button>(R.id.calendarBtn)
         val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
+        val reviewDueBtn = findViewById<Button>(R.id.reviewDueBtn)
+        val reviewDueGlow = findViewById<PulseRingView>(R.id.reviewDueGlow)
         // Disabled for now: this testing-only ClearAllData button used to wipe every table.
         // It is commented out so it can be re-enabled later.
 //        val clearDataBtn = findViewById<Button>(R.id.clearDataBtn)
@@ -74,6 +81,26 @@ class HomeActivity : AppCompatActivity() {
         homeVm.homeSummary.observe(this) { summary ->
             nextDueCountdownText.text = summary.nextDueCountdown
             nextDueDetailsText.text = summary.nextDueDetails
+
+            // Enable "Review due decks" only when something is actually due; light up
+            // the travelling glow while it's active and dim/stop it when it isn't.
+            dueDeckIds = summary.dueDeckIds
+            dueDeckNames = summary.dueDeckNames
+            val hasDue = dueDeckIds.isNotEmpty()
+            reviewDueBtn.isEnabled = hasDue
+            reviewDueBtn.alpha = if (hasDue) 1f else 0.45f
+            reviewDueBtn.text = if (hasDue) {
+                "Review ${summary.dueCardCount} card${if (summary.dueCardCount == 1) "" else "s"} now"
+            } else {
+                "No decks due"
+            }
+            if (hasDue) {
+                reviewDueGlow.visibility = View.VISIBLE
+                reviewDueGlow.startAnimating()
+            } else {
+                reviewDueGlow.stopAnimating()
+                reviewDueGlow.visibility = View.GONE
+            }
         }
 
         // Send the user back to login when there is no valid session.
@@ -130,6 +157,17 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.StatisticsActivity"))
         }
 
+        // Review every due deck back-to-back: hand the ordered deck queue to the review
+        // screen, which finishes one deck then immediately starts the next.
+        reviewDueBtn.setOnClickListener {
+            if (dueDeckIds.isEmpty()) return@setOnClickListener
+            startActivity(
+                Intent().setClassName(packageName, "$packageName.ui.ReviewDeckActivity")
+                    .putExtra("deck_queue_ids", dueDeckIds.toIntArray())
+                    .putExtra("deck_queue_names", dueDeckNames.toTypedArray())
+            )
+        }
+
         // Disabled for now: this testing-only click handler used to wipe every table.
         // It is commented out so it can be re-enabled later.
 //        clearDataBtn.setOnClickListener {
@@ -155,9 +193,10 @@ class HomeActivity : AppCompatActivity() {
         homeCard.alpha = 0f
         homeCard.setLayerType(View.LAYER_TYPE_HARDWARE, null)
 
+        val reviewDueContainer = findViewById<View>(R.id.reviewDueContainer)
         val staggerViews = listOf(
             nextDueContainer, navDivider, navSectionLabel,
-            assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn
+            assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn, reviewDueContainer
         )
         staggerViews.forEach { v ->
             v.alpha = 0f

@@ -44,6 +44,10 @@ class ReviewDeckActivity : AppCompatActivity() {
 
         val deckId = intent.getIntExtra("deck_id", -1)
         val deckName = intent.getStringExtra("deck_name") ?: "Deck"
+        // When launched from the dashboard "Review due decks" button we get an ordered
+        // queue of decks to walk back-to-back instead of a single deck.
+        val queueIds = intent.getIntArrayExtra("deck_queue_ids")
+        val queueNames = intent.getStringArrayExtra("deck_queue_names")
 
         card = findViewById(R.id.reviewCard)
         flipCard = findViewById(R.id.flipCard)
@@ -55,7 +59,7 @@ class ReviewDeckActivity : AppCompatActivity() {
         gradeRow = findViewById(R.id.gradeRow)
         reviewAllBtn = findViewById(R.id.reviewAllBtn)
 
-        titleText.text = deckName
+        titleText.text = queueNames?.firstOrNull() ?: deckName
 
         val reviewPanel = findViewById<View>(R.id.reviewPanel)
         ViewCompat.setOnApplyWindowInsetsListener(card) { _, insets ->
@@ -88,7 +92,11 @@ class ReviewDeckActivity : AppCompatActivity() {
 
         vm = ViewModelProvider(this)[ReviewDeckViewModel::class.java]
         vm.state.observe(this) { render(it) }
-        vm.load(deckId, deckName)
+        if (queueIds != null && queueIds.isNotEmpty()) {
+            vm.loadChain(queueIds.toList(), queueNames?.toList() ?: emptyList())
+        } else {
+            vm.load(deckId, deckName)
+        }
     }
 
     private fun render(state: ReviewDeckViewModel.State) {
@@ -101,6 +109,7 @@ class ReviewDeckActivity : AppCompatActivity() {
             }
             is ReviewDeckViewModel.State.Empty -> {
                 currentCard = null
+                titleText.text = state.deckName
                 cardCountText.text = "All caught up"
                 setContent("No cards are due for review right now. 🎉", bold = false)
                 showButtons(flip = false, grades = false, reviewAll = true)
@@ -109,6 +118,7 @@ class ReviewDeckActivity : AppCompatActivity() {
             }
             is ReviewDeckViewModel.State.Reviewing -> {
                 currentCard = state.card
+                titleText.text = state.deckName
                 showingFront = true
                 resetFlipRotation()
                 cardCountText.text = "${state.remaining} card${if (state.remaining == 1) "" else "s"} left"
@@ -119,6 +129,7 @@ class ReviewDeckActivity : AppCompatActivity() {
             }
             is ReviewDeckViewModel.State.Done -> {
                 currentCard = null
+                titleText.text = state.deckName
                 val n = state.reviewedCount
                 cardCountText.text = "Review complete"
                 setContent("Reviewed $n card${if (n == 1) "" else "s"}.\nGreat work!", bold = false)

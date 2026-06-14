@@ -280,19 +280,6 @@
 
                     </LinearLayout>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/testNotificationBtn"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="10dp"
-                        android:text="Send a test reminder now"
-                        android:textColor="@color/gold_light"
-                        android:textSize="13sp"
-                        android:visibility="gone"
-                        app:strokeColor="#33D4BC7E"
-                        app:strokeWidth="1dp" />
-
                     <!-- AT A GLANCE -->
                     <TextView
                         android:id="@+id/glanceSectionLabel"

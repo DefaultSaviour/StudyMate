@@ -56,24 +56,55 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
     private var deckId: Int = -1
     private var deckName: String = "Deck"
     private val queue = ArrayDeque<FlashCard>()
-    private var doneCount = 0   // distinct cards finished (graded Correct)
+    private var doneCount = 0   // distinct cards finished (graded Correct) in the current deck
+
+    // Multi-deck chaining (from the dashboard "Review due decks" button): walk each
+    // queued deck's due cards, then immediately move on to the next. chainTotal carries
+    // the count completed in decks already finished this session.
+    private val deckChain = ArrayDeque<Pair<Int, String>>()
+    private var isChain = false
+    private var chainTotal = 0
 
     fun load(deckId: Int, deckName: String) {
+        isChain = false
         this.deckId = deckId
         this.deckName = deckName
         startQueue(dueOnly = true)
+    }
+
+    // Review several decks back-to-back. Decks are walked in the order given.
+    fun loadChain(deckIds: List<Int>, deckNames: List<String>) {
+        isChain = true
+        chainTotal = 0
+        deckChain.clear()
+        deckIds.forEachIndexed { i, id -> deckChain.addLast(id to (deckNames.getOrNull(i) ?: "Deck")) }
+        advanceToNextDeck()
+    }
+
+    // Move to the next deck in the chain (if any). Returns false when the chain is empty.
+    private fun advanceToNextDeck(): Boolean {
+        val next = deckChain.removeFirstOrNull() ?: return false
+        deckId = next.first
+        deckName = next.second
+        startQueue(dueOnly = true)
+        return true
     }
 
     // Fallback offered when nothing is due: run through the whole deck anyway.
     fun reviewAll() = startQueue(dueOnly = false)
 
     private fun startQueue(dueOnly: Boolean) {
-        _state.value = State.Loading
+        _state.postValue(State.Loading)
         viewModelScope.launch(Dispatchers.IO) {
             val cards = if (dueOnly) cardRepo.getDueCardsForDeck(deckId) else cardRepo.getCards(deckId)
             queue.clear()
             queue.addAll(cards)
             doneCount = 0
+            // In a chain, a deck that turns out to have nothing due is skipped silently.
+            if (isChain && queue.isEmpty() && deckChain.isNotEmpty()) {
+                advanceToNextDeck()
+                return@launch
+            }
             emitCurrent()
             rescheduleReviewReminder()
         }
@@ -92,9 +123,18 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
                 Grade.WRONG -> queue.addLast(current)    // re-show later this session
                 Grade.AGAIN -> queue.addFirst(current)   // re-show immediately
             }
-            // Session finished — the cards just reviewed have fresh due dates, so
-            // refresh the "cards are due" reminder to match.
-            if (queue.isEmpty()) rescheduleReviewReminder()
+            if (queue.isEmpty()) {
+                // This deck is done. In a chain with more decks ahead, roll its tally
+                // into the running total and immediately start the next deck.
+                if (isChain && deckChain.isNotEmpty()) {
+                    chainTotal += doneCount
+                    advanceToNextDeck()
+                    return@launch
+                }
+                // Whole session finished — the cards just reviewed have fresh due
+                // dates, so refresh the "cards are due" reminder to match.
+                rescheduleReviewReminder()
+            }
             emitCurrent()
         }
     }
@@ -103,7 +143,8 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
         _state.postValue(
             when {
                 queue.isEmpty() && doneCount == 0 -> State.Empty(deckName)
-                queue.isEmpty() -> State.Done(deckName, doneCount)
+                // On the final deck, report the whole chain's total, not just this deck.
+                queue.isEmpty() -> State.Done(deckName, if (isChain) chainTotal + doneCount else doneCount)
                 else -> State.Reviewing(deckName, queue.first(), queue.size)
             }
         )

@@ -62,7 +62,16 @@ class BiometricLoginManager(private val context: Context) {
         return km?.isDeviceSecure == true
     }
 
+    /** Device-wide: is the single quick sign-in slot enabled at all (any account)? */
     fun isEnabled(): Boolean = prefs.getBoolean(KEY_ENABLED, false) && hasStoredCredentials()
+
+    /** Quick sign-in is on AND this device's slot belongs to [userId]. */
+    fun isEnabledForUser(userId: Int): Boolean =
+        BiometricOwnership.isEnabledForUser(isEnabled(), storedUserId(), userId)
+
+    /** The slot is held by a different account than [userId] (so [userId] can't use it). */
+    fun isOwnedByAnotherUser(userId: Int): Boolean =
+        BiometricOwnership.isOwnedByAnotherUser(isEnabled(), storedUserId(), userId)
 
     fun hasStoredCredentials(): Boolean =
         prefs.contains(KEY_EMAIL) && prefs.contains(KEY_PASSWORD)
