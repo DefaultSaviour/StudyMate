@@ -3,7 +3,7 @@
     <item><color android:color="#0F172A" /></item>
     <item>
         <bitmap
-            android:src="@drawable/bg_wood2"
+            android:src="@drawable/bg_flashcards"
             android:gravity="fill"
             android:tileMode="disabled" />
     </item>
