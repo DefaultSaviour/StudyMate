@@ -41,6 +41,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:paddingStart="24dp"
                 android:paddingEnd="24dp"
                 android:paddingTop="20dp"
@@ -183,6 +185,40 @@
                     app:strokeWidth="1dp"
                     app:cornerRadius="12dp"
                     app:rippleColor="#33D4BC7E" />
+
+                <!-- Review-due-decks: only enabled when cards are due. The PulseRingView
+                     overlay paints a travelling gold glow around the ring when active.
+                     It is non-clickable, so taps fall through to the button beneath. -->
+                <FrameLayout
+                    android:id="@+id/reviewDueContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="12dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/reviewDueBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="Review due decks"
+                        android:textColor="@color/gold_light"
+                        android:textSize="18sp"
+                        android:gravity="center"
+                        android:backgroundTint="#59000000"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="12dp"
+                        app:rippleColor="#33D4BC7E" />
+
+                    <uws.ac.uk.studymate.ui.PulseRingView
+                        android:id="@+id/reviewDueGlow"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
+
+                </FrameLayout>
 
             </LinearLayout>
 

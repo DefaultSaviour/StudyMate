@@ -130,12 +130,16 @@
                 android:layout_height="match_parent"
                 android:fillViewport="true"
                 android:overScrollMode="never"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:visibility="invisible">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:paddingStart="24dp"
                     android:paddingEnd="24dp"
                     android:paddingTop="20dp"
@@ -164,28 +168,43 @@
                         android:textColor="@color/gold_light"
                         android:textSize="13sp" />
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/addSubjectNameLayout"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    <FrameLayout
+                        android:id="@+id/addNameGlowWrap"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="24dp"
-                        android:hint="Subject name"
-                        app:boxStrokeColor="@color/box_stroke_gold"
-                        app:hintTextColor="@color/gold_light"
-                        android:textColorHint="#99D4BC7E">
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/addSubjectNameInput"
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/addSubjectNameLayout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:imeOptions="actionDone"
-                            android:inputType="text|textCapWords"
-                            android:maxLines="1"
-                            android:maxLength="60"
-                            android:textColor="@color/surface" />
+                            android:hint="Subject name"
+                            app:boxStrokeColor="@color/box_stroke_gold"
+                            app:hintTextColor="@color/gold_light"
+                            android:textColorHint="#99D4BC7E">
 
-                    </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/addSubjectNameInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:imeOptions="actionDone"
+                                android:inputType="text|textCapWords"
+                                android:maxLines="1"
+                                android:maxLength="60"
+                                android:textColor="@color/surface" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <uws.ac.uk.studymate.ui.PulseRingView
+                            android:id="@+id/addNameGlow"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+
+                    </FrameLayout>
 
                     <TextView
                         android:id="@+id/addColorLabel"
@@ -202,25 +221,58 @@
                         android:textColor="@color/gold_light"
                         android:textSize="12sp" />
 
-                    <LinearLayout
-                        android:id="@+id/addColorRow"
+                    <FrameLayout
+                        android:id="@+id/addColorGlowWrap"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:gravity="start|center_vertical"
-                        android:orientation="horizontal" />
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/addConfirmBtn"
-                        style="@style/Widget.Material3.Button"
+                        <LinearLayout
+                            android:id="@+id/addColorRow"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_glow_field"
+                            android:padding="8dp"
+                            android:gravity="start|center_vertical"
+                            android:orientation="horizontal" />
+
+                        <uws.ac.uk.studymate.ui.PulseRingView
+                            android:id="@+id/addColorGlow"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/addSaveGlowWrap"
                         android:layout_width="match_parent"
-                        android:layout_height="52dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="28dp"
-                        android:text="Save subject"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/navy"
-                        android:backgroundTint="@color/gold" />
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/addConfirmBtn"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:text="Save subject"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/navy"
+                            app:cornerRadius="12dp"
+                            android:backgroundTint="@color/gold" />
+
+                        <uws.ac.uk.studymate.ui.PulseRingView
+                            android:id="@+id/addSaveGlow"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+
+                    </FrameLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/addCancelBtn"

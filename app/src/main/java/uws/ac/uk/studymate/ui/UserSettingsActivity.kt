@@ -65,12 +65,7 @@ class UserSettingsActivity : AppCompatActivity() {
     private var isUpdatingBiometricSwitch = false
     private lateinit var biometricManager: BiometricLoginManager
 
-    // If true, the next successful POST_NOTIFICATIONS grant fires the test
-    // notification right away (the user pressed the test button before granting).
-    private var pendingTestFireAfterGrant = false
-
-    // Permission launcher for POST_NOTIFICATIONS. Handles both the toggle-on
-    // flow and the test-button flow.
+    // Permission launcher for POST_NOTIFICATIONS, used by the notifications toggle.
     private val postNotificationsLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -83,16 +78,10 @@ class UserSettingsActivity : AppCompatActivity() {
                 isUpdatingSwitch = false
             }
             vm.updatePushNotifications(true)
-
-            if (pendingTestFireAfterGrant) {
-                pendingTestFireAfterGrant = false
-                scheduleTestNotification()
-            }
         } else {
             isUpdatingSwitch = true
             notificationsSwitch.isChecked = false
             isUpdatingSwitch = false
-            pendingTestFireAfterGrant = false
             Toast.makeText(
                 this,
                 "Notification permission was denied. Enable it in Android Settings → Apps → StudyMate → Notifications.",
@@ -300,17 +289,6 @@ class UserSettingsActivity : AppCompatActivity() {
                 .show()
         }
 
-        // Quick test for the notification pipeline — fires a reminder against the
-        // user's first assignment so we don't have to wait for a real reminder
-        // window. Debug-only: the row stays GONE in release builds.
-        val testBtn = findViewById<com.google.android.material.button.MaterialButton>(R.id.testNotificationBtn)
-        if (uws.ac.uk.studymate.BuildConfig.DEBUG) {
-            testBtn.visibility = View.VISIBLE
-            testBtn.setOnClickListener { scheduleTestNotification() }
-        } else {
-            testBtn.visibility = View.GONE
-        }
-
         notificationsSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isUpdatingSwitch) return@setOnCheckedChangeListener
             if (isChecked) {
@@ -348,10 +326,9 @@ class UserSettingsActivity : AppCompatActivity() {
                     ).show()
                     return@setOnCheckedChangeListener
                 }
-                // One-bio rule: if the slot is held by someone else, refuse.
-                val owner = biometricManager.storedUserId()
-                val currentUserId = currentUserIdOrZero()
-                if (biometricManager.isEnabled() && owner != currentUserId && owner > 0) {
+                // One-bio rule: if the slot is held by another account, refuse.
+                // (The switch is also disabled in that case; this is a backstop.)
+                if (biometricManager.isOwnedByAnotherUser(currentUserIdOrZero())) {
                     revertBiometricSwitch(false)
                     Toast.makeText(
                         this,
@@ -369,164 +346,8 @@ class UserSettingsActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Fires a notification immediately, bypassing WorkManager and the per-user
-     * preference check. Surfaces every failure mode via a toast so we can tell
-     * exactly which step is broken: permission, channel, notify(), etc.
-     */
-    private fun scheduleTestNotification() {
-        // Step 1 — OS-level permission (Android 13+ requires it on top of
-        // any in-app toggle). Request it directly if missing; the launcher
-        // will fire the test once the user grants.
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-                this, android.Manifest.permission.POST_NOTIFICATIONS
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                // If Android won't show the dialog again (user denied twice),
-                // we can't re-prompt — send them to system settings instead.
-                val canAsk = androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
-                    this, android.Manifest.permission.POST_NOTIFICATIONS
-                ) || !hasEverRequestedNotificationPermission()
-                if (canAsk) {
-                    pendingTestFireAfterGrant = true
-                    markNotificationPermissionRequested()
-                    postNotificationsLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    Toast.makeText(
-                        this,
-                        "Android is blocking the permission dialog. Open Android Settings → Apps → StudyMate → Notifications and turn it on.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    openAppNotificationSettings()
-                }
-                return
-            }
-        }
-
-        // Step 2 — system-side notifications enabled at all? The user can
-        // disable an app's notifications from system Settings even after
-        // the runtime permission was granted.
-        val nm = androidx.core.app.NotificationManagerCompat.from(this)
-        if (!nm.areNotificationsEnabled()) {
-            Toast.makeText(
-                this,
-                "Android Settings → StudyMate → Notifications is OFF. Enable it there.",
-                Toast.LENGTH_LONG
-            ).show()
-            return
-        }
-
-        // Step 3 — channel exists?
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val sysNm = getSystemService(android.app.NotificationManager::class.java)
-            val ch = sysNm.getNotificationChannel(
-                uws.ac.uk.studymate.StudyMateApplication.CHANNEL_ASSIGNMENT_REMINDERS
-            )
-            if (ch == null) {
-                Toast.makeText(this, "Notification channel missing — bug.", Toast.LENGTH_LONG).show()
-                return
-            }
-            if (ch.importance == android.app.NotificationManager.IMPORTANCE_NONE) {
-                Toast.makeText(
-                    this,
-                    "Android Settings → StudyMate → Notifications → 'Assignment reminders' is OFF.",
-                    Toast.LENGTH_LONG
-                ).show()
-                return
-            }
-        }
-
-        // Step 4 — grab the user's first assignment (any will do for the test).
-        val userId = uws.ac.uk.studymate.util.SessionManager(this).getLoggedInUserId()
-        if (userId == null) {
-            Toast.makeText(this, "No active session", Toast.LENGTH_SHORT).show()
-            return
-        }
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-            val db = uws.ac.uk.studymate.data.StudyMateDatabase.getInstance(applicationContext)
-            val data = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                val assignments = db.assignmentDao().getAssignments(userId)
-                val user = db.userDao().getById(userId)
-                Pair(assignments.firstOrNull(), user)
-            }
-            val target = data.first
-            val user = data.second
-            if (target == null) {
-                Toast.makeText(
-                    this@UserSettingsActivity,
-                    "Create an assignment first",
-                    Toast.LENGTH_LONG
-                ).show()
-                return@launch
-            }
-            if (user == null) {
-                Toast.makeText(this@UserSettingsActivity, "User missing", Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-            // Respect the in-app toggle the same way real reminders do — the
-            // test button is for verifying the user-visible behaviour, not
-            // for bypassing it.
-            if (user.pushNotificationsEnabled != true) {
-                Toast.makeText(
-                    this@UserSettingsActivity,
-                    "Turn on push notifications first.",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@launch
-            }
-
-            // Step 5 — fire it directly via NotificationManagerCompat.
-            val tapIntent = android.content.Intent(applicationContext, LoginActivity::class.java).apply {
-                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                    android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                putExtra(LoginActivity.EXTRA_NOTIFICATION_USERNAME, user.name)
-            }
-            val pi = android.app.PendingIntent.getActivity(
-                applicationContext, 9999, tapIntent,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-            )
-            val body = "${user.name}: ‘${target.title}’ — test reminder."
-            val notif = androidx.core.app.NotificationCompat.Builder(
-                applicationContext,
-                uws.ac.uk.studymate.StudyMateApplication.CHANNEL_ASSIGNMENT_REMINDERS
-            )
-                .setSmallIcon(R.drawable.ic_studymate_logo)
-                .setContentTitle("StudyMate test")
-                .setContentText(body)
-                .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
-                .setContentIntent(pi)
-                .setAutoCancel(true)
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
-                .build()
-            try {
-                nm.notify(9999, notif)
-                Toast.makeText(
-                    this@UserSettingsActivity,
-                    "Notification fired. Check the shade.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } catch (e: SecurityException) {
-                Toast.makeText(
-                    this@UserSettingsActivity,
-                    "notify() threw SecurityException: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
-
-    private fun hasEverRequestedNotificationPermission(): Boolean =
-        getPreferences(MODE_PRIVATE).getBoolean(KEY_NOTIF_PERM_REQUESTED, false)
-
     private fun markNotificationPermissionRequested() {
         getPreferences(MODE_PRIVATE).edit().putBoolean(KEY_NOTIF_PERM_REQUESTED, true).apply()
-    }
-
-    private fun openAppNotificationSettings() {
-        val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
-        startActivity(intent)
     }
 
     /** The currently-signed-in user's id, or 0 before the VM has loaded. */
@@ -545,17 +366,29 @@ class UserSettingsActivity : AppCompatActivity() {
             return
         }
         biometricRow.visibility = View.VISIBLE
+
+        // Quick sign-in is a single per-device slot owned by exactly one account.
+        // Show the toggle's state for THIS account only — never the global flag —
+        // and don't offer it at all when another account already owns the slot.
+        val uid = currentUserIdOrZero()
+        val ownedByMe = biometricManager.isEnabledForUser(uid)
+        val ownedByOther = biometricManager.isOwnedByAnotherUser(uid)
+
         isUpdatingBiometricSwitch = true
-        biometricSwitch.isChecked = biometricManager.isEnabled()
+        biometricSwitch.isChecked = ownedByMe
+        biometricSwitch.isEnabled = !ownedByOther
         isUpdatingBiometricSwitch = false
-        biometricSubText.text = when (biometricManager.availability()) {
-            BiometricLoginManager.Availability.NONE_ENROLLED ->
+        biometricRow.alpha = if (ownedByOther) 0.5f else 1f
+
+        biometricSubText.text = when {
+            ownedByOther ->
+                "Another account on this device already uses quick sign-in"
+            biometricManager.availability() == BiometricLoginManager.Availability.NONE_ENROLLED ->
                 "Set a screen lock in phone settings to enable"
-            BiometricLoginManager.Availability.HW_UNAVAILABLE ->
+            biometricManager.availability() == BiometricLoginManager.Availability.HW_UNAVAILABLE ->
                 "Sensor temporarily unavailable"
-            else ->
-                if (biometricManager.isEnabled()) "Enabled for this device"
-                else "Use fingerprint, face, or screen lock"
+            ownedByMe -> "Enabled for this account"
+            else -> "Use fingerprint, face, or screen lock"
         }
     }
 

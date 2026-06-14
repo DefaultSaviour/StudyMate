@@ -14,6 +14,7 @@ import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.SessionUserResolver
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 /*//////////////////////
 Coded by Jamie Coleman
@@ -27,7 +28,13 @@ updated 16/04/26
 data class HomeSummary(
     val welcomeText: String,
     val nextDueCountdown: String,
-    val nextDueDetails: String
+    val nextDueDetails: String,
+    // Decks that have at least one card due now, ordered the same way the Flashcards
+    // list shows them (subject name, then deck name). The "Review due decks" button
+    // is enabled only when this is non-empty, and reviews them back-to-back.
+    val dueDeckIds: List<Int>,
+    val dueDeckNames: List<String>,
+    val dueCardCount: Int
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -93,11 +100,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val assignments = db.assignmentDao().getAssignments(userId)
             val nextDueAssignment = findNextDueAssignment(assignments)
 
+            // Work out which decks have cards due now, ordered like the Flashcards list.
+            val today = LocalDate.now().toString()
+            val dueCards = db.cardDao().getDueCards(userId, today)
+            val dueDeckIdSet = dueCards.map { it.deckId }.toSet()
+            val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
+            val dueDecks = db.deckDao().getDecks(userId)
+                .filter { it.id in dueDeckIdSet }
+                .sortedWith(
+                    compareBy(
+                        { subjectsById[it.subjectId]?.name?.lowercase() ?: "" },
+                        { it.name.lowercase() }
+                    )
+                )
+
             // Build the text that the home screen still needs to show.
             val summary = HomeSummary(
                 welcomeText = "Welcome back, ${user.name}",
                 nextDueCountdown = buildCountdownText(nextDueAssignment?.second),
-                nextDueDetails = buildNextDueDetails(nextDueAssignment)
+                nextDueDetails = buildNextDueDetails(nextDueAssignment),
+                dueDeckIds = dueDecks.map { it.id },
+                dueDeckNames = dueDecks.map { it.name },
+                dueCardCount = dueCards.size
             )
 
             // Send the finished dashboard data back to the UI.
