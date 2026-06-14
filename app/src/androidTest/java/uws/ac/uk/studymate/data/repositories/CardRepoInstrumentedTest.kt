@@ -6,7 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWitho
+import org.junit.runner.RunWith
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.testutil.RoomDbTestBase
 import uws.ac.uk.studymate.util.SpacedRepetition
