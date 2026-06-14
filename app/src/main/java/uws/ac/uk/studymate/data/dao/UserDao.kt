@@ -29,6 +29,10 @@ interface UserDao {
     @Query("UPDATE User SET push_notifications_enabled = :enabled WHERE id = :userId")
     suspend fun updatePushNotificationsEnabled(userId: Int, enabled: Boolean)
 
+    // Save whether this account is signed in automatically on cold launch.
+    @Query("UPDATE User SET auto_login_enabled = :enabled WHERE id = :userId")
+    suspend fun updateAutoLoginEnabled(userId: Int, enabled: Boolean)
+
     // Remove a user from the database.
     @Delete
     suspend fun delete(user: User)

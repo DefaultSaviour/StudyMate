@@ -252,6 +252,49 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/autoLoginRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_subject_row"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto sign-in"
+                                android:textColor="@color/surface"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Skip the password and open straight to your dashboard"
+                                android:textColor="@color/gold_light"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/autoLoginSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:thumbTint="@color/gold"
+                            app:trackTint="#66D4BC7E" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
                         android:id="@+id/biometricRow"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

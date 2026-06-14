@@ -46,6 +46,8 @@ class UserSettingsActivity : AppCompatActivity() {
     private lateinit var libraryText: TextView
     private lateinit var assignmentsText: TextView
     private lateinit var notificationsSwitch: SwitchCompat
+    private lateinit var autoLoginRow: View
+    private lateinit var autoLoginSwitch: SwitchCompat
     private lateinit var biometricRow: View
     private lateinit var biometricSwitch: SwitchCompat
     private lateinit var biometricSubText: TextView
@@ -62,6 +64,7 @@ class UserSettingsActivity : AppCompatActivity() {
     private lateinit var editDeleteBtn: MaterialButton
 
     private var isUpdatingSwitch = false
+    private var isUpdatingAutoLoginSwitch = false
     private var isUpdatingBiometricSwitch = false
     private lateinit var biometricManager: BiometricLoginManager
 
@@ -137,6 +140,13 @@ class UserSettingsActivity : AppCompatActivity() {
             isUpdatingSwitch = true
             notificationsSwitch.isChecked = summary.notificationsEnabled
             isUpdatingSwitch = false
+
+            // Auto sign-in is only meaningful for password accounts (there's no
+            // password to skip for a biometric-only account) — hide it otherwise.
+            autoLoginRow.visibility = if (summary.isPasswordAccount) View.VISIBLE else View.GONE
+            isUpdatingAutoLoginSwitch = true
+            autoLoginSwitch.isChecked = summary.autoLoginEnabled
+            isUpdatingAutoLoginSwitch = false
         }
 
         vm.sessionExpired.observe(this) { if (it) openLogin() }
@@ -206,6 +216,8 @@ class UserSettingsActivity : AppCompatActivity() {
         libraryText = findViewById(R.id.settingsLibraryText)
         assignmentsText = findViewById(R.id.settingsAssignmentsText)
         notificationsSwitch = findViewById(R.id.notificationsSwitch)
+        autoLoginRow = findViewById(R.id.autoLoginRow)
+        autoLoginSwitch = findViewById(R.id.autoLoginSwitch)
         biometricRow = findViewById(R.id.biometricRow)
         biometricSwitch = findViewById(R.id.biometricSwitch)
         biometricSubText = findViewById(R.id.biometricSubText)
@@ -228,6 +240,7 @@ class UserSettingsActivity : AppCompatActivity() {
             findViewById<View>(R.id.accountRow)                to  1f,
             findViewById<View>(R.id.prefSectionLabel)          to -1f,
             findViewById<View>(R.id.prefRow)                   to  1f,
+            autoLoginRow                                        to  1f,
             biometricRow                                        to -1f,
             findViewById<View>(R.id.glanceSectionLabel)        to -1f,
             findViewById<View>(R.id.glanceRow)                 to  1f,
@@ -311,6 +324,16 @@ class UserSettingsActivity : AppCompatActivity() {
                 vm.updatePushNotifications(false)
                 Toast.makeText(this, "Notifications off", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        autoLoginSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isUpdatingAutoLoginSwitch) return@setOnCheckedChangeListener
+            vm.updateAutoLogin(isChecked)
+            Toast.makeText(
+                this,
+                if (isChecked) "Auto sign-in on" else "Auto sign-in off",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         refreshBiometricRow()

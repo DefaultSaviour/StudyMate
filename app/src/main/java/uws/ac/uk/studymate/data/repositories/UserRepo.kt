@@ -114,6 +114,11 @@ class UserRepo(private val db: StudyMateDatabase) {
         db.userDao().updatePushNotificationsEnabled(userId, enabled)
     }
 
+    // Save the user's auto-login choice on the user row.
+    suspend fun updateAutoLogin(userId: Int, enabled: Boolean) {
+        db.userDao().updateAutoLoginEnabled(userId, enabled)
+    }
+
     // Remove a user from the database.
     suspend fun deleteUser(user: User) {
         db.userDao().delete(user)

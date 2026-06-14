@@ -27,7 +27,7 @@ Coded by Jamie Coleman
         ReviewLog::class
     ],
     exportSchema = false,
-    version = 9
+    version = 10
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -139,7 +139,15 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+        // Auto-login toggle — add auto_login_enabled to User, on by default.
+        // Additive only; existing accounts inherit the default (auto-login on).
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `User` ADD COLUMN `auto_login_enabled` INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile
