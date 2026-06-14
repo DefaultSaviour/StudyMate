@@ -1,13 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android Auto Backup rules for API <= 30 (older devices).
+    See https://developer.android.com/guide/topics/data/autobackup
+
+    We back up everything by default (the Room database "StudyMate.db" so a user
+    who loses or replaces their phone keeps their subjects, assignments, decks and
+    review history.
+
+    We EXCLUDE two things:
+      - studymate_biometric.xml: the encrypted credential store is sealed with a
+        device-bound Android Keystore key that does not survive a backup/restore,
+        so backing it up would only restore an undecryptable blob.
+      - studymate_session.xml: holds lastUserId. With auto sign-in on by default,
+        restoring it onto a new device would sign straight into the account with
+        no password. Excluding it means a restored device always lands on a real
+        sign-in. (The owning account simply re-enables quick sign-in too.)
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="sharedpref" path="studymate_biometric.xml"/>
+    <exclude domain="sharedpref" path="studymate_session.xml"/>
 </full-backup-content>
