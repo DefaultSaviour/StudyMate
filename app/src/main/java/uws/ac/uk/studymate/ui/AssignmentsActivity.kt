@@ -69,6 +69,19 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var addConfirmBtn: MaterialButton
     private lateinit var addCancelBtn: MaterialButton
 
+    // Progressive-glow guidance on the New-assignment panel: each step's field
+    // glows when it's the next required input, and stays locked until then.
+    private lateinit var addSubjectGlowWrap: View
+    private lateinit var addTitleGlow: PulseRingView
+    private lateinit var addSubjectGlow: PulseRingView
+    private lateinit var addDueGlow: PulseRingView
+    private lateinit var addIconGlow: PulseRingView
+    private lateinit var addSaveGlow: PulseRingView
+    private val addGlows: List<PulseRingView> by lazy {
+        listOf(addTitleGlow, addSubjectGlow, addDueGlow, addIconGlow, addSaveGlow)
+    }
+    private var subjectStepUnlocked = false
+
     private lateinit var editTitleInput: TextInputEditText
     private lateinit var editSubjectRow: LinearLayout
     private lateinit var editPickDueBtn: MaterialButton
@@ -149,9 +162,10 @@ class AssignmentsActivity : AppCompatActivity() {
             recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
             // Refresh swatches when subjects change so the picker stays in sync.
             buildSubjectSwatches(addSubjectRow) { tappedSubject ->
+                if (!subjectStepUnlocked) return@buildSubjectSwatches
                 addSubject = tappedSubject
                 highlightSelectedSubject(addSubjectRow, tappedSubject)
-                updateAddIconEnabled()
+                updateAddProgress()
             }
             buildSubjectSwatches(editSubjectRow) { tappedSubject ->
                 editSubject = tappedSubject
@@ -195,6 +209,17 @@ class AssignmentsActivity : AppCompatActivity() {
         addConfirmBtn = findViewById(R.id.addConfirmBtn)
         addCancelBtn = findViewById(R.id.addCancelBtn)
 
+        addSubjectGlowWrap = findViewById(R.id.addSubjectGlowWrap)
+        addTitleGlow = findViewById(R.id.addTitleGlow)
+        addSubjectGlow = findViewById(R.id.addSubjectGlow)
+        addDueGlow = findViewById(R.id.addDueGlow)
+        addIconGlow = findViewById(R.id.addIconGlow)
+        addSaveGlow = findViewById(R.id.addSaveGlow)
+        // Round the title field's box to 12dp so the glow ring lines up with it.
+        val r12 = 12f * resources.displayMetrics.density
+        findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.addTitleLayout)
+            .setBoxCornerRadii(r12, r12, r12, r12)
+
         editTitleInput = findViewById(R.id.editTitleInput)
         editSubjectRow = findViewById(R.id.editSubjectRow)
         editPickDueBtn = findViewById(R.id.editPickDueBtn)
@@ -225,16 +250,16 @@ class AssignmentsActivity : AppCompatActivity() {
             emptyText                                      to -1f
         )
         addElems = listOf(
-            findViewById<View>(R.id.addTitleText)     to -1f,
-            findViewById<View>(R.id.addSubText)       to  1f,
-            findViewById<View>(R.id.addTitleLayout)   to -1f,
-            findViewById<View>(R.id.addSubjectLabel)  to  1f,
-            findViewById<View>(R.id.addSubjectScroll) to -1f,
-            findViewById<View>(R.id.addDueLabel)      to  1f,
-            addPickDueBtn                              to -1f,
-            addPickIconBtn                             to  1f,
-            addConfirmBtn                              to -1f,
-            addCancelBtn                               to  1f
+            findViewById<View>(R.id.addTitleText)       to -1f,
+            findViewById<View>(R.id.addSubText)         to  1f,
+            findViewById<View>(R.id.addTitleGlowWrap)   to -1f,
+            findViewById<View>(R.id.addSubjectLabel)    to  1f,
+            findViewById<View>(R.id.addSubjectGlowWrap) to -1f,
+            findViewById<View>(R.id.addDueLabel)        to  1f,
+            findViewById<View>(R.id.addDueGlowWrap)     to -1f,
+            findViewById<View>(R.id.addIconGlowWrap)    to  1f,
+            findViewById<View>(R.id.addSaveGlowWrap)    to -1f,
+            addCancelBtn                                 to  1f
         )
         editElems = listOf(
             findViewById<View>(R.id.editTitleText)     to -1f,
@@ -313,7 +338,7 @@ class AssignmentsActivity : AppCompatActivity() {
                 Panel.ADD -> {
                     addDueDate = picked
                     addPickDueBtn.text = formatDueButton(picked)
-                    updateAddIconEnabled()
+                    updateAddProgress()
                     swapToPanel(Panel.ADD)
                 }
                 Panel.EDIT -> {
@@ -358,7 +383,7 @@ class AssignmentsActivity : AppCompatActivity() {
 
         // React to title changes so we can ungate the icon button as soon as
         // all three required fields are filled in.
-        addTitleInput.addTextChangedListener(simpleWatcher { updateAddIconEnabled() })
+        addTitleInput.addTextChangedListener(simpleWatcher { updateAddProgress() })
         editTitleInput.addTextChangedListener(simpleWatcher { updateEditIconEnabled() })
     }
 
@@ -505,7 +530,7 @@ class AssignmentsActivity : AppCompatActivity() {
                             Panel.ADD -> {
                                 addIconKey = option.key
                                 refreshIconButtonLabel(addPickIconBtn, option.key, true)
-                                updateAddIconEnabled()
+                                updateAddProgress()
                                 swapToPanel(Panel.ADD)
                             }
                             Panel.EDIT -> {
@@ -540,17 +565,52 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // ─────────────────── Form gating ───────────────────
 
-    private fun updateAddIconEnabled() {
-        val coreReady = !addTitleInput.text.isNullOrBlank() &&
-                addSubject != null &&
-                addDueDate != null
-        addPickIconBtn.isEnabled = coreReady
-        addPickIconBtn.alpha = if (coreReady) 1f else 0.45f
+    // Progressive guidance on the New-assignment panel: walk title → subject →
+    // due date → icon → save, unlocking each step only once the ones before it are
+    // done, and glowing the single next-required field. Cancel and the title field
+    // are always available.
+    private fun updateAddProgress() {
+        val hasTitle = !addTitleInput.text.isNullOrBlank()
+        val hasSubject = addSubject != null
+        val hasDue = addDueDate != null
+        val hasIcon = !addIconKey.isNullOrBlank()
 
-        val saveReady = coreReady && !addIconKey.isNullOrBlank()
-        addConfirmBtn.isEnabled = saveReady
-        addConfirmBtn.alpha = if (saveReady) 1f else 0.45f
+        subjectStepUnlocked = hasTitle
+        addSubjectGlowWrap.alpha = if (hasTitle) 1f else 0.45f
+
+        addPickDueBtn.isEnabled = hasTitle && hasSubject
+        addPickDueBtn.alpha = if (addPickDueBtn.isEnabled) 1f else 0.45f
+
+        addPickIconBtn.isEnabled = hasTitle && hasSubject && hasDue
+        addPickIconBtn.alpha = if (addPickIconBtn.isEnabled) 1f else 0.45f
+
+        addConfirmBtn.isEnabled = hasTitle && hasSubject && hasDue && hasIcon
+        addConfirmBtn.alpha = if (addConfirmBtn.isEnabled) 1f else 0.45f
+
+        val active = when {
+            !hasTitle -> addTitleGlow
+            !hasSubject -> addSubjectGlow
+            !hasDue -> addDueGlow
+            !hasIcon -> addIconGlow
+            else -> addSaveGlow
+        }
+        setActiveGlow(active)
     }
+
+    // Glow exactly one step's ring (or none). Others are stopped + hidden.
+    private fun setActiveGlow(active: PulseRingView?) {
+        addGlows.forEach { glow ->
+            if (glow === active) {
+                glow.visibility = View.VISIBLE
+                glow.startAnimating()
+            } else {
+                glow.stopAnimating()
+                glow.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun stopAllAddGlows() = setActiveGlow(null)
 
     private fun updateEditIconEnabled() {
         val coreReady = !editTitleInput.text.isNullOrBlank() &&
@@ -575,11 +635,12 @@ class AssignmentsActivity : AppCompatActivity() {
         addPickIconBtn.text = "Choose icon"
         // Clear any swatch highlight from a previous session.
         buildSubjectSwatches(addSubjectRow) { tapped ->
+            if (!subjectStepUnlocked) return@buildSubjectSwatches
             addSubject = tapped
             highlightSelectedSubject(addSubjectRow, tapped)
-            updateAddIconEnabled()
+            updateAddProgress()
         }
-        updateAddIconEnabled()
+        updateAddProgress()
         swapToPanel(Panel.ADD)
     }
 
@@ -709,6 +770,9 @@ class AssignmentsActivity : AppCompatActivity() {
         }, hideDelay)
 
         currentPanel = target
+
+        // Only run the progressive glow while the New-assignment panel is showing.
+        if (target == Panel.ADD) updateAddProgress() else stopAllAddGlows()
     }
 
     private fun panelView(p: Panel): View = when (p) {
