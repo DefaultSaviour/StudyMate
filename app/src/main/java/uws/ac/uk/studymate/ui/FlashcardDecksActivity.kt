@@ -56,6 +56,16 @@ class FlashcardDecksActivity : AppCompatActivity() {
     private lateinit var addConfirmBtn: MaterialButton
     private lateinit var addCancelBtn: MaterialButton
 
+    // Progressive-glow guidance on the New-deck panel: name → subject → save.
+    private lateinit var addSubjectGlowWrap: View
+    private lateinit var addNameGlow: PulseRingView
+    private lateinit var addSubjectGlow: PulseRingView
+    private lateinit var addSaveGlow: PulseRingView
+    private val addGlows: List<PulseRingView> by lazy {
+        listOf(addNameGlow, addSubjectGlow, addSaveGlow)
+    }
+    private var subjectStepUnlocked = false
+
     private lateinit var editNameInput: TextInputEditText
     private lateinit var editSubjectRow: LinearLayout
     private lateinit var editConfirmBtn: MaterialButton
@@ -128,6 +138,14 @@ class FlashcardDecksActivity : AppCompatActivity() {
         addConfirmBtn = findViewById(R.id.addConfirmBtn)
         addCancelBtn = findViewById(R.id.addCancelBtn)
 
+        addSubjectGlowWrap = findViewById(R.id.addSubjectGlowWrap)
+        addNameGlow = findViewById(R.id.addNameGlow)
+        addSubjectGlow = findViewById(R.id.addSubjectGlow)
+        addSaveGlow = findViewById(R.id.addSaveGlow)
+        val r12 = 12f * resources.displayMetrics.density
+        findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.addDeckNameLayout)
+            .setBoxCornerRadii(r12, r12, r12, r12)
+
         editNameInput = findViewById(R.id.editDeckNameInput)
         editSubjectRow = findViewById(R.id.editSubjectRow)
         editConfirmBtn = findViewById(R.id.editConfirmBtn)
@@ -142,13 +160,13 @@ class FlashcardDecksActivity : AppCompatActivity() {
             emptyText                                  to  1f
         )
         addElems = listOf(
-            findViewById<View>(R.id.addTitleText)       to -1f,
-            findViewById<View>(R.id.addSubText)         to  1f,
-            findViewById<View>(R.id.addDeckNameLayout)  to -1f,
-            findViewById<View>(R.id.addSubjectLabel)    to  1f,
-            findViewById<View>(R.id.addSubjectScroll)   to -1f,
-            addConfirmBtn                                to  1f,
-            addCancelBtn                                 to -1f
+            findViewById<View>(R.id.addTitleText)        to -1f,
+            findViewById<View>(R.id.addSubText)          to  1f,
+            findViewById<View>(R.id.addNameGlowWrap)     to -1f,
+            findViewById<View>(R.id.addSubjectLabel)     to  1f,
+            findViewById<View>(R.id.addSubjectGlowWrap)  to -1f,
+            findViewById<View>(R.id.addSaveGlowWrap)     to  1f,
+            addCancelBtn                                  to -1f
         )
         editElems = listOf(
             findViewById<View>(R.id.editTitleText)       to -1f,
@@ -189,6 +207,15 @@ class FlashcardDecksActivity : AppCompatActivity() {
             val original = editingDeck ?: return@setOnClickListener
             vm.updateDeck(original, editNameInput.text?.toString().orEmpty(), editSubject)
         }
+
+        // Recompute the New-deck progressive glow as the name is typed.
+        addNameInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateAddProgress()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
     }
 
     private fun setupBackHandler() {
@@ -226,8 +253,10 @@ class FlashcardDecksActivity : AppCompatActivity() {
         recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
 
         buildSubjectSwatches(addSubjectRow) { tapped ->
+            if (!subjectStepUnlocked) return@buildSubjectSwatches
             addSubject = tapped
             highlightSelectedSubject(addSubjectRow, tapped)
+            updateAddProgress()
         }
         buildSubjectSwatches(editSubjectRow) { tapped ->
             editSubject = tapped
@@ -307,10 +336,56 @@ class FlashcardDecksActivity : AppCompatActivity() {
             return
         }
         addNameInput.setText("")
-        addSubject = subjects.firstOrNull()
-        addSubject?.let { highlightSelectedSubject(addSubjectRow, it) }
+        // No subject pre-selected — the user must pick one (it's the second step).
+        addSubject = null
+        clearSubjectHighlight(addSubjectRow)
+        updateAddProgress()
         swapToPanel(Panel.ADD)
     }
+
+    private fun clearSubjectHighlight(row: LinearLayout) {
+        val density = resources.displayMetrics.density
+        for (i in 0 until row.childCount) {
+            val item = row.getChildAt(i) as? LinearLayout ?: continue
+            val bg = item.getChildAt(0)?.background as? GradientDrawable ?: continue
+            bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
+        }
+    }
+
+    // Progressive guidance on the New-deck panel: name → subject → save. Each step
+    // unlocks only once the prior one is done, and the next-required field gets the
+    // breathing gold glow. Cancel and the name field are always available.
+    private fun updateAddProgress() {
+        val hasName = !addNameInput.text.isNullOrBlank()
+        val hasSubject = addSubject != null
+
+        subjectStepUnlocked = hasName
+        addSubjectGlowWrap.alpha = if (hasName) 1f else 0.45f
+
+        addConfirmBtn.isEnabled = hasName && hasSubject
+        addConfirmBtn.alpha = if (addConfirmBtn.isEnabled) 1f else 0.45f
+
+        val active = when {
+            !hasName -> addNameGlow
+            !hasSubject -> addSubjectGlow
+            else -> addSaveGlow
+        }
+        setActiveGlow(active)
+    }
+
+    private fun setActiveGlow(active: PulseRingView?) {
+        addGlows.forEach { glow ->
+            if (glow === active) {
+                glow.visibility = View.VISIBLE
+                glow.startAnimating()
+            } else {
+                glow.stopAnimating()
+                glow.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun stopAllAddGlows() = setActiveGlow(null)
 
     private fun openEditFor(item: DeckListItem) {
         editingDeck = item.deck
@@ -382,6 +457,8 @@ class FlashcardDecksActivity : AppCompatActivity() {
         }, hideDelay)
 
         currentPanel = target
+
+        if (target == Panel.ADD) updateAddProgress() else stopAllAddGlows()
     }
 
     private fun panelView(p: Panel): View = when (p) {

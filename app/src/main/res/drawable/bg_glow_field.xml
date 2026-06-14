@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Outlined "field" container (12dp corners, faint dark fill, subtle gold stroke).
+     Gives the subject selector a visible outline that the PulseRingView glow can
+     trace when it's the next required step, matching the title field and buttons. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#14000000" />
+    <stroke
+        android:width="1dp"
+        android:color="#55C4A24A" />
+    <corners android:radius="12dp" />
+</shape>

@@ -58,6 +58,16 @@ class SubjectsActivity : AppCompatActivity() {
     private lateinit var addConfirmBtn: MaterialButton
     private lateinit var addCancelBtn: MaterialButton
 
+    // Progressive-glow guidance on the New-subject panel: name → colour → save.
+    private lateinit var addColorGlowWrap: View
+    private lateinit var addNameGlow: PulseRingView
+    private lateinit var addColorGlow: PulseRingView
+    private lateinit var addSaveGlow: PulseRingView
+    private val addGlows: List<PulseRingView> by lazy {
+        listOf(addNameGlow, addColorGlow, addSaveGlow)
+    }
+    private var colorStepUnlocked = false
+
     // Edit panel
     private lateinit var editNameInput: TextInputEditText
     private lateinit var editColorRow: LinearLayout
@@ -134,6 +144,14 @@ class SubjectsActivity : AppCompatActivity() {
         addConfirmBtn = findViewById(R.id.addConfirmBtn)
         addCancelBtn = findViewById(R.id.addCancelBtn)
 
+        addColorGlowWrap = findViewById(R.id.addColorGlowWrap)
+        addNameGlow = findViewById(R.id.addNameGlow)
+        addColorGlow = findViewById(R.id.addColorGlow)
+        addSaveGlow = findViewById(R.id.addSaveGlow)
+        val r12 = 12f * resources.displayMetrics.density
+        findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.addSubjectNameLayout)
+            .setBoxCornerRadii(r12, r12, r12, r12)
+
         editNameInput = findViewById(R.id.editSubjectNameInput)
         editColorRow = findViewById(R.id.editColorRow)
         editConfirmBtn = findViewById(R.id.editConfirmBtn)
@@ -148,13 +166,13 @@ class SubjectsActivity : AppCompatActivity() {
             emptyStateText                              to  1f
         )
         addElems = listOf(
-            findViewById<View>(R.id.addTitleText)         to -1f,
-            findViewById<View>(R.id.addSubText)           to  1f,
-            findViewById<View>(R.id.addSubjectNameLayout) to -1f,
-            findViewById<View>(R.id.addColorLabel)        to  1f,
-            addColorRow                                    to -1f,
-            addConfirmBtn                                  to  1f,
-            addCancelBtn                                   to -1f
+            findViewById<View>(R.id.addTitleText)       to -1f,
+            findViewById<View>(R.id.addSubText)         to  1f,
+            findViewById<View>(R.id.addNameGlowWrap)    to -1f,
+            findViewById<View>(R.id.addColorLabel)      to  1f,
+            findViewById<View>(R.id.addColorGlowWrap)   to -1f,
+            findViewById<View>(R.id.addSaveGlowWrap)    to  1f,
+            addCancelBtn                                 to -1f
         )
         editElems = listOf(
             findViewById<View>(R.id.editTitleText)         to -1f,
@@ -204,6 +222,15 @@ class SubjectsActivity : AppCompatActivity() {
                 colorChoice = editSelectedColor
             )
         }
+
+        // Recompute the New-subject progressive glow as the name is typed.
+        addNameInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateAddProgress()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
     }
 
     private fun setupBackHandler() {
@@ -273,8 +300,10 @@ class SubjectsActivity : AppCompatActivity() {
                     editSelectedColor = choice
                     highlightSelected(editColorRow, choice)
                 } else {
+                    if (!colorStepUnlocked) return@setOnClickListener
                     addSelectedColor = choice
                     highlightSelected(addColorRow, choice)
+                    updateAddProgress()
                 }
             }
             row.addView(swatch)
@@ -297,10 +326,55 @@ class SubjectsActivity : AppCompatActivity() {
 
     private fun openAddPanel() {
         addNameInput.setText("")
-        addSelectedColor = colorChoices.firstOrNull()
-        addSelectedColor?.let { highlightSelected(addColorRow, it) }
+        // No colour pre-selected — the user must pick one (it's the second step).
+        addSelectedColor = null
+        clearColorHighlight(addColorRow)
+        updateAddProgress()
         swapToPanel(Panel.ADD)
     }
+
+    private fun clearColorHighlight(row: LinearLayout) {
+        val density = resources.displayMetrics.density
+        for (i in 0 until row.childCount) {
+            val bg = row.getChildAt(i).background as? GradientDrawable ?: continue
+            bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
+        }
+    }
+
+    // Progressive guidance on the New-subject panel: name → colour → save. Each
+    // step unlocks only once the prior one is done, and the next-required field
+    // gets the breathing gold glow. Cancel and the name field are always available.
+    private fun updateAddProgress() {
+        val hasName = !addNameInput.text.isNullOrBlank()
+        val hasColor = addSelectedColor != null
+
+        colorStepUnlocked = hasName
+        addColorGlowWrap.alpha = if (hasName) 1f else 0.45f
+
+        addConfirmBtn.isEnabled = hasName && hasColor
+        addConfirmBtn.alpha = if (addConfirmBtn.isEnabled) 1f else 0.45f
+
+        val active = when {
+            !hasName -> addNameGlow
+            !hasColor -> addColorGlow
+            else -> addSaveGlow
+        }
+        setActiveGlow(active)
+    }
+
+    private fun setActiveGlow(active: PulseRingView?) {
+        addGlows.forEach { glow ->
+            if (glow === active) {
+                glow.visibility = View.VISIBLE
+                glow.startAnimating()
+            } else {
+                glow.stopAnimating()
+                glow.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun stopAllAddGlows() = setActiveGlow(null)
 
     private fun openEditFor(item: SubjectWithAssignments) {
         editingSubject = item.subject
@@ -376,6 +450,8 @@ class SubjectsActivity : AppCompatActivity() {
         }, hideDelay)
 
         currentPanel = target
+
+        if (target == Panel.ADD) updateAddProgress() else stopAllAddGlows()
     }
 
     private fun panelView(panel: Panel): View = when (panel) {

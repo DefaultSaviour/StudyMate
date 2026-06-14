@@ -76,7 +76,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/AssignmentDateTimeUtils.kt` | Shared date/time parsing & formatting — use this rather than duplicating logic |
 | `util/PasswordUtils.kt` | PBKDF2 hashing; used only during registration and login |
 | `util/KeyboardInsets.kt` | Adds IME-height bottom padding so text fields aren't hidden by the keyboard (edge-to-edge fix — see "Keyboard / IME insets") |
-| `ui/PulseRingView.kt` | Custom `View` that paints a soft, slowly breathing gold halo around a rounded-rect ring; overlaid on the dashboard "Review due decks" button (see "Review due decks") |
+| `ui/PulseRingView.kt` | Custom `View` that paints a soft, slowly breathing gold halo around a rounded-rect ring. Overlaid on the dashboard "Review due decks" button and on each next-required field of the three "create" panels (see "Review due decks" and "Progressive-glow guidance") |
 | `notifications/AssignmentReminderScheduler.kt` | Schedules / cancels per-assignment reminder work (see "Notifications") |
 | `notifications/AssignmentReminderWorker.kt` | `CoroutineWorker` that re-verifies state at fire time and posts the notification |
 
@@ -161,6 +161,7 @@ A single dashboard button reviews every deck that has cards due, back-to-back, w
 **Reusable resources:**
 - `@color/box_stroke_gold` (`res/color/box_stroke_gold.xml`) — ColorStateList that keeps TextInputLayout outlines gold in every state. Always use this for `app:boxStrokeColor`.
 - `@drawable/bg_subject_row` — 12dp rounded rect, 20 % black fill, 33 % gold stroke. Use for any RecyclerView item that should look like a "mini glass card" inside the main glass card.
+- `@drawable/bg_glow_field` — 12dp rounded rect, faint dark fill (`#14000000`), subtle gold stroke (`#55C4A24A`). Gives an otherwise-borderless selector (subject swatches, colour row) a field outline that the `PulseRingView` glow can trace. See "Progressive-glow guidance".
 - `@drawable/bg_color_dot` — small oval that takes a runtime tint via `GradientDrawable.setColor(int)`. Use for subject swatches.
 - `@drawable/ic_edit`, `ic_delete`, `ic_add`, `ic_arrow_back` — Material-style 24dp vector icons added in the redesign. Reuse rather than redrawing.
 - `@drawable/bg_icon_badge` — 12dp rounded rect with a runtime-tinted fill, used as the icon background on assignment rows. Tint with the parent subject's colour via `(badge.background as GradientDrawable).setColor(int)`.
@@ -174,7 +175,16 @@ When a follow-up action (icon picker, save) requires *prior* fields to be filled
 Chain multiple gates from one recompute function. On Assignments:
 - "Choose icon" unlocks when title + subject + due-date are set.
 - "Save assignment" only unlocks when **all four** (title + subject + due-date + icon) are set.
-- Both checks live in the same `updateAddIconEnabled()` / `updateEditIconEnabled()` call so any field change recomputes both buttons in one pass. Call this function from the date picker confirm, icon picker confirm, subject swatch tap, and the title text watcher.
+- Both checks live in the same `updateAddProgress()` / `updateEditIconEnabled()` call so any field change recomputes the gating in one pass. Call this function from the date picker confirm, icon picker confirm, subject swatch tap, and the title text watcher.
+
+### Progressive-glow guidance (the three "create" panels)
+The **New assignment**, **New subject**, and **New deck** panels walk the user through their required fields one at a time, with the next step lit by the breathing gold glow.
+
+- **Order:** assignment = title → subject → due date → icon → save; subject = name → colour → save; deck = name → subject → save.
+- **Gating:** every control past the current step is disabled (`isEnabled=false` for buttons, a `…StepUnlocked` flag + `alpha=0.45` for the swatch/colour rows whose taps are ignored until unlocked). Only the name field and **Cancel** are always available. One `updateAddProgress()` per screen recomputes the whole chain; it's called from the name `TextWatcher`, every picker confirm/tap, `openAddPanel`, and on every swap **to** the ADD panel (and `stopAllAddGlows()` when leaving it, so the glow only animates while that panel shows).
+- **Glow:** each step's field is wrapped in a `FrameLayout` (with `clipChildren=false`) holding the field plus a [`PulseRingView`](#) overlay; `setActiveGlow(view)` shows + animates exactly the next-required one and stops/hides the rest. The glow blooms slightly outside the field, so the ScrollView + its inner `LinearLayout` also keep `clipChildren/clipToPadding=false`.
+- **Corner alignment:** the glow's ring is a fixed 12dp radius, so every glow target is given 12dp corners — `app:cornerRadius="12dp"` on the buttons, `setBoxCornerRadii(12dp…)` in code on the title `TextInputLayout`, and `@drawable/bg_glow_field` (12dp outlined box) wrapping the previously-borderless selectors (assignment subject swatches, deck subject swatches, subject colour row).
+- **No pre-selection:** because each step must visibly "become next", the selectors no longer pre-pick a default — the deck's subject and the subject's colour both start empty and must be chosen (matching how the assignment panel already worked).
 
 ### Background treatment
 - **Layer-list** (`bg_login_combined.xml` pattern):
