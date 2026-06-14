@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
+import uws.ac.uk.studymate.util.SessionManager
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.TextSanitizer
 import java.time.Instant
@@ -30,6 +31,10 @@ data class UserSettingsSummary(
     val email: String,
     val memberSinceText: String,
     val notificationsEnabled: Boolean,
+    val autoLoginEnabled: Boolean,
+    // Auto-login only makes sense for password accounts (it bypasses the typed
+    // password). Hide the row entirely for biometric-only accounts.
+    val isPasswordAccount: Boolean,
     val subjectCount: Int,
     val deckCount: Int,
     val flashcardCount: Int,
@@ -96,6 +101,8 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                     email = user.email,
                     memberSinceText = formatMemberSince(user.createdAt),
                     notificationsEnabled = user.pushNotificationsEnabled ?: false,
+                    autoLoginEnabled = user.autoLoginEnabled,
+                    isPasswordAccount = user.authMode == SessionManager.AUTH_MODE_PASSWORD,
                     subjectCount = subjects.size,
                     deckCount = decksWithCards.size,
                     flashcardCount = decksWithCards.sumOf { it.cards.size },
@@ -126,6 +133,16 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                 uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
                     .cancelAllForUser(app, session.userId)
             }
+        }
+    }
+
+    fun updateAutoLogin(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: run {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            repo.updateAutoLogin(session.userId, enabled)
         }
     }
 

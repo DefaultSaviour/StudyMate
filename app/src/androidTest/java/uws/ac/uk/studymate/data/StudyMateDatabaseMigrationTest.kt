@@ -157,6 +157,37 @@ class StudyMateDatabaseMigrationTest {
         context.getDatabasePath(dbName).delete()
     }
 
+    // 9 -> 10 adds the auto_login_enabled column to User, on (1) by default.
+    // Additive only.
+    @Test
+    fun migration9To10_addsAutoLoginColumn_defaultsOn() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbName = "migration-test-${System.currentTimeMillis()}.db"
+
+        val helper = createHelper(dbName)
+        helper.writableDatabase.use { db ->
+            // v8 User shape == v9 User shape (8->9 didn't touch User).
+            createVersion8Schema(db)
+            applyMigrations(db, from = 9, to = 10)
+
+            assertTrue(readColumnNames(db, "User").contains("auto_login_enabled"))
+
+            // Defaults to 1 (on) for inserts that omit it.
+            db.execSQL(
+                """
+                INSERT INTO `User` (`name`, `email`, `password_hash`, `password_salt`)
+                VALUES ('Jamie', 'jamie@example.com', 'hash', 'salt')
+                """.trimIndent()
+            )
+            db.query("SELECT auto_login_enabled FROM `User` WHERE name = 'Jamie'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+        }
+
+        context.getDatabasePath(dbName).delete()
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     // Apply each migration in the production MIGRATIONS array, in order, from

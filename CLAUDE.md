@@ -51,7 +51,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
                                           ↓
                               Repositories (UserRepo, SubjectRepo, ...)
                                           ↓
-                                  Room DAOs → StudyMateDatabase (v9)
+                                  Room DAOs → StudyMateDatabase (v10)
 ```
 
 **Session flow:** `LoginActivity` writes a session via `SessionManager` (SharedPreferences). Every ViewModel that needs the current user calls `SessionUserResolver.resolveUser()` to load the `User` entity — do not read SharedPreferences directly in ViewModels.
@@ -62,7 +62,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 | Path | Purpose |
 |------|---------|
-| `data/StudyMateDatabase.kt` | Room singleton, v9, exposes all DAOs; migrations `MIGRATION_4_5` … `MIGRATION_8_9` and the `MIGRATIONS` array live here |
+| `data/StudyMateDatabase.kt` | Room singleton, v10, exposes all DAOs; migrations `MIGRATION_4_5` … `MIGRATION_9_10` and the `MIGRATIONS` array live here |
 | `util/SpacedRepetition.kt` | Pure-Kotlin SM-2 scheduler (ease/interval/repetitions → next due date); maps the 4 review buttons to SM-2 quality. Unit-tested |
 | `data/entities/` | Room `@Entity` classes — one file per table |
 | `data/relations/` | `@Relation` data classes for one-to-many queries (e.g. `SubjectWithAssignments`) |
@@ -82,8 +82,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 ## Database Conventions
 
-- Database version is **9**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
-- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved).
+- Database version is **10**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
+- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only).
 - The `User` table's user-facing identifier is **`name`** (unique). `email` is now an internal placeholder, not user-visible. `auth_mode` is `password` or `biometric_only`.
 - Foreign keys use `CASCADE` delete — deleting a `User` removes all their subjects, assignments, flashcards, etc.
 - DAOs use `LOWER()` for case-insensitive lookups.
@@ -104,6 +104,7 @@ Migration tests (`StudyMateDatabaseMigrationTest`) use `MigrationTestHelper` wit
 - **`LoginActivity` is a panel-swap router**, not a navigation graph. Three panels live in one card: `signInPanel`, `signupChoosePanel`, `signupPasswordPanel`. There is no `RegisterActivity` (deleted). The visible panel is chosen from DB state on launch.
 - **`BiometricLoginManager`** wraps `androidx.biometric.BiometricPrompt` with `BIOMETRIC_STRONG | DEVICE_CREDENTIAL` (fingerprint, face, or PIN/pattern/password). It stores the owning account's credentials in `EncryptedSharedPreferences` (`androidx.security:security-crypto`) keyed by `user_id`. Only one credential set exists at a time — that enforces the one-bio rule.
 - **Cold-launch fast path:** `SessionManager.lastUserId` + `authMode` let `LoginActivity` show a minimal panel for the returning user — just the biometric prompt (biometric_only) or just the password field (password). The full sign-in screen only appears after an explicit **Sign out**.
+- **Auto sign-in (`User.auto_login_enabled`, on by default):** a per-account column. On cold launch, if the remembered `lastUser` is a **password** account with auto-login on, `LoginActivity.decidePanelAsync` writes the session (`sessionManager.login`/`setLastUserId`) and opens Home **without** the password — deferred to `onSplashFinished` (`pendingAutoLaunchHome`) so the splash still plays. It is **password-only**: biometric_only accounts always keep their prompt (bypassing it would defeat that mode), and a tapped notification still routes to its own user first. Toggled in `UserSettings` ("Auto sign-in" row) via `updateAutoLogin`; the row is **hidden for biometric_only accounts** (`UserSettingsSummary.isPasswordAccount`). Sign out clears `lastUserId`, so the next launch shows full sign-in regardless of the flag — that's the way to switch accounts.
 - **Biometric prompt timing:** auto-launch the prompt at the *start* of the splash fade-out (`splashDone` / `pendingBiometricAutoLaunch`), never over the splash itself.
 - **One-bio enforcement on signup:** when the bio slot is already taken, the "Use fingerprint or screen lock" signup option is hidden and the password path is promoted to primary. The biometric toggle in `UserSettings` likewise refuses to enable if another account owns the slot.
 - **Per-account toggle state (important):** the biometric store is a single device-global slot (one `enabled` flag + one `storedUserId`). The `UserSettings` "Quick sign-in" toggle must therefore be evaluated **per account**, never from the global `isEnabled()` — use `BiometricLoginManager.isEnabledForUser(uid)` for the checked state and `isOwnedByAnotherUser(uid)` to disable + grey the row for non-owners ("Another account on this device already uses quick sign-in"). The pure rules live in `util/BiometricOwnership` and are unit-tested (`BiometricOwnershipTest`). Reading the global flag was a real bug: a second account showed the toggle as ON for a slot a different account owned.

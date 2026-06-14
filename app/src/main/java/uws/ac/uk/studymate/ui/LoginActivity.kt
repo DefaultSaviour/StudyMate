@@ -81,6 +81,11 @@ class LoginActivity : AppCompatActivity() {
     private var splashDone: Boolean = false
     private var pendingBiometricAutoLaunch: Boolean = false
 
+    // Auto-login: when the returning password account has it enabled we sign the
+    // session in immediately but defer opening Home until the splash has fully
+    // played, so the user still sees the branded launch (not an abrupt jump).
+    private var pendingAutoLaunchHome: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Always call installSplashScreen so the post-splash theme swap runs
         // (otherwise the activity keeps the black splash background). When
@@ -195,6 +200,11 @@ class LoginActivity : AppCompatActivity() {
     /** Called when the splash flip-cycle + fade have fully completed. */
     private fun onSplashFinished() {
         splashDone = true
+        if (pendingAutoLaunchHome) {
+            pendingAutoLaunchHome = false
+            openHome()
+            return
+        }
         if (pendingBiometricAutoLaunch) {
             pendingBiometricAutoLaunch = false
             launchBiometricLogin()
@@ -237,6 +247,19 @@ class LoginActivity : AppCompatActivity() {
                     state.notificationUser.id,
                     state.notificationUser.authMode == SessionManager.AUTH_MODE_BIOMETRIC_ONLY
                 )
+                // Cold launch + a remembered PASSWORD account with auto-login on
+                // → bypass the password and sign straight back in. (Biometric
+                // accounts always keep their prompt — bypassing it would defeat
+                // the whole point of that mode.)
+                !skipSplash && state.lastUser != null &&
+                    state.lastUser.authMode == SessionManager.AUTH_MODE_PASSWORD &&
+                    state.lastUser.autoLoginEnabled -> {
+                    withContext(Dispatchers.IO) {
+                        sessionManager.login(state.lastUser.id)
+                        sessionManager.setLastUserId(state.lastUser.id)
+                    }
+                    if (splashDone) openHome() else pendingAutoLaunchHome = true
+                }
                 // Cold launch + a remembered user → straight to their prompt.
                 !skipSplash && state.lastUser != null -> showReturningSignIn(
                     state.lastUser.name,

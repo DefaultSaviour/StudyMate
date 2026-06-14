@@ -29,5 +29,9 @@ data class User(
     @ColumnInfo(name = "password_salt") val passwordSalt: String,
     @ColumnInfo(name = "auth_mode", defaultValue = "password") val authMode: String = "password",
     @ColumnInfo(name = "push_notifications_enabled") val pushNotificationsEnabled: Boolean? = null,
+    // Auto-login: when on (the default), a returning password account is signed
+    // back in on cold launch without re-typing the password. Inert for
+    // biometric_only accounts (there's no password to bypass).
+    @ColumnInfo(name = "auto_login_enabled", defaultValue = "1") val autoLoginEnabled: Boolean = true,
     @ColumnInfo(name = "created_at", defaultValue = "CURRENT_TIMESTAMP") val createdAt: String? = null
 )
