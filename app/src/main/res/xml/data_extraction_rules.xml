@@ -1,19 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup / transfer rules for API 31+ (Android 12 and newer).
+    See https://developer.android.com/about/versions/12/backup-restore
+
+    Same policy as backup_rules.xml: back up the Room database by default, but
+    exclude two prefs files from both cloud backup and device-to-device transfer:
+      - studymate_biometric.xml — its Keystore-backed key is device-bound and
+        would not decrypt on the destination device.
+      - studymate_session.xml — holds lastUserId; with auto sign-in on by default,
+        restoring/transferring it would sign into the account on the new device
+        with no password. Excluding it forces a real sign-in there.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="sharedpref" path="studymate_biometric.xml"/>
+        <exclude domain="sharedpref" path="studymate_session.xml"/>
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="sharedpref" path="studymate_biometric.xml"/>
+        <exclude domain="sharedpref" path="studymate_session.xml"/>
     </device-transfer>
-    -->
 </data-extraction-rules>

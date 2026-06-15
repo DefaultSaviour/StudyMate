@@ -38,7 +38,15 @@ All commands run from the project root. On Windows use `gradlew.bat` instead of 
 
 # Lint
 ./gradlew lint
+
+# Release build (R8 + resource shrink). Signed only if keystore.properties exists.
+./gradlew bundleRelease     # .aab for Play
+./gradlew assembleRelease   # signed/unsigned .apk
 ```
+
+## Release build & signing
+
+Release uses **R8** (`isMinifyEnabled` + `isShrinkResources`). Keep rules live in `app/proguard-rules.pro` (Room entities, ViewModels, WorkManager workers, Tink for `EncryptedSharedPreferences`) — **R8 only fully verifies at runtime, so always smoke-test a release build on a device** before shipping. Signing is read from a gitignored `keystore.properties` at the repo root (template: `keystore.properties.example`); when absent the release build is left unsigned rather than failing. **Android Auto Backup is configured** (`res/xml/backup_rules.xml` + `data_extraction_rules.xml`): the Room DB is backed up; **excluded** are the encrypted biometric store (its Keystore key is device-bound and won't restore) and the session prefs (`studymate_session.xml`, holds `lastUserId` — backing it up would let auto sign-in enter the account password-free on a restored device). Full launch steps + Data Safety answers are in `RELEASE.md`; user-facing privacy terms in `PRIVACY_POLICY.md`.
 
 ## Architecture
 

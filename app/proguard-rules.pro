@@ -1,21 +1,35 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# StudyMate R8 / ProGuard rules (release build, minify + resource shrink on).
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# AGP automatically keeps everything referenced from AndroidManifest.xml
+# (Application, every Activity), so those need no rules here. The keeps below
+# cover things that are created reflectively or sealed inside libraries.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep crash-report line numbers meaningful (use the generated mapping.txt in
+# Play Console to de-obfuscate). Hide the original source file name.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ── Room entities ──────────────────────────────────────────────────────────
+# Room's generated code is R8-safe, but keep the entity classes' members so
+# column binding via reflection can never be stripped.
+-keep class uws.ac.uk.studymate.data.entities.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ── ViewModels ─────────────────────────────────────────────────────────────
+# ViewModelProvider instantiates these reflectively through their
+# (Application) constructor — keep the constructors.
+-keep class * extends androidx.lifecycle.ViewModel { <init>(...); }
+
+# ── WorkManager workers ────────────────────────────────────────────────────
+# CoroutineWorkers (AssignmentReminderWorker, ReviewReminderWorker) are created
+# reflectively by WorkManager via the (Context, WorkerParameters) constructor.
+-keep class * extends androidx.work.ListenableWorker {
+    <init>(android.content.Context, androidx.work.WorkerParameters);
+}
+
+# ── Tink (backs EncryptedSharedPreferences via security-crypto) ─────────────
+# Tink loads its key managers reflectively; stripping them breaks the encrypted
+# biometric credential store at runtime.
+-keep class com.google.crypto.tink.** { *; }
+-dontwarn com.google.crypto.tink.**
+-dontwarn javax.annotation.**
+-dontwarn com.google.errorprone.annotations.**
