@@ -55,12 +55,10 @@ class StatisticsActivity : AppCompatActivity() {
 
         findViewById<MaterialButton>(R.id.backBtn).setOnClickListener { finish() }
 
-        floatOrb(findViewById(R.id.orb1), 14f, 3800L, 0L)
-        floatOrb(findViewById(R.id.orb2), 18f, 4200L, 600L)
-        floatOrb(findViewById(R.id.orb3), 12f, 3600L, 1200L)
-        floatOrb(findViewById(R.id.orb4), 16f, 4400L, 300L)
-        floatOrb(findViewById(R.id.orb5), 13f, 3900L, 900L)
-        floatOrb(findViewById(R.id.orb7), 15f, 3700L, 400L)
+        uws.ac.uk.studymate.util.OrbField.scatter(
+            findViewById(R.id.statsCard),
+            listOf(findViewById(R.id.backBtn))
+        )
 
         runEntranceAnimation(card)
 
@@ -176,17 +174,6 @@ class StatisticsActivity : AppCompatActivity() {
             .start()
     }
 
-    private fun floatOrb(view: View, amplitude: Float, duration: Long, delay: Long) {
-        view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, -amplitude, amplitude).apply {
-            this.duration = duration
-            startDelay = delay
-            repeatMode = ObjectAnimator.REVERSE
-            repeatCount = ObjectAnimator.INFINITE
-            interpolator = AccelerateDecelerateInterpolator()
-            start()
-        }
-    }
 
     private fun openLogin() {
         startActivity(

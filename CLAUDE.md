@@ -84,6 +84,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/AssignmentDateTimeUtils.kt` | Shared date/time parsing & formatting — use this rather than duplicating logic |
 | `util/PasswordUtils.kt` | PBKDF2 hashing; used only during registration and login |
 | `util/KeyboardInsets.kt` | Adds IME-height bottom padding so text fields aren't hidden by the keyboard (edge-to-edge fix — see "Keyboard / IME insets") |
+| `util/OrbField.kt` | Runtime generator for the ambient floating orbs — measures the wood band above a glass card and scatters a space-appropriate, non-overlapping set into it (jittered grid, keep-out around the top-right button, anchored so they follow the card under the keyboard). Replaced all per-screen static orbs except Login. See "Ambient floating orbs" |
 | `ui/PulseRingView.kt` | Custom `View` that paints a soft, slowly breathing gold halo around a rounded-rect ring. Overlaid on the dashboard "Review due decks" button and on each next-required field of the three "create" panels (see "Review due decks" and "Progressive-glow guidance") |
 | `notifications/AssignmentReminderScheduler.kt` | Schedules / cancels per-assignment reminder work (see "Notifications") |
 | `notifications/AssignmentReminderWorker.kt` | `CoroutineWorker` that re-verifies state at fire time and posts the notification |
@@ -277,11 +278,20 @@ The thin gold scrollbar + 32dp fading edge tell the user there's more content of
 - **In-card subtext labels** ("Sign in to continue" etc.) — `@drawable/bg_text_pill_subtle` (`#2E000000`, 18 % black, 20 dp corners). Same padding: 14 / 5 dp.
 - App name uses `android:shadowColor="#99000000"` radius 6 for legibility over the wood.
 
-### Ambient floating orbs (background decoration)
-- 6 × `ImageView` with `@drawable/bg_orb` background (`#14C4A24A`, 8 % gold tint) and a subject icon at ~34–42 % alpha. (Login still uses 8 because there is more empty space above the card.)
-- Animated with `ObjectAnimator` on `translationY`, `INFINITE/REVERSE`, `AccelerateDecelerateInterpolator`. Each orb gets a unique amplitude (8–17 dp), duration (3100–5200 ms) and start delay so they never sync up.
-- Orb sizes range 42–56 dp; scatter them strictly **in the wood band above the glass card** in two rows (~40 dp and ~90 dp from top). Do not let orbs sit inside the card — they look cluttered against form content.
-- Declare the orbs **after** the card in XML so they paint on top of the gold stroke if any overlap.
+### Ambient floating orbs (`util/OrbField`)
+Orbs are **generated at runtime by `util/OrbField.scatter(card, avoid)`** — do NOT
+hand-place orbs in XML any more (the old per-screen `<ImageView>` orbs + `floatOrb`
+helpers were deleted). Static orbs were tuned to one device and broke everywhere
+else: on short screens the wood band shrinks and the percentage-positioned card
+rises, so fixed orbs slid *under* the card or collapsed into a single line.
+
+`OrbField` measures the wood band (status-bar inset → the card's top) once at
+layout and drops in a space-appropriate scatter:
+- **Call site:** each wood-glass Activity calls `OrbField.scatter(findViewById(R.id.<card>), listOf(findViewById(R.id.<topRightBtn>)))` in `onCreate` (where the old `floatOrb` loop was). The card id gives the band bottom; the button(s) are keep-out rects so no orb hides behind the back/settings button.
+- **Deferred placement:** runs inside `card.doOnLayout { card.post { … } }` — placing views *during* the layout pass made `requestLayout` get dropped (orbs never measured **and** the constraint solve corrupted, which once blanked the settings button). `post` runs it after layout.
+- **Anchoring:** each orb is `bottomToTop = card.id` + `startToStart = parent` with computed margins, so it sits in the band and **rides up with the card when the keyboard pushes it up** (off-screen is fine). Added on **top** (`addView` at end) so the full-screen `centerCrop` wood `ImageView` on Calendar/Settings can't hide it.
+- **Jittered-grid scatter (not random):** the band is divided into rows × cols; orbs are jittered one-per-cell so they land in **different rows** (real 2D scatter, never a horizontal line). Count is **deterministic** (~60% of cells, clamped 5–14) so it's reliable rather than a high-variance coin flip — wide screens (foldables) get more, short screens fewer. Orb size scales to band height (`(bandH-8)/2`, capped) so **two rows always fit** even on a short band. Distinct shuffled icon per orb (no duplicates per screen). Float: `translationY` up-only, `REVERSE/INFINITE`, duration 3900–9000 ms, with `currentPlayTime` jumped to a random phase so they don't swell in unison.
+- **Exception — Login keeps its 8 static XML orbs + own `floatOrb`** (its card sits at 37%, so the band is large and the static orbs already clear it).
 
 ### Cycling icon (branding header)
 - Single `ImageView` (`logoIcon`), no background circle.
@@ -545,3 +555,48 @@ The login screen is the established reference. Every other screen should be brou
 - [ ] `GlassCardRecyclerViewAdapter` pattern — RecyclerView items styled as mini glass cards (semi-transparent row backgrounds, cream text, gold accent)
 - [ ] Consistent empty-state illustration — wood-tinted icon + gold subtext for "no items yet" states
 - [ ] Transition animations between screens — shared-element or slide transitions that feel consistent with the panel-swap style
+
+---
+
+## Roadmap (toward 1.0)
+
+Milestone naming: the build is currently targeting **0.8** (device/compatibility
+hardening) even though `versionName` in `app/build.gradle.kts` still reads `1.0` —
+**align `versionCode`/`versionName` with the real milestone before any upload.**
+
+### 0.8 — device & compatibility testing (current focus)
+The app has only been validated on the **Samsung A14 5G** (one size, one density,
+one API level). Known gaps to close before widening the audience:
+- **Orientation — DONE: locked portrait.** Every activity has
+  `android:screenOrientation="portrait"` in the manifest (the whole design is
+  portrait-only). Note: apps targeting **SDK 36+** have orientation locks *ignored*
+  on large screens — we target 35, so it's honored; revisit when bumping targetSdk.
+- **Large screens / tablets — DECISION: phone-first, letterboxed.** No `sw600dp`
+  resources; with portrait locked, the app runs in a centered portrait **letterbox**
+  on tablets/foldables (content renders correctly, just pillarboxed). This is the
+  accepted outcome for now — proper tablet layouts are a 0.9 item below.
+- **Orbs verified across a device matrix** (Small Phone/Nexus 5 → Pixel 8/9 →
+  foldable + the A14) — see `util/OrbField`, which replaced the per-device static
+  orbs precisely because they didn't survive this matrix.
+- **API range:** `minSdk 30` → `compileSdk/targetSdk 35`, only tested on API 34.
+  Smoke-test the edges (API 30 edge-to-edge + pre-33 notification behaviour, and a
+  current API).
+- **Density/size matrix:** only 480dpi tested. Cover small/large + ldpi…xxxhdpi.
+
+### 0.9 — polish & growth features
+- **Export / import** — manual JSON export to Downloads / share sheet (and import).
+  Completes the durability story (cloud Auto Backup is already configured) and
+  doubles as device migration. No backend.
+- **Empty-state polish** — the "consistent empty-state illustration" item above;
+  first-run with zero subjects/decks is the first thing a new user sees.
+- **Accessibility pass** — content descriptions on icon buttons, touch-target
+  sizes, text-scaling / large-font behaviour.
+- **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
+- **Flashcard import** — CSV / Quizlet / Anki to remove hand-entry friction.
+- **Tablet / large-screen layouts** — `sw600dp` resources so the app fills big
+  screens instead of the portrait letterbox it falls back to today (see 0.8).
+
+### 1.0 — store launch
+- Generate the upload keystore + `keystore.properties` (see `RELEASE.md`).
+- Host `PRIVACY_POLICY.md`, complete the Play Data Safety form, content rating.
+- Store listing assets (feature graphic, screenshots).
