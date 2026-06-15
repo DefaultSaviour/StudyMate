@@ -84,10 +84,10 @@ class DeckCardsActivity : AppCompatActivity() {
         setupBackHandler()
         setupWindowInsets()
 
-        floatOrb(findViewById(R.id.orb1), 14f, 3800L, 0L)
-        floatOrb(findViewById(R.id.orb2), 17f, 4200L, 500L)
-        floatOrb(findViewById(R.id.orb3), 12f, 3600L, 1000L)
-        floatOrb(findViewById(R.id.orb4), 15f, 4000L, 300L)
+        uws.ac.uk.studymate.util.OrbField.scatter(
+            findViewById(R.id.cardsCard),
+            listOf(findViewById(R.id.backBtn))
+        )
 
         val d = resources.displayMetrics.density
         card.translationY = 200f * d
@@ -315,17 +315,6 @@ class DeckCardsActivity : AppCompatActivity() {
         Panel.EDIT -> editElems
     }
 
-    private fun floatOrb(view: View, amplitude: Float, duration: Long, delay: Long) {
-        view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, -amplitude, amplitude).apply {
-            this.duration = duration
-            startDelay = delay
-            repeatMode = ObjectAnimator.REVERSE
-            repeatCount = ObjectAnimator.INFINITE
-            interpolator = AccelerateDecelerateInterpolator()
-            start()
-        }
-    }
 
     private fun openLogin() {
         startActivity(Intent(this, LoginActivity::class.java).apply {

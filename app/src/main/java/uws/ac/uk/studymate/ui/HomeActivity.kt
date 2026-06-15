@@ -174,13 +174,12 @@ class HomeActivity : AppCompatActivity() {
 //            homeVm.clearAllData()
 //        }
 
-        // Start floating orb animations.
-        floatOrb(findViewById(R.id.orb1), 14f, 3800L,    0L)
-        floatOrb(findViewById(R.id.orb2), 18f, 4200L,  600L)
-        floatOrb(findViewById(R.id.orb3), 12f, 3600L, 1200L)
-        floatOrb(findViewById(R.id.orb4), 16f, 4400L,  300L)
-        floatOrb(findViewById(R.id.orb5), 13f, 3900L,  900L)
-        floatOrb(findViewById(R.id.orb7), 15f, 3700L,  400L)
+        // Scatter ambient orbs into the wood band above the card (count scales to
+        // the available space, avoids the settings button, never under the card).
+        uws.ac.uk.studymate.util.OrbField.scatter(
+            findViewById(R.id.homeCard),
+            listOf(findViewById(R.id.userSettingsBtn))
+        )
 
         // Entrance animation: card slides up, then content staggers in.
         val density = resources.displayMetrics.density
