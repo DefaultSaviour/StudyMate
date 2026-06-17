@@ -38,6 +38,7 @@ class StatisticsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_statistics)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
 
         flashcardStatsContainer = findViewById(R.id.flashcardStatsContainer)
         assignmentStatsContainer = findViewById(R.id.assignmentStatsContainer)

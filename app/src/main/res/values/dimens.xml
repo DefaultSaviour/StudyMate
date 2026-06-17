@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Glass-card max width. On phones this cap exceeds any phone's width, so the
+         card spreads to fill the screen exactly as before. Large screens (sw600dp)
+         override this to cap + centre the card on a full-bleed wood background
+         (tablet "Option 1" support) — see CLAUDE.md "Large-screen / tablet layout". -->
+    <dimen name="card_max_width">2000dp</dimen>
+</resources>

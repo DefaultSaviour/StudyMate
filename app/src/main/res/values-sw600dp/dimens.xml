@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablets / unfolded foldables: cap the glass card at the unfolded foldable's
+         own width (~852dp = 2076px @ 390dpi). That lets the foldable still fill
+         edge-to-edge (its width <= the cap), while a wider tablet in landscape caps
+         at the same width and centres the card on a full-bleed wood background. -->
+    <dimen name="card_max_width">852dp</dimen>
+</resources>

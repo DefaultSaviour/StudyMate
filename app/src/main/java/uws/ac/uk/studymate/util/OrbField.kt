@@ -13,25 +13,44 @@ import uws.ac.uk.studymate.R
 import kotlin.random.Random
 
 /**
- * Scatters the ambient floating "orbs" into the wood band ABOVE a glass card.
+ * Scatters the ambient floating "orbs" into the wood that FRAMES a glass card.
  *
  * Why this exists: orbs used to be hand-placed per screen, tuned to one device.
- * On a short screen the band shrinks and the percentage-positioned card rises,
- * so fixed-position orbs slid under the card. This instead MEASURES the real
- * band at layout time and drops in as many non-overlapping orbs as actually fit
- * — room for 10 → 10, room for 2 → 2. Orbs:
- *   - never overlap each other or the [avoid] views (the top-right settings /
- *     back button),
- *   - are anchored to the card's top edge, so when the keyboard pushes the card
- *     up they ride up with it (going off-screen is fine — they're decoration),
- *   - never sit under the card (the band stops at the card's top).
+ * On a short screen the band shrinks and the percentage-positioned card rises, so
+ * fixed-position orbs slid under the card. This instead MEASURES the real wood at
+ * layout time and drops a non-overlapping jittered-grid scatter into it.
  *
- * Cost is a single rejection-sampling pass at layout; no per-frame work beyond
- * the existing float animation.
+ * On a phone the card fills the width, so the only wood is the band ABOVE the card
+ * and that's the only place orbs land — exactly the original behaviour. On a large
+ * screen (sw600dp) the card is capped + centred (see `@dimen/card_max_width`), so
+ * wood also appears in the LEFT and RIGHT gutters; the same scatter rules run in
+ * those regions too, framing the card. The side strips compute to zero width on a
+ * phone, so there is no form-factor branching — it just falls out of the geometry.
+ *
+ * Orbs:
+ *   - never overlap each other or the [avoid] views (the top-right button),
+ *   - never sit under the card (regions are the wood MINUS the card rect),
+ *   - in the top band, are anchored to the card's top edge so they ride up with it
+ *     under the keyboard; side-strip orbs stay put (the keyboard docks at the
+ *     bottom and the card already handles that inset).
+ *
+ * The total count is capped (see [BUDGET]) and split across regions so a wide
+ * tablet frame stays ambient rather than swarmed.
  */
 object OrbField {
 
     private val ICONS = AssignmentIcons.options.map { it.drawableResId }
+
+    /** Max orbs across the whole frame — keeps it calm on a wide tablet. */
+    private const val BUDGET = 16
+
+    private enum class Anchor { CARD_TOP, PARENT }
+
+    private class Region(val rect: Rect, val anchor: Anchor) {
+        var rows = 1
+        var cols = 1
+        var target = 0
+    }
 
     /**
      * Call once (e.g. in onCreate). [card] is the glass MaterialCardView; [avoid]
@@ -56,13 +75,38 @@ object OrbField {
         val statusTop = ViewCompat.getRootWindowInsets(root)
             ?.getInsets(WindowInsetsCompat.Type.statusBars())?.top ?: dp(24f)
 
-        val bandTop = statusTop + dp(6f)
-        val bandBottom = card.top - dp(4f)        // never under the card
-        val bandLeft = dp(8f)
-        val bandRight = root.width - dp(8f)
-        val bandH = bandBottom - bandTop
-        val bandW = bandRight - bandLeft
-        if (bandH < dp(44f) || bandW < dp(44f)) return   // no usable band
+        val gap = dp(6f)
+        val edge = dp(8f)
+
+        // The top band: full width, status bar → card top. This region exists on
+        // every device and drives the (uniform) orb size.
+        val topBandTop = statusTop + dp(6f)
+        val topBandBottom = card.top - dp(4f)
+        val topBandH = topBandBottom - topBandTop
+        if (topBandH < dp(44f)) return   // no usable wood at all
+
+        // Scale orb size to the top-band height so two rows always fit (a short band
+        // otherwise collapses the scatter to a single line). Used for ALL regions so
+        // the orbs read as one population, not three different sizes.
+        val maxSizeDp = ((topBandH / density - 8f) / 2f).coerceIn(28f, 54f)
+        val minSizeDp = (maxSizeDp - 14f).coerceAtLeast(24f)
+        val orbPx = dp(maxSizeDp)
+
+        // Regions = the wood MINUS the card. Top band always; left/right gutters only
+        // when the card is narrower than the screen (tablets / unfolded foldables).
+        val regions = ArrayList<Region>(3)
+        regions.add(Region(Rect(edge, topBandTop, root.width - edge, topBandBottom), Anchor.CARD_TOP))
+
+        val sideTop = card.top + gap
+        val sideBottom = card.bottom - gap
+        val leftStrip = Rect(edge, sideTop, card.left - gap, sideBottom)
+        val rightStrip = Rect(card.right + gap, sideTop, root.width - edge, sideBottom)
+        if (leftStrip.width() >= orbPx && leftStrip.height() >= orbPx) {
+            regions.add(Region(leftStrip, Anchor.PARENT))
+        }
+        if (rightStrip.width() >= orbPx && rightStrip.height() >= orbPx) {
+            regions.add(Region(rightStrip, Anchor.PARENT))
+        }
 
         // Keep-out rectangles (the button(s) plus breathing room).
         val pad = dp(10f)
@@ -70,41 +114,63 @@ object OrbField {
             Rect(it.left - pad, it.top - pad, it.right + pad, it.bottom + pad)
         }
 
-        // Scale orb size to the band height so two rows always fit (a short band
-        // otherwise collapses the scatter to a single line).
-        val gap = dp(6f)
-        val bandHdp = bandH / density
-        // Cap raised for bigger orbs on roomy bands, but the (bandH-8)/2 term still
-        // limits short bands to a size where TWO rows fit (no 1-row line regression).
-        val maxSizeDp = ((bandHdp - 8f) / 2f).coerceIn(28f, 54f)
-        val minSizeDp = (maxSizeDp - 14f).coerceAtLeast(24f)
-        val orbPx = dp(maxSizeDp)
-
-        // Lay the band out as a jittered grid so orbs land in DIFFERENT rows (a
-        // real 2D scatter) instead of filling one long horizontal line. n items of
-        // size s with gaps fit when n <= (band + gap) / (s + gap).
-        val rows = ((bandH + gap) / (orbPx + gap)).coerceIn(1, 3)
-        val cols = ((bandW + gap) / (orbPx + gap)).coerceIn(1, 9)
-        val colW = bandW / cols
-        val rowH = bandH / rows
-
-        // Visit cells in random order and fill a fraction of them, up to a cap, so
-        // the count stays tasteful even on a very wide screen (e.g. a foldable).
-        val cells = ArrayList<Pair<Int, Int>>(rows * cols)
-        for (r in 0 until rows) for (c in 0 until cols) cells.add(c to r)
-        cells.shuffle()
+        // Per-region jittered grid + deterministic target (~60% of cells), then scale
+        // the whole frame down to BUDGET so a wide tablet doesn't get swarmed. On a
+        // phone there's only the top region and its target is already < BUDGET, so the
+        // scale is 1 and the result is identical to the original single-band scatter.
+        for (region in regions) {
+            val w = region.rect.width()
+            val h = region.rect.height()
+            region.rows = ((h + gap) / (orbPx + gap)).coerceIn(1, 3)
+            region.cols = ((w + gap) / (orbPx + gap)).coerceIn(1, 9)
+            region.target = (region.rows * region.cols * 6 / 10).coerceIn(if (region.anchor == Anchor.CARD_TOP) 5 else 2, 14)
+        }
+        val rawTotal = regions.sumOf { it.target }
+        val scale = if (rawTotal > BUDGET) BUDGET.toFloat() / rawTotal else 1f
 
         val icons = ICONS.shuffled()
-        // Deterministic count (~60% of cells, clamped) so it's reliable instead of a
-        // high-variance per-cell coin flip — wide screens get more, short ones fewer.
-        val target = (rows * cols * 6 / 10).coerceIn(5, 14)
         val placed = ArrayList<Rect>()
+        var made = 0
+        for (region in regions) {
+            val regionTarget = (region.target * scale).toInt()
+                .coerceAtLeast(if (region.anchor == Anchor.CARD_TOP) 3 else 1)
+            made += fillRegion(root, card, region, regionTarget, orbPx, minSizeDp, maxSizeDp, gap, blocked, placed, icons, made)
+        }
+    }
+
+    /** Fills one rectangular region with up to [target] non-overlapping orbs. */
+    private fun fillRegion(
+        root: ConstraintLayout,
+        card: View,
+        region: Region,
+        target: Int,
+        orbPx: Int,
+        minSizeDp: Float,
+        maxSizeDp: Float,
+        gap: Int,
+        blocked: List<Rect>,
+        placed: ArrayList<Rect>,
+        icons: List<Int>,
+        startIndex: Int,
+    ): Int {
+        val density = root.resources.displayMetrics.density
+        fun dp(v: Float) = (v * density).toInt()
+
+        val colW = region.rect.width() / region.cols
+        val rowH = region.rect.height() / region.rows
+
+        // Visit cells in random order so the chosen subset is a real 2D scatter
+        // (different rows AND columns), never a horizontal line.
+        val cells = ArrayList<Pair<Int, Int>>(region.rows * region.cols)
+        for (r in 0 until region.rows) for (c in 0 until region.cols) cells.add(c to r)
+        cells.shuffle()
+
         var made = 0
         for ((c, r) in cells) {
             if (made >= target) break
             val size = dp(Random.nextInt(minSizeDp.toInt(), maxSizeDp.toInt() + 1).toFloat())
-            val cellLeft = bandLeft + c * colW
-            val cellTop = bandTop + r * rowH
+            val cellLeft = region.rect.left + c * colW
+            val cellTop = region.rect.top + r * rowH
             val xHi = (cellLeft + colW - size).coerceAtLeast(cellLeft)
             val yHi = (cellTop + rowH - size).coerceAtLeast(cellTop)
             val x = if (xHi > cellLeft) Random.nextInt(cellLeft, xHi + 1) else cellLeft
@@ -114,12 +180,13 @@ object OrbField {
             val grown = Rect(rect.left - gap, rect.top - gap, rect.right + gap, rect.bottom + gap)
             if (placed.any { Rect.intersects(it, grown) }) continue
             placed.add(rect)
-            addOrb(root, card, rect, size, density, icons[made % icons.size])
+            addOrb(root, card, region.anchor, rect, size, density, icons[(startIndex + made) % icons.size])
             made++
         }
+        return made
     }
 
-    private fun addOrb(root: ConstraintLayout, card: View, rect: Rect, size: Int, density: Float, iconRes: Int) {
+    private fun addOrb(root: ConstraintLayout, card: View, anchor: Anchor, rect: Rect, size: Int, density: Float, iconRes: Int) {
         val orb = ImageView(root.context).apply {
             setImageResource(iconRes)
             setBackgroundResource(R.drawable.bg_orb)
@@ -130,16 +197,24 @@ object OrbField {
             contentDescription = null
         }
         val lp = ConstraintLayout.LayoutParams(size, size).apply {
-            // Anchor to the card's top edge so orbs follow it up under the keyboard.
-            bottomToTop = card.id
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID
             marginStart = rect.left
-            bottomMargin = (card.top - rect.bottom).coerceAtLeast(0)
+            when (anchor) {
+                // Top band: anchor to the card's top edge so orbs follow it up under
+                // the keyboard (off-screen is fine — they're decoration).
+                Anchor.CARD_TOP -> {
+                    bottomToTop = card.id
+                    bottomMargin = (card.top - rect.bottom).coerceAtLeast(0)
+                }
+                // Side gutters (tablets): static placement beside the card.
+                Anchor.PARENT -> {
+                    topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                    topMargin = rect.top
+                }
+            }
         }
-        // Add on top: positioned in the empty band above the card (and clear of
-        // the top-right button), so z-order doesn't cause overlap — but this keeps
-        // them ABOVE any full-screen background ImageView some screens add (e.g.
-        // the centerCrop wood on Calendar/Settings), which would otherwise hide them.
+        // Add on top so orbs sit ABOVE the full-screen centerCrop wood ImageView each
+        // screen now uses for its background (otherwise they'd be hidden behind it).
         root.addView(orb, lp)
 
         val amp = (8..18).random() * density
@@ -150,8 +225,8 @@ object OrbField {
             repeatCount = ObjectAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
             start()
-            // Jump each orb to a random point in its cycle so they don't all swell
-            // in unison (the "in sync" look) — instant phase desync.
+            // Jump each orb to a random point in its cycle so they don't all swell in
+            // unison (the "in sync" look) — instant phase desync.
             currentPlayTime = (0 until duration).random()
         }
     }
