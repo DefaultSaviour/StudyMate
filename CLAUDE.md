@@ -84,7 +84,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/AssignmentDateTimeUtils.kt` | Shared date/time parsing & formatting — use this rather than duplicating logic |
 | `util/PasswordUtils.kt` | PBKDF2 hashing; used only during registration and login |
 | `util/KeyboardInsets.kt` | Adds IME-height bottom padding so text fields aren't hidden by the keyboard (edge-to-edge fix — see "Keyboard / IME insets") |
-| `util/OrbField.kt` | Runtime generator for the ambient floating orbs — measures the wood band above a glass card and scatters a space-appropriate, non-overlapping set into it (jittered grid, keep-out around the top-right button, anchored so they follow the card under the keyboard). Replaced all per-screen static orbs except Login. See "Ambient floating orbs" |
+| `util/OrbField.kt` | Runtime generator for the ambient floating orbs — measures the wood that frames a glass card (top band + side gutters on tablets) and scatters a space-appropriate, non-overlapping set into it (jittered grid, keep-out around the top-right button, anchored so they follow the card under the keyboard, total capped at 16). Replaced all per-screen static orbs except Login. See "Ambient floating orbs" |
+| `util/OrientationLock.kt` | `OrientationLock.apply(activity)` — reads `@bool/lock_portrait` and locks phones to portrait while letting `sw600dp` (tablets/foldables) rotate. Called in every Activity's `onCreate` (replaced the static manifest `screenOrientation` locks). See "Large-screen / tablet layout" |
 | `ui/PulseRingView.kt` | Custom `View` that paints a soft, slowly breathing gold halo around a rounded-rect ring. Overlaid on the dashboard "Review due decks" button and on each next-required field of the three "create" panels (see "Review due decks" and "Progressive-glow guidance") |
 | `notifications/AssignmentReminderScheduler.kt` | Schedules / cancels per-assignment reminder work (see "Notifications") |
 | `notifications/AssignmentReminderWorker.kt` | `CoroutineWorker` that re-verifies state at fire time and posts the notification |
@@ -197,12 +198,27 @@ The **New assignment**, **New subject**, and **New deck** panels walk the user t
 - **No pre-selection:** because each step must visibly "become next", the selectors no longer pre-pick a default — the deck's subject and the subject's colour both start empty and must be chosen (matching how the assignment panel already worked).
 
 ### Background treatment
-- **Layer-list** (`bg_login_combined.xml` pattern):
-  1. Solid navy base
-  2. Wood photo bitmap (`gravity="fill"`) — user supplies per-screen JPEG as `bg_<screen>.jpg`
-  3. `#1A000000` dark veil for contrast
-  4. Top-to-bottom gradient: `#000F172A` → `#BF0F172A` (75 % navy at bottom so wood grain shows through the glass panel)
+**Every wood-glass screen uses the same three layers, in this order, as the first
+children of the root `ConstraintLayout`** (the old per-screen `bg_*_combined.xml`
+layer-lists with a `gravity="fill"` bitmap were **deleted in 0.8.5** — `fill`
+stretches the grain, which smears badly once the wood becomes the dominant element
+on a wide tablet):
+  1. Root `android:background="@color/navy"` — solid navy base.
+  2. `<ImageView android:id="@+id/bgImage" scaleType="centerCrop" src="@drawable/bg_<screen>">` constrained to all four parent edges — wood photo, **to scale (never stretched) at any width**. User supplies per-screen JPEG as `bg_<screen>.jpg`.
+  3. `<View android:background="@drawable/bg_wood_overlay">` constrained to all four edges — the `#1A000000` dark veil + `#000F172A → #BF0F172A` top-to-bottom gradient (75 % navy at bottom so wood grain shows through the glass panel).
 - Do **not** fade to 100 % navy — the glass card needs texture behind it.
+- The orbs (`OrbField`) are added programmatically **after** these, so they sit above the wood.
+
+### Large-screen / tablet layout (sw600dp)
+Phone-first design that adapts to big screens by **centring**, not redesigning
+(chosen with Jamie over a two-pane split). On `sw600dp` (tablets / unfolded
+foldables) the glass card becomes a capped, centred column on a full-bleed wood
+background with orbs framing it; phones are untouched.
+- **Card width:** every card sets `app:layout_constraintWidth_max="@dimen/card_max_width"` while keeping `width=0dp` + start/end → parent (so it centres). The dimen is effectively unbounded on phones (`values/` = 2000dp) and **852dp** on `values-sw600dp/` — that's the unfolded foldable's own width, so the foldable still fills edge-to-edge while a wider tablet caps at the same width and shows wood gutters.
+- **Top-right action button** anchors `constraintEnd_toEndOf="@id/<card>"` (not parent) so it tracks the centred card's corner instead of floating in the screen corner.
+- **Orientation:** `OrientationLock.apply(this)` in each `onCreate` reads `@bool/lock_portrait` (`true` in `values/`, `false` in `values-sw600dp/`) — phones stay portrait, tablets rotate freely. The static manifest `screenOrientation="portrait"` locks were removed.
+- **Orbs** fill the side gutters automatically — see "Ambient floating orbs".
+- A future pass could add true multi-pane layouts that *use* the width (list + detail) rather than centring a phone-width column.
 
 ### Glass panel (MaterialCardView)
 ```xml
@@ -285,12 +301,13 @@ helpers were deleted). Static orbs were tuned to one device and broke everywhere
 else: on short screens the wood band shrinks and the percentage-positioned card
 rises, so fixed orbs slid *under* the card or collapsed into a single line.
 
-`OrbField` measures the wood band (status-bar inset → the card's top) once at
-layout and drops in a space-appropriate scatter:
-- **Call site:** each wood-glass Activity calls `OrbField.scatter(findViewById(R.id.<card>), listOf(findViewById(R.id.<topRightBtn>)))` in `onCreate` (where the old `floatOrb` loop was). The card id gives the band bottom; the button(s) are keep-out rects so no orb hides behind the back/settings button.
+`OrbField` measures the wood that FRAMES the card once at layout and drops in a
+space-appropriate scatter:
+- **Call site:** each wood-glass Activity calls `OrbField.scatter(findViewById(R.id.<card>), listOf(findViewById(R.id.<topRightBtn>)))` in `onCreate` (where the old `floatOrb` loop was). The card id gives the region geometry; the button(s) are keep-out rects so no orb hides behind the back/settings button.
+- **Regions = wood minus the card (0.8.5).** Always the **top band** (status-bar inset → card top); plus the **left/right gutters** beside the card when it's narrower than the screen (tablets/foldables — the card is capped + centred, see "Large-screen / tablet layout"). On a phone the card fills the width so the side strips compute to zero width and you get exactly the original top-band-only scatter — **no form-factor branching**, it falls out of the geometry. Regions are the wood *minus* the card rect, so an orb can never sit under the glass (structural, not a runtime check).
 - **Deferred placement:** runs inside `card.doOnLayout { card.post { … } }` — placing views *during* the layout pass made `requestLayout` get dropped (orbs never measured **and** the constraint solve corrupted, which once blanked the settings button). `post` runs it after layout.
-- **Anchoring:** each orb is `bottomToTop = card.id` + `startToStart = parent` with computed margins, so it sits in the band and **rides up with the card when the keyboard pushes it up** (off-screen is fine). Added on **top** (`addView` at end) so the full-screen `centerCrop` wood `ImageView` on Calendar/Settings can't hide it.
-- **Jittered-grid scatter (not random):** the band is divided into rows × cols; orbs are jittered one-per-cell so they land in **different rows** (real 2D scatter, never a horizontal line). Count is **deterministic** (~60% of cells, clamped 5–14) so it's reliable rather than a high-variance coin flip — wide screens (foldables) get more, short screens fewer. Orb size scales to band height (`(bandH-8)/2`, capped) so **two rows always fit** even on a short band. Distinct shuffled icon per orb (no duplicates per screen). Float: `translationY` up-only, `REVERSE/INFINITE`, duration 3900–9000 ms, with `currentPlayTime` jumped to a random phase so they don't swell in unison.
+- **Anchoring:** top-band orbs are `bottomToTop = card.id` + `startToStart = parent` so they **ride up with the card when the keyboard pushes it up** (off-screen is fine); side-gutter orbs are anchored to the parent (static — the keyboard docks at the bottom and the card already handles that inset). Added on **top** (`addView` at end) so the full-screen `centerCrop` wood `ImageView` behind every screen can't hide them.
+- **Jittered-grid scatter (not random):** each region is divided into rows × cols; orbs are jittered one-per-cell so they land in **different rows** (real 2D scatter, never a horizontal line). Per-region count is **deterministic** (~60% of cells), then the whole frame is scaled down to a **global cap of 16** (`BUDGET`) so a wide tablet frame stays ambient rather than swarmed. On a phone the single region's target is already < 16, so the scale is 1 and the result is identical to the original. Orb size is **uniform** across regions — scaled to the top-band height (`(bandH-8)/2`, capped) so **two rows always fit** even on a short band. Distinct shuffled icon per orb. Float: `translationY` up-only, `REVERSE/INFINITE`, duration 3900–9000 ms, with `currentPlayTime` jumped to a random phase so they don't swell in unison.
 - **Exception — Login keeps its 8 static XML orbs + own `floatOrb`** (its card sits at 37%, so the band is large and the static orbs already clear it).
 
 ### Cycling icon (branding header)
@@ -567,14 +584,16 @@ hardening) even though `versionName` in `app/build.gradle.kts` still reads `1.0`
 ### 0.8 — device & compatibility testing (current focus)
 The app has only been validated on the **Samsung A14 5G** (one size, one density,
 one API level). Known gaps to close before widening the audience:
-- **Orientation — DONE: locked portrait.** Every activity has
-  `android:screenOrientation="portrait"` in the manifest (the whole design is
-  portrait-only). Note: apps targeting **SDK 36+** have orientation locks *ignored*
-  on large screens — we target 35, so it's honored; revisit when bumping targetSdk.
-- **Large screens / tablets — DECISION: phone-first, letterboxed.** No `sw600dp`
-  resources; with portrait locked, the app runs in a centered portrait **letterbox**
-  on tablets/foldables (content renders correctly, just pillarboxed). This is the
-  accepted outcome for now — proper tablet layouts are a 0.9 item below.
+- **Orientation — DONE, resource-driven (0.8.5).** No longer a static manifest
+  lock. `OrientationLock.apply(this)` (called in every Activity's `onCreate`) reads
+  `@bool/lock_portrait` — `true` on phones (locks portrait), `false` on `sw600dp`
+  (tablets/foldables rotate freely). Done this way because `screenOrientation` can't
+  be qualified by a resource bucket. Note: apps targeting **SDK 36+** have
+  orientation locks *ignored* on large screens — we target 35, so it's honored.
+- **Large screens / tablets — DONE: centred column on full-bleed wood (0.8.5).**
+  See "Large-screen / tablet layout (sw600dp)" in the design system. The old
+  portrait-letterbox fallback is gone; tablets now show the glass card capped +
+  centred with wood (and ambient orbs) framing it.
 - **Orbs verified across a device matrix** (Small Phone/Nexus 5 → Pixel 8/9 →
   foldable + the A14) — see `util/OrbField`, which replaced the per-device static
   orbs precisely because they didn't survive this matrix.
@@ -593,8 +612,10 @@ one API level). Known gaps to close before widening the audience:
   sizes, text-scaling / large-font behaviour.
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
 - **Flashcard import** — CSV / Quizlet / Anki to remove hand-entry friction.
-- **Tablet / large-screen layouts** — `sw600dp` resources so the app fills big
-  screens instead of the portrait letterbox it falls back to today (see 0.8).
+- **Tablet / large-screen layouts — basic support shipped in 0.8.5** (centred
+  column on full-bleed wood). A future pass could go further: true multi-pane
+  layouts that *use* the extra width (e.g. list + detail) rather than centring a
+  phone-width column.
 
 ### 1.0 — store launch
 - Generate the upload keystore + `keystore.properties` (see `RELEASE.md`).
