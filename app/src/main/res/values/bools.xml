@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phones are portrait-only by design. Large screens (sw600dp) override this to
+         false so tablets / foldables can rotate freely — the card caps + centres in
+         either orientation. Read in each Activity via applyOrientationLock(). -->
+    <bool name="lock_portrait">true</bool>
+</resources>
