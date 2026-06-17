@@ -20,6 +20,10 @@ interface FlashcardDeckDao {
     @Query("SELECT * FROM Flashcard_Decks WHERE user_id = :userId")
     suspend fun getDecks(userId: Int): List<FlashcardDeck>
 
+    // Get all decks belonging to one subject. Used by the backup export.
+    @Query("SELECT * FROM Flashcard_Decks WHERE subject_id = :subjectId")
+    suspend fun getDecksForSubject(subjectId: Int): List<FlashcardDeck>
+
     // Get each deck together with all the flashcards inside it for a user.
     @Transaction
     @Query("SELECT * FROM Flashcard_Decks WHERE user_id = :userId")

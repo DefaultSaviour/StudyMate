@@ -83,6 +83,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/BiometricOwnership.kt` | Pure (Android-free) per-account ownership rules for the single quick-sign-in slot; unit-tested in `BiometricOwnershipTest` |
 | `util/AssignmentDateTimeUtils.kt` | Shared date/time parsing & formatting — use this rather than duplicating logic |
 | `util/PasswordUtils.kt` | PBKDF2 hashing; used only during registration and login |
+| `util/BackupSerializer.kt` | Pure (Android-free) converter for the data-backup JSON format (`toJson`/`fromJson` over plain DTOs); uses built-in `org.json`, throws `InvalidBackupException` on bad files. Unit-tested in `BackupSerializerTest`. See "Data backup (export / import)" |
+| `data/repositories/BackupRepo.kt` | Reads a user's whole study tree into backup DTOs (`export`) and restores one under a user (`import`, transactional, merge-by-name); re-stamps all FKs since the format carries no ids |
 | `util/KeyboardInsets.kt` | Adds IME-height bottom padding so text fields aren't hidden by the keyboard (edge-to-edge fix — see "Keyboard / IME insets") |
 | `util/OrbField.kt` | Runtime generator for the ambient floating orbs — measures the wood that frames a glass card (top band + side gutters on tablets) and scatters a space-appropriate, non-overlapping set into it (jittered grid, keep-out around the top-right button, anchored so they follow the card under the keyboard, total capped at 16). Replaced all per-screen static orbs except Login. See "Ambient floating orbs" |
 | `util/OrientationLock.kt` | `OrientationLock.apply(activity)` — reads `@bool/lock_portrait` and locks phones to portrait while letting `sw600dp` (tablets/foldables) rotate. Called in every Activity's `onCreate` (replaced the static manifest `screenOrientation` locks). See "Large-screen / tablet layout" |
@@ -147,6 +149,44 @@ A single dashboard button reviews every deck that has cards due, back-to-back, w
 - **Gating:** `HomeViewModel` computes `dueDeckIds` / `dueDeckNames` (decks with ≥1 due card, ordered by subject name then deck name — same order as the Flashcards list) plus `dueCardCount`. `reviewDueBtn` is enabled only when `dueDeckIds` is non-empty; disabled it reads "No decks due" at 0.45 alpha, enabled it reads "Review N cards now".
 - **Breathing glow:** `ui/PulseRingView` is a custom `View` overlaid on the button inside a `FrameLayout`. It paints a soft warm-gold halo around the whole ring (a blurred rounded-rect stroke) that slowly **breathes** — swelling thicker + brighter then receding — on an `AccelerateDecelerateInterpolator`, matching the floating orbs' gentle motion (no travelling/comet; that earlier version read as cheap). It is **non-clickable**, so taps fall through to the button beneath. The halo blooms slightly outside the border, so the scroll content `LinearLayout` + the `FrameLayout` keep `clipChildren=false` (and the scroll view keeps `clipToPadding=false`). `HomeActivity` calls `startAnimating()` / `stopAnimating()` from the summary observer (only while enabled); the view also stops itself on detach. **Corner radius (12dp) is hand-synced** with the button's `app:cornerRadius`.
 - **Chaining:** the button launches `ReviewDeckActivity` with `deck_queue_ids` (IntArray) + `deck_queue_names` (String[]). `ReviewDeckViewModel.loadChain(...)` walks the decks in order; when one deck's queue empties it rolls the completed count into `chainTotal` and immediately `advanceToNextDeck()` (a deck that turns out to have nothing due is skipped silently). The final `Done` state reports the whole-session total. `ReviewDeckActivity.render()` re-sets the title from `state.deckName` each emission so the header follows the current deck. Single-deck entry from the deck screen (`load(deckId, deckName)`) is unchanged.
+
+## Data backup (export / import)
+
+Manual, on-device JSON backup + restore of a user's whole study tree. **No
+backend, no network** — the app writes a file and reads one back; the OS handles
+where it lives. Surfaced in **Settings → DATA** ("Export my data" / "Import data").
+
+- **Format (`util/BackupSerializer.kt`):** a **nested** tree —
+  `subjects[] → { assignments[], decks[] → cards[] }` — carrying **no database
+  ids** (PKs are `autoGenerate` and device-local, so meaningless elsewhere).
+  Relationships are implicit in the nesting. Root has `format:"studymate-backup"`,
+  `version` (current **1**), `exportedAt`. Card scheduling state (ease/interval/
+  reps/dueAt/lastReviewedAt) and assignment `completedAt` **are** kept (this is the
+  user's own data for migration). `fromJson` rejects wrong format / future version
+  / malformed JSON with `InvalidBackupException`; tolerates missing optional fields
+  and skips nameless subjects / empty cards. Pure Kotlin over `org.json` (built
+  into Android — **no new runtime dependency**); unit-tested in `BackupSerializerTest`.
+  > `org.json` is a *stub* on the JVM test classpath, so `testImplementation("org.json:json:…")`
+  > is added (test-only) so the serializer can be unit-tested.
+- **DB I/O (`data/repositories/BackupRepo.kt`):** `export(userId)` walks
+  `subjectDao.getSubjects` → `getAssignmentsForSubject` / `getDecksForSubject` →
+  `cardDao.getCards`. `import(userId, data)` runs in a single `db.withTransaction`
+  (a bad file is a no-op): **subjects merge by name** (case-insensitive
+  `getByName`, reuse else create), **decks/assignments/cards always create** under
+  the resolved subject, **all FKs re-stamped** with the current user + freshly
+  generated parent ids. Additive — never deletes existing data. Returns an
+  `ImportSummary` (counts) for the toast.
+- **UI (`UserSettingsActivity` + `UserSettingsViewModel`):** two Storage Access
+  Framework launchers — `CreateDocument("application/json")` (export, default name
+  `studymate_backup_<date>.json`) and `OpenDocument()` (import, accepts
+  json/text/`*/*` since providers mislabel JSON). **No storage permission needed**
+  on API 30+. The VM does file I/O via `contentResolver.openOutputStream` /
+  `openInputStream` on `Dispatchers.IO`, resolves the user via `SessionUserResolver`,
+  and emits a `DataOpResult` (Export/Import success or Error) the Activity toasts.
+- **Out of scope (v1, deferred):** per-deck *Share*, CSV (teacher-authored) deck
+  import, merge UI, and any networked/class-code distribution. These are subsets of
+  the same insert plumbing if ever wanted. **Not migrated:** `Review_Logs` (so
+  study streaks reset on a restored device) and derived stats.
 
 ## UI & Theming
 
@@ -603,15 +643,18 @@ one API level). Known gaps to close before widening the audience:
 - **Density/size matrix:** only 480dpi tested. Cover small/large + ldpi…xxxhdpi.
 
 ### 0.9 — polish & growth features
-- **Export / import** — manual JSON export to Downloads / share sheet (and import).
-  Completes the durability story (cloud Auto Backup is already configured) and
-  doubles as device migration. No backend.
+- **Export / import — JSON account backup shipped in 0.9** (Settings → DATA; see
+  "Data backup (export / import)"). Full study tree to/from a user-picked file via
+  SAF, no backend. **Still pending:** per-deck Share to a file, and CSV
+  (teacher-authored) deck import — both subsets of the same insert plumbing.
 - **Empty-state polish** — the "consistent empty-state illustration" item above;
   first-run with zero subjects/decks is the first thing a new user sees.
 - **Accessibility pass** — content descriptions on icon buttons, touch-target
   sizes, text-scaling / large-font behaviour.
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
-- **Flashcard import** — CSV / Quizlet / Anki to remove hand-entry friction.
+- **Flashcard import** — CSV / Quizlet / Anki to remove hand-entry friction. (JSON
+  account-backup import already shipped in 0.9; CSV is the remaining teacher-
+  authoring path.)
 - **Tablet / large-screen layouts — basic support shipped in 0.8.5** (centred
   column on full-bleed wood). A future pass could go further: true multi-pane
   layouts that *use* the extra width (e.g. list + detail) rather than centring a

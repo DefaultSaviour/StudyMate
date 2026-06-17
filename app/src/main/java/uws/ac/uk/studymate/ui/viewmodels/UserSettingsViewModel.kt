@@ -1,6 +1,8 @@
 package uws.ac.uk.studymate.ui.viewmodels
 
 import android.app.Application
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -8,8 +10,10 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
+import uws.ac.uk.studymate.data.repositories.BackupRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
+import uws.ac.uk.studymate.util.BackupSerializer
 import uws.ac.uk.studymate.util.SessionManager
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.TextSanitizer
@@ -46,6 +50,7 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
 
     private val db = StudyMateDatabase.getInstance(application)
     private val repo = UserRepo(db)
+    private val backupRepo = BackupRepo(db)
     private val sessionResolver = SessionUserResolver(application, repo)
 
     private val _settingsSummary = MutableLiveData<UserSettingsSummary>()
@@ -244,6 +249,71 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
 
     fun consumeBiometricCredentials() {
         _biometricCredentialsToSave.value = null
+    }
+
+    // ── Data backup (export / import) ──
+
+    // Outcome of an export/import op, observed by the Activity to toast the user.
+    sealed class DataOpResult {
+        data class ExportSuccess(val subjects: Int, val decks: Int, val cards: Int) : DataOpResult()
+        data class ImportSuccess(val summary: BackupRepo.ImportSummary) : DataOpResult()
+        data class Error(val message: String) : DataOpResult()
+    }
+
+    private val _dataOpResult = MutableLiveData<DataOpResult?>()
+    val dataOpResult: LiveData<DataOpResult?> = _dataOpResult
+
+    fun consumeDataOpResult() {
+        _dataOpResult.value = null
+    }
+
+    // Write the current user's whole study tree to [uri] as backup JSON.
+    fun exportTo(resolver: ContentResolver, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: run {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            try {
+                val data = backupRepo.export(session.userId)
+                val json = BackupSerializer.toJson(data, Instant.now().toString())
+                resolver.openOutputStream(uri)?.use { out ->
+                    out.write(json.toByteArray(Charsets.UTF_8))
+                } ?: throw java.io.IOException("Couldn't open the file for writing.")
+                _dataOpResult.postValue(
+                    DataOpResult.ExportSuccess(
+                        subjects = data.subjects.size,
+                        decks = data.subjects.sumOf { it.decks.size },
+                        cards = data.subjects.sumOf { s -> s.decks.sumOf { it.cards.size } }
+                    )
+                )
+            } catch (e: Exception) {
+                _dataOpResult.postValue(DataOpResult.Error("Couldn't save the backup."))
+            }
+        }
+    }
+
+    // Read a backup file at [uri] and add its contents under the current user.
+    fun importFrom(resolver: ContentResolver, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: run {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            try {
+                val raw = resolver.openInputStream(uri)?.use { input ->
+                    input.bufferedReader(Charsets.UTF_8).readText()
+                } ?: throw java.io.IOException("Couldn't open the file for reading.")
+                val data = BackupSerializer.fromJson(raw)
+                val summary = backupRepo.import(session.userId, data)
+                _dataOpResult.postValue(DataOpResult.ImportSuccess(summary))
+                loadSettings()  // refresh the "at a glance" counts
+            } catch (e: BackupSerializer.InvalidBackupException) {
+                _dataOpResult.postValue(DataOpResult.Error(e.message ?: "That file isn't a StudyMate backup."))
+            } catch (e: Exception) {
+                _dataOpResult.postValue(DataOpResult.Error("Couldn't read the file."))
+            }
+        }
     }
 
     private fun formatMemberSince(createdAt: String?): String {
