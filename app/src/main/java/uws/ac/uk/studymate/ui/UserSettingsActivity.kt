@@ -93,6 +93,19 @@ class UserSettingsActivity : AppCompatActivity() {
         }
     }
 
+    // Storage Access Framework launchers for data backup. Neither needs a runtime
+    // storage permission on API 30+ — the system picker grants per-URI access.
+    private val exportDataLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) vm.exportTo(contentResolver, uri)
+    }
+    private val importDataLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) vm.importFrom(contentResolver, uri)
+    }
+
     private enum class Panel { LIST, EDIT }
     private var currentPanel = Panel.LIST
     private var isAnimating = false
@@ -194,6 +207,20 @@ class UserSettingsActivity : AppCompatActivity() {
             refreshBiometricRow()
             Toast.makeText(this, "Fingerprint login enabled", Toast.LENGTH_SHORT).show()
         }
+        vm.dataOpResult.observe(this) { result ->
+            if (result == null) return@observe
+            val msg = when (result) {
+                is UserSettingsViewModel.DataOpResult.ExportSuccess ->
+                    "Backup saved — ${result.subjects} subjects, ${result.decks} decks, ${result.cards} cards"
+                is UserSettingsViewModel.DataOpResult.ImportSuccess -> {
+                    val s = result.summary
+                    "Imported ${s.subjects} new subjects, ${s.decks} decks, ${s.cards} cards"
+                }
+                is UserSettingsViewModel.DataOpResult.Error -> result.message
+            }
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            vm.consumeDataOpResult()
+        }
     }
 
     override fun onResume() {
@@ -243,6 +270,9 @@ class UserSettingsActivity : AppCompatActivity() {
             findViewById<View>(R.id.prefRow)                   to  1f,
             autoLoginRow                                        to  1f,
             biometricRow                                        to -1f,
+            findViewById<View>(R.id.dataSectionLabel)          to -1f,
+            findViewById<View>(R.id.exportDataRow)             to  1f,
+            findViewById<View>(R.id.importDataRow)             to -1f,
             findViewById<View>(R.id.glanceSectionLabel)        to -1f,
             findViewById<View>(R.id.glanceRow)                 to  1f,
             logoutBtn                                           to -1f
@@ -301,6 +331,15 @@ class UserSettingsActivity : AppCompatActivity() {
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
+        }
+
+        findViewById<View>(R.id.exportDataRow).setOnClickListener {
+            val date = java.time.LocalDate.now()
+            exportDataLauncher.launch("studymate_backup_$date.json")
+        }
+        findViewById<View>(R.id.importDataRow).setOnClickListener {
+            // Some providers report JSON as a generic type, so accept a few.
+            importDataLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
         }
 
         notificationsSwitch.setOnCheckedChangeListener { _, isChecked ->
