@@ -165,6 +165,7 @@ class LoginActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
 
         sessionManager = SessionManager(this)
         biometricManager = BiometricLoginManager(this)

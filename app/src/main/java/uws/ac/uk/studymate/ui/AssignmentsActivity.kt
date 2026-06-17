@@ -130,6 +130,7 @@ class AssignmentsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_assignments)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
         uws.ac.uk.studymate.util.KeyboardInsets.apply(this)
 
         vm = ViewModelProvider(this)[AssignmentsViewModel::class.java]

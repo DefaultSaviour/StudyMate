@@ -103,6 +103,7 @@ class UserSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_settings)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
         uws.ac.uk.studymate.util.KeyboardInsets.apply(this)
 
         vm = ViewModelProvider(this)[UserSettingsViewModel::class.java]

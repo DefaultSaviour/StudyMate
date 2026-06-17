@@ -50,6 +50,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
 
         // Pad the scroll view so the last nav button clears the system nav bar on any device.
         val scrollView = findViewById<NestedScrollView>(R.id.homeScrollView)

@@ -69,6 +69,7 @@ class DeckCardsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_deck_cards)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
         uws.ac.uk.studymate.util.KeyboardInsets.apply(this)
 
         deckId = intent.getIntExtra("deck_id", -1)

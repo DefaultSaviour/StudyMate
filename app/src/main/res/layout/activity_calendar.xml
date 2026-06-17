@@ -47,6 +47,7 @@
         app:strokeColor="#99C4A24A"
         app:strokeWidth="1dp"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.StudyMate.LoginCard"
+        app:layout_constraintWidth_max="@dimen/card_max_width"
         app:layout_constraintTop_toBottomOf="@id/headerGuide"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -212,7 +213,7 @@
         app:rippleColor="#33D4BC7E"
         android:contentDescription="Back to home"
         app:layout_constraintBottom_toTopOf="@id/calendarCard"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/calendarCard"
         android:layout_marginBottom="12dp"
         android:layout_marginEnd="16dp" />
 

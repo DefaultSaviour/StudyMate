@@ -41,6 +41,7 @@ class ReviewDeckActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_review_deck)
+        uws.ac.uk.studymate.util.OrientationLock.apply(this)
 
         val deckId = intent.getIntExtra("deck_id", -1)
         val deckName = intent.getStringExtra("deck_name") ?: "Deck"
