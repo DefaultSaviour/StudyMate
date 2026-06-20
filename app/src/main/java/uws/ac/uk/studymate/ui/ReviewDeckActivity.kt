@@ -1,5 +1,6 @@
 package uws.ac.uk.studymate.ui
 
+import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
@@ -38,6 +39,11 @@ class ReviewDeckActivity : AppCompatActivity() {
     private var showingFront = true
     private var isFlipping = false
 
+    // First-run onboarding (0.9E): when launched from the welcome screen, exiting
+    // the session (back arrow or the "Done" continue button) goes to Home rather
+    // than back to whatever launched us.
+    private var fromOnboarding = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_review_deck)
@@ -49,6 +55,7 @@ class ReviewDeckActivity : AppCompatActivity() {
         // queue of decks to walk back-to-back instead of a single deck.
         val queueIds = intent.getIntArrayExtra("deck_queue_ids")
         val queueNames = intent.getStringArrayExtra("deck_queue_names")
+        fromOnboarding = intent.getBooleanExtra(EXTRA_FROM_ONBOARDING, false)
 
         card = findViewById(R.id.reviewCard)
         flipCard = findViewById(R.id.flipCard)
@@ -73,7 +80,9 @@ class ReviewDeckActivity : AppCompatActivity() {
             insets
         }
 
-        findViewById<MaterialButton>(R.id.backBtn).setOnClickListener { finish() }
+        findViewById<MaterialButton>(R.id.backBtn).setOnClickListener {
+            if (fromOnboarding) goHome() else finish()
+        }
         flipCard.setOnClickListener { revealAnswer() }
         cardContentText.setOnClickListener { revealAnswer() }
         flipBtn.setOnClickListener { revealAnswer() }
@@ -134,7 +143,15 @@ class ReviewDeckActivity : AppCompatActivity() {
                 val n = state.reviewedCount
                 cardCountText.text = "Review complete"
                 setContent("Reviewed $n card${if (n == 1) "" else "s"}.\nGreat work!", bold = false)
-                showButtons(flip = false, grades = false, reviewAll = false)
+                // In onboarding mode, give a clear way out to the dashboard; otherwise
+                // the user just taps the top back arrow as before.
+                if (fromOnboarding) {
+                    reviewAllBtn.text = getString(R.string.onboarding_go_to_dashboard)
+                    reviewAllBtn.setOnClickListener { goHome() }
+                    showButtons(flip = false, grades = false, reviewAll = true)
+                } else {
+                    showButtons(flip = false, grades = false, reviewAll = false)
+                }
                 tapHint.visibility = View.GONE
                 setFlipTappable(false)
             }
@@ -194,5 +211,17 @@ class ReviewDeckActivity : AppCompatActivity() {
         flipBtn.visibility = if (flip) View.VISIBLE else View.GONE
         gradeRow.visibility = if (grades) View.VISIBLE else View.GONE
         reviewAllBtn.visibility = if (reviewAll) View.VISIBLE else View.GONE
+    }
+
+    private fun goHome() {
+        startActivity(Intent(this, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
+    }
+
+    companion object {
+        /** Set when the review is launched from first-run onboarding; on exit we go to Home. */
+        const val EXTRA_FROM_ONBOARDING = "from_onboarding"
     }
 }

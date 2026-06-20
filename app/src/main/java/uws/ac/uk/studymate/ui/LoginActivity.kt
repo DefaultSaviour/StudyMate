@@ -556,7 +556,9 @@ class LoginActivity : AppCompatActivity() {
             biometricManager.saveCredentials(creds.userId, creds.email, creds.password)
             registerVm.consumeBiometricCredentials()
         }
-        registerVm.registrationSuccess.observe(this) { success -> if (success) openHome() }
+        // A brand-new account goes through the first-run onboarding carousel (which
+        // then lands on Home). Signing into an existing account skips straight to Home.
+        registerVm.registrationSuccess.observe(this) { success -> if (success) openOnboarding() }
         registerVm.errorMessage.observe(this) { msg ->
             if (msg.isNullOrBlank()) {
                 regMessage.visibility = View.GONE
@@ -748,6 +750,14 @@ class LoginActivity : AppCompatActivity() {
 
     private fun openHome() {
         startActivity(Intent(this, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+    }
+
+    // First-run only: a freshly created account is shown the onboarding carousel,
+    // which itself opens Home when finished/skipped.
+    private fun openOnboarding() {
+        startActivity(Intent(this, OnboardingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         })
     }
