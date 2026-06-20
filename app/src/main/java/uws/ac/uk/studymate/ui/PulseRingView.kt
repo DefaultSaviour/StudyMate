@@ -47,6 +47,21 @@ class PulseRingView @JvmOverloads constructor(
     private var phase = 0f                          // 0 (rest) .. 1 (full breath)
     private var animator: ValueAnimator? = null
 
+    // We are a decorative overlay that only ever traces a sibling field inside a
+    // FrameLayout. We must NEVER inflate a wrap_content parent: a plain View with
+    // layout_height="match_parent" under an AT_MOST (wrap_content) spec expands to
+    // fill the whole available space (View.getDefaultSize returns the spec size for
+    // AT_MOST), which made the FrameLayout — and therefore the glow ring — balloon
+    // to the size of the entire panel. So report 0 unless we're given an EXACTLY
+    // spec; the FrameLayout then sizes to the real field and re-measures us (a
+    // match_parent child) to that exact size, so the ring lines up with the field.
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        setMeasuredDimension(exactOrZero(widthMeasureSpec), exactOrZero(heightMeasureSpec))
+    }
+
+    private fun exactOrZero(spec: Int): Int =
+        if (MeasureSpec.getMode(spec) == MeasureSpec.EXACTLY) MeasureSpec.getSize(spec) else 0
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         ringPath.reset()

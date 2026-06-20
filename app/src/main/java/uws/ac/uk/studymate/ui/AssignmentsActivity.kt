@@ -151,11 +151,13 @@ class AssignmentsActivity : AppCompatActivity() {
             // Refresh swatches in case the colour list ever changes.
             buildColorSwatches(addColorRow) { tappedColor ->
                 if (!colorStepUnlocked) return@buildColorSwatches
+                uws.ac.uk.studymate.util.Keyboard.hide(this)
                 addColor = tappedColor
                 highlightSelectedColor(addColorRow, tappedColor)
                 updateAddProgress()
             }
             buildColorSwatches(editColorRow) { tappedColor ->
+                uws.ac.uk.studymate.util.Keyboard.hide(this)
                 editColor = tappedColor
                 highlightSelectedColor(editColorRow, tappedColor)
                 updateEditIconEnabled()
@@ -235,29 +237,32 @@ class AssignmentsActivity : AppCompatActivity() {
             recycler                                       to -1f,
             emptyText                                      to  1f
         )
+        // Order: name → colour → icon → due date → save.
         addElems = listOf(
             findViewById<View>(R.id.addTitleText)       to -1f,
             findViewById<View>(R.id.addSubText)         to  1f,
             findViewById<View>(R.id.addTitleGlowWrap)   to -1f,
             findViewById<View>(R.id.addSubjectLabel)    to  1f,
             findViewById<View>(R.id.addSubjectGlowWrap) to -1f,
+            findViewById<View>(R.id.addIconLabel)       to  1f,
+            findViewById<View>(R.id.addIconGlowWrap)    to -1f,
             findViewById<View>(R.id.addDueLabel)        to  1f,
             findViewById<View>(R.id.addDueGlowWrap)     to -1f,
-            findViewById<View>(R.id.addIconGlowWrap)    to  1f,
-            findViewById<View>(R.id.addSaveGlowWrap)    to -1f,
-            addCancelBtn                                 to  1f
+            findViewById<View>(R.id.addSaveGlowWrap)    to  1f,
+            addCancelBtn                                 to -1f
         )
         editElems = listOf(
             findViewById<View>(R.id.editTitleText)     to -1f,
             findViewById<View>(R.id.editSubText)       to  1f,
             findViewById<View>(R.id.editTitleLayout)   to -1f,
             findViewById<View>(R.id.editSubjectLabel)  to  1f,
-            findViewById<View>(R.id.editSubjectScroll) to -1f,
+            findViewById<View>(R.id.editSubjectRow)    to -1f,
+            findViewById<View>(R.id.editIconLabel)     to  1f,
+            editPickIconBtn                            to -1f,
             findViewById<View>(R.id.editDueLabel)      to  1f,
             editPickDueBtn                              to -1f,
-            editPickIconBtn                            to  1f,
-            editConfirmBtn                             to -1f,
-            editCancelBtn                              to  1f
+            editConfirmBtn                             to  1f,
+            editCancelBtn                              to -1f
         )
         iconElems = listOf(
             findViewById<View>(R.id.iconPanelTitle)   to -1f,
@@ -408,64 +413,82 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // ─────────────────── Colour swatches ───────────────────
 
-    private fun buildColorSwatches(row: LinearLayout, onTap: (ColorChoice) -> Unit) {
-        row.removeAllViews()
+    // Lay the colour swatches out in fixed rows of three (built into a vertical
+    // container) so the picker is two tidy rows and NEVER needs a horizontal scroll.
+    private fun buildColorSwatches(container: LinearLayout, onTap: (ColorChoice) -> Unit) {
+        container.removeAllViews()
         val density = resources.displayMetrics.density
-        val container = (62 * density).toInt()
+        val cellW = (62 * density).toInt()
         val dot = (40 * density).toInt()
-        val margin = (8 * density).toInt()
+        val hMargin = (6 * density).toInt()
+        val vMargin = (6 * density).toInt()
 
-        colorChoices.forEach { choice ->
-            val item = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(container, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                    marginEnd = margin
-                }
-                tag = choice
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { onTap(choice) }
-            }
-
-            val swatch = View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(dot, dot)
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(parseColor(choice.hex))
-                    setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
-                }
-            }
-
-            val label = TextView(this).apply {
-                text = choice.label
-                textSize = 11f
-                setTextColor(Color.parseColor("#D4BC7E"))
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
+        colorChoices.chunked(3).forEachIndexed { rowIndex, group ->
+            val rowView = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(
-                    container, LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = (4 * density).toInt() }
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { if (rowIndex > 0) topMargin = vMargin }
             }
 
-            item.addView(swatch)
-            item.addView(label)
-            row.addView(item)
+            group.forEach { choice ->
+                val item = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    layoutParams = LinearLayout.LayoutParams(cellW, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                        marginStart = hMargin
+                        marginEnd = hMargin
+                    }
+                    tag = choice
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { onTap(choice) }
+                }
+
+                val swatch = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(dot, dot)
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(parseColor(choice.hex))
+                        setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
+                    }
+                }
+
+                val label = TextView(this).apply {
+                    text = choice.label
+                    textSize = 11f
+                    setTextColor(Color.parseColor("#D4BC7E"))
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        cellW, LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = (4 * density).toInt() }
+                }
+
+                item.addView(swatch)
+                item.addView(label)
+                rowView.addView(item)
+            }
+            container.addView(rowView)
         }
     }
 
-    private fun highlightSelectedColor(row: LinearLayout, selected: ColorChoice) {
+    private fun highlightSelectedColor(container: LinearLayout, selected: ColorChoice) {
         val density = resources.displayMetrics.density
-        for (i in 0 until row.childCount) {
-            val item = row.getChildAt(i) as? LinearLayout ?: continue
-            val choice = item.tag as? ColorChoice ?: continue
-            val swatch = item.getChildAt(0)
-            val bg = swatch.background as? GradientDrawable ?: continue
-            if (choice.hex.equals(selected.hex, ignoreCase = true)) {
-                bg.setStroke((3 * density).toInt(), Color.parseColor("#FFC4A24A"))
-            } else {
-                bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
+        for (r in 0 until container.childCount) {
+            val rowView = container.getChildAt(r) as? LinearLayout ?: continue
+            for (i in 0 until rowView.childCount) {
+                val item = rowView.getChildAt(i) as? LinearLayout ?: continue
+                val choice = item.tag as? ColorChoice ?: continue
+                val bg = item.getChildAt(0)?.background as? GradientDrawable ?: continue
+                if (choice.hex.equals(selected.hex, ignoreCase = true)) {
+                    bg.setStroke((3 * density).toInt(), Color.parseColor("#FFC4A24A"))
+                } else {
+                    bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
+                }
             }
         }
     }
@@ -548,32 +571,32 @@ class AssignmentsActivity : AppCompatActivity() {
     // ─────────────────── Form gating ───────────────────
 
     // Progressive guidance on the New-assignment panel: walk name → colour →
-    // due date → icon → save, unlocking each step only once the ones before it are
+    // icon → due date → save, unlocking each step only once the ones before it are
     // done, and glowing the single next-required field. Cancel and the name field
     // are always available.
     private fun updateAddProgress() {
         val hasTitle = !addTitleInput.text.isNullOrBlank()
         val hasColor = addColor != null
-        val hasDue = addDueDate != null
         val hasIcon = !addIconKey.isNullOrBlank()
+        val hasDue = addDueDate != null
 
         colorStepUnlocked = hasTitle
         addColorGlowWrap.alpha = if (hasTitle) 1f else 0.45f
 
-        addPickDueBtn.isEnabled = hasTitle && hasColor
-        addPickDueBtn.alpha = if (addPickDueBtn.isEnabled) 1f else 0.45f
-
-        addPickIconBtn.isEnabled = hasTitle && hasColor && hasDue
+        addPickIconBtn.isEnabled = hasTitle && hasColor
         addPickIconBtn.alpha = if (addPickIconBtn.isEnabled) 1f else 0.45f
 
-        addConfirmBtn.isEnabled = hasTitle && hasColor && hasDue && hasIcon
+        addPickDueBtn.isEnabled = hasTitle && hasColor && hasIcon
+        addPickDueBtn.alpha = if (addPickDueBtn.isEnabled) 1f else 0.45f
+
+        addConfirmBtn.isEnabled = hasTitle && hasColor && hasIcon && hasDue
         addConfirmBtn.alpha = if (addConfirmBtn.isEnabled) 1f else 0.45f
 
         val active = when {
             !hasTitle -> addTitleGlow
             !hasColor -> addColorGlow
-            !hasDue -> addDueGlow
             !hasIcon -> addIconGlow
+            !hasDue -> addDueGlow
             else -> addSaveGlow
         }
         setActiveGlow(active)
@@ -594,14 +617,20 @@ class AssignmentsActivity : AppCompatActivity() {
 
     private fun stopAllAddGlows() = setActiveGlow(null)
 
+    // Same order as the add panel: name → colour → icon → due date → save.
     private fun updateEditIconEnabled() {
-        val coreReady = !editTitleInput.text.isNullOrBlank() &&
-                editColor != null &&
-                editDueDate != null
-        editPickIconBtn.isEnabled = coreReady
-        editPickIconBtn.alpha = if (coreReady) 1f else 0.45f
+        val hasTitle = !editTitleInput.text.isNullOrBlank()
+        val hasColor = editColor != null
+        val hasIcon = !editIconKey.isNullOrBlank()
+        val hasDue = editDueDate != null
 
-        val saveReady = coreReady && !editIconKey.isNullOrBlank()
+        editPickIconBtn.isEnabled = hasTitle && hasColor
+        editPickIconBtn.alpha = if (editPickIconBtn.isEnabled) 1f else 0.45f
+
+        editPickDueBtn.isEnabled = hasTitle && hasColor && hasIcon
+        editPickDueBtn.alpha = if (editPickDueBtn.isEnabled) 1f else 0.45f
+
+        val saveReady = hasTitle && hasColor && hasIcon && hasDue
         editConfirmBtn.isEnabled = saveReady
         editConfirmBtn.alpha = if (saveReady) 1f else 0.45f
     }
@@ -618,6 +647,7 @@ class AssignmentsActivity : AppCompatActivity() {
         // Clear any swatch highlight from a previous session.
         buildColorSwatches(addColorRow) { tapped ->
             if (!colorStepUnlocked) return@buildColorSwatches
+            uws.ac.uk.studymate.util.Keyboard.hide(this)
             addColor = tapped
             highlightSelectedColor(addColorRow, tapped)
             updateAddProgress()
@@ -698,6 +728,9 @@ class AssignmentsActivity : AppCompatActivity() {
 
     private fun swapToPanel(target: Panel) {
         if (isAnimating || target == currentPanel) return
+
+        // Leaving a panel (often a text-entry one) — make sure the keyboard goes too.
+        uws.ac.uk.studymate.util.Keyboard.hide(this)
 
         val outgoingPanel = panelView(currentPanel)
         val incomingPanel = panelView(target)

@@ -12,6 +12,8 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -32,6 +34,7 @@ import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.ui.viewmodels.DeckListItem
 import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksSummary
 import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksViewModel
+import uws.ac.uk.studymate.util.AssignmentIcons
 
 /*//////////////////////
 Coded by Jamie Coleman
@@ -78,6 +81,11 @@ class FlashcardDecksActivity : AppCompatActivity() {
     private var editAssignment: Assignment? = null
     private var editingDeck: FlashcardDeck? = null
 
+    // When opened from a calendar assignment the screen is scoped to that one
+    // assignment: only its decks are listed and a new deck pre-picks it.
+    private var scopedAssignmentId: Int = -1
+    private var scopedAssignmentName: String? = null
+
     private enum class Panel { LIST, ADD, EDIT }
     private var currentPanel: Panel = Panel.LIST
     private var isAnimating = false
@@ -92,9 +100,13 @@ class FlashcardDecksActivity : AppCompatActivity() {
         uws.ac.uk.studymate.util.OrientationLock.apply(this)
         uws.ac.uk.studymate.util.KeyboardInsets.apply(this)
 
+        scopedAssignmentId = intent.getIntExtra("scoped_assignment_id", -1)
+        scopedAssignmentName = intent.getStringExtra("scoped_assignment_name")
+
         vm = ViewModelProvider(this)[FlashcardDecksViewModel::class.java]
 
         bindViews()
+        applyScopedHeader()
         setupRecycler()
         setupClicks()
         setupBackHandler()
@@ -121,7 +133,16 @@ class FlashcardDecksActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        vm.loadScreen()
+        vm.loadScreen(scopedAssignmentId.takeIf { it > 0 })
+    }
+
+    // In scoped mode, retitle the header to the assignment so it reads as "that
+    // assignment's decks" rather than the whole library.
+    private fun applyScopedHeader() {
+        val name = scopedAssignmentName
+        if (scopedAssignmentId <= 0 || name.isNullOrBlank()) return
+        findViewById<TextView>(R.id.listTitle).text = name
+        findViewById<TextView>(R.id.listSubText).text = "Decks for this assignment"
     }
 
     private fun bindViews() {
@@ -182,7 +203,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
 
     private fun setupRecycler() {
         adapter = DeckListAdapter(
-            items = emptyList(),
+            rows = emptyList(),
             onTap = { openDeckOptions(it.deck.id, it.deck.name) },
             onEdit = { openEditFor(it) },
             onDelete = { confirmDelete(it) }
@@ -248,18 +269,33 @@ class FlashcardDecksActivity : AppCompatActivity() {
 
     private fun applySummary(summary: FlashcardDecksSummary) {
         assignments = summary.assignments
-        adapter.submit(summary.items)
+
+        // Active decks first; completed-assignment decks go under their own header
+        // (shown only when there's at least one).
+        val active = summary.items.filter { !it.isCompleted }
+        val completed = summary.items.filter { it.isCompleted }
+        val rows = buildList {
+            active.forEach { add(DeckRow.Deck(it)) }
+            if (completed.isNotEmpty()) {
+                add(DeckRow.Header("COMPLETED ASSIGNMENTS"))
+                completed.forEach { add(DeckRow.Deck(it)) }
+            }
+        }
+        adapter.submitRows(rows)
+
         val isEmpty = summary.items.isEmpty()
         emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
         recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
 
         buildAssignmentSwatches(addSubjectRow) { tapped ->
             if (!assignmentStepUnlocked) return@buildAssignmentSwatches
+            uws.ac.uk.studymate.util.Keyboard.hide(this)
             addAssignment = tapped
             highlightSelectedAssignment(addSubjectRow, tapped)
             updateAddProgress()
         }
         buildAssignmentSwatches(editSubjectRow) { tapped ->
+            uws.ac.uk.studymate.util.Keyboard.hide(this)
             editAssignment = tapped
             highlightSelectedAssignment(editSubjectRow, tapped)
         }
@@ -290,13 +326,26 @@ class FlashcardDecksActivity : AppCompatActivity() {
                 setOnClickListener { onTap(assignment) }
             }
 
-            val swatch = View(this).apply {
+            // Show the assignment's own icon tinted with its colour (instead of a
+            // plain coloured circle) so the picker reads as that assignment at a
+            // glance. The badge keeps a GradientDrawable background so the selection
+            // highlight (a gold stroke) still works via getChildAt(0).
+            val swatch = FrameLayout(this).apply {
                 layoutParams = LinearLayout.LayoutParams(dot, dot)
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(parseSubjectColor(assignment.color))
+                    setColor(Color.parseColor("#33000000"))
                     setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
                 }
+                addView(
+                    ImageView(this@FlashcardDecksActivity).apply {
+                        layoutParams = FrameLayout.LayoutParams(
+                            (24 * density).toInt(), (24 * density).toInt(), Gravity.CENTER
+                        )
+                        setImageResource(AssignmentIcons.drawableForKey(assignment.icon))
+                        setColorFilter(parseSubjectColor(assignment.color))
+                    }
+                )
             }
 
             val label = TextView(this).apply {
@@ -340,9 +389,16 @@ class FlashcardDecksActivity : AppCompatActivity() {
             return
         }
         addNameInput.setText("")
-        // No assignment pre-selected — the user must pick one (it's the second step).
-        addAssignment = null
-        clearSubjectHighlight(addSubjectRow)
+        // Scoped mode pre-picks its assignment; otherwise the user must choose one
+        // (it's the second step).
+        addAssignment = scopedAssignmentId.takeIf { it > 0 }
+            ?.let { id -> assignments.firstOrNull { it.id == id } }
+        val preselected = addAssignment
+        if (preselected != null) {
+            highlightSelectedAssignment(addSubjectRow, preselected)
+        } else {
+            clearSubjectHighlight(addSubjectRow)
+        }
         updateAddProgress()
         swapToPanel(Panel.ADD)
     }
@@ -414,6 +470,9 @@ class FlashcardDecksActivity : AppCompatActivity() {
 
     private fun swapToPanel(target: Panel) {
         if (isAnimating || target == currentPanel) return
+
+        // Leaving a panel (often a text-entry one) — make sure the keyboard goes too.
+        uws.ac.uk.studymate.util.Keyboard.hide(this)
 
         val outgoingPanel = panelView(currentPanel)
         val incomingPanel = panelView(target)

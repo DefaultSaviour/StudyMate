@@ -252,31 +252,65 @@
                         android:clipChildren="false"
                         android:clipToPadding="false">
 
-                        <HorizontalScrollView
-                            android:id="@+id/addSubjectScroll"
+                        <!-- Colours laid out in fixed rows (built in code) so they
+                             never need a horizontal scroll. -->
+                        <LinearLayout
+                            android:id="@+id/addSubjectRow"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:background="@drawable/bg_glow_field"
                             android:padding="8dp"
-                            android:overScrollMode="never"
-                            android:scrollbars="horizontal"
-                            android:scrollbarThumbHorizontal="@color/gold_light"
-                            android:scrollbarSize="3dp"
-                            android:scrollbarAlwaysDrawHorizontalTrack="false"
-                            android:requiresFadingEdge="horizontal"
-                            android:fadingEdgeLength="32dp">
-
-                            <LinearLayout
-                                android:id="@+id/addSubjectRow"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal" />
-
-                        </HorizontalScrollView>
+                            android:gravity="center_horizontal"
+                            android:orientation="vertical" />
 
                         <uws.ac.uk.studymate.ui.PulseRingView
                             android:id="@+id/addSubjectGlow"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/addIconLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="ICON"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp" />
+
+                    <FrameLayout
+                        android:id="@+id/addIconGlowWrap"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/addPickIconBtn"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:gravity="center"
+                            android:text="Choose icon"
+                            android:textColor="@color/gold_light"
+                            android:textSize="15sp"
+                            android:backgroundTint="#59000000"
+                            android:enabled="false"
+                            app:cornerRadius="12dp"
+                            app:strokeColor="@color/gold_light"
+                            app:strokeWidth="1.5dp" />
+
+                        <uws.ac.uk.studymate.ui.PulseRingView
+                            android:id="@+id/addIconGlow"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:visibility="gone" />
@@ -316,43 +350,13 @@
                             android:textColor="@color/gold_light"
                             android:textSize="15sp"
                             android:backgroundTint="#59000000"
-                            app:cornerRadius="12dp"
-                            app:strokeColor="@color/gold_light"
-                            app:strokeWidth="1.5dp" />
-
-                        <uws.ac.uk.studymate.ui.PulseRingView
-                            android:id="@+id/addDueGlow"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:visibility="gone" />
-
-                    </FrameLayout>
-
-                    <FrameLayout
-                        android:id="@+id/addIconGlowWrap"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:clipChildren="false"
-                        android:clipToPadding="false">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/addPickIconBtn"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="52dp"
-                            android:gravity="center"
-                            android:text="Choose icon"
-                            android:textColor="@color/gold_light"
-                            android:textSize="15sp"
-                            android:backgroundTint="#59000000"
                             android:enabled="false"
                             app:cornerRadius="12dp"
                             app:strokeColor="@color/gold_light"
                             app:strokeWidth="1.5dp" />
 
                         <uws.ac.uk.studymate.ui.PulseRingView
-                            android:id="@+id/addIconGlow"
+                            android:id="@+id/addDueGlow"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:visibility="gone" />
@@ -482,27 +486,45 @@
                         android:textColor="@color/gold_light"
                         android:textSize="12sp" />
 
-                    <HorizontalScrollView
-                        android:id="@+id/editSubjectScroll"
+                    <!-- Colours in fixed rows (built in code), never a horizontal scroll. -->
+                    <LinearLayout
+                        android:id="@+id/editSubjectRow"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:overScrollMode="never"
-                        android:scrollbars="horizontal"
-                        android:scrollbarThumbHorizontal="@color/gold_light"
-                        android:scrollbarSize="3dp"
-                        android:scrollbarAlwaysDrawHorizontalTrack="false"
-                        android:requiresFadingEdge="horizontal"
-                        android:fadingEdgeLength="32dp">
+                        android:background="@drawable/bg_glow_field"
+                        android:padding="8dp"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical" />
 
-                        <LinearLayout
-                            android:id="@+id/editSubjectRow"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal" />
+                    <TextView
+                        android:id="@+id/editIconLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="ICON"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp" />
 
-                    </HorizontalScrollView>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/editPickIconBtn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:text="Edit icon"
+                        android:textColor="@color/gold_light"
+                        android:textSize="15sp"
+                        android:backgroundTint="#59000000"
+                        app:strokeColor="@color/gold_light"
+                        app:strokeWidth="1.5dp" />
 
                     <TextView
                         android:id="@+id/editDueLabel"
@@ -527,20 +549,6 @@
                         android:layout_marginTop="8dp"
                         android:gravity="center"
                         android:text="Edit due date"
-                        android:textColor="@color/gold_light"
-                        android:textSize="15sp"
-                        android:backgroundTint="#59000000"
-                        app:strokeColor="@color/gold_light"
-                        app:strokeWidth="1.5dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/editPickIconBtn"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="16dp"
-                        android:gravity="center"
-                        android:text="Edit icon"
                         android:textColor="@color/gold_light"
                         android:textSize="15sp"
                         android:backgroundTint="#59000000"

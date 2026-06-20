@@ -101,8 +101,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val nextDueAssignment = findNextDueAssignment(assignments)
 
             // Work out which decks have cards due now, ordered like the Flashcards list.
+            // Decks under a finished/past-due assignment are excluded from quick-review.
             val today = LocalDate.now().toString()
-            val dueCards = db.cardDao().getDueCards(userId, today)
+            val dueCards = db.cardDao().getDueCardsActive(userId, today, LocalDateTime.now().toString())
             val dueDeckIdSet = dueCards.map { it.deckId }.toSet()
             val assignmentsById = db.assignmentDao().getAssignments(userId).associateBy { it.id }
             val dueDecks = db.deckDao().getDecks(userId)

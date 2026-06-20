@@ -257,6 +257,9 @@ class DeckCardsActivity : AppCompatActivity() {
     private fun swapToPanel(target: Panel) {
         if (isAnimating || target == currentPanel) return
 
+        // Leaving a panel (often a text-entry one) — make sure the keyboard goes too.
+        uws.ac.uk.studymate.util.Keyboard.hide(this)
+
         val outgoingPanel = panelView(currentPanel)
         val incomingPanel = panelView(target)
         val outgoingElems = panelElems(currentPanel)

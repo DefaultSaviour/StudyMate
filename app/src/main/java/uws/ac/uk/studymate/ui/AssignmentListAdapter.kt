@@ -1,8 +1,6 @@
 package uws.ac.uk.studymate.ui
 
-import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -49,10 +47,11 @@ class AssignmentListAdapter(
         holder.title.text = item.assignment.title
         holder.due.text = "Due: ${AssignmentDateTimeUtils.formatDueDate(item.dueAt)}"
 
+        // Just the icon in the assignment's colour — no badge background or outline.
         val color = ColorUtils.parseOrDefault(item.colorHex)
-        (holder.badge.background as? GradientDrawable)?.setColor(color)
+        holder.badge.background = null
         holder.icon.setImageResource(AssignmentIcons.drawableForKey(item.iconKey))
-        holder.icon.setColorFilter(Color.WHITE)
+        holder.icon.setColorFilter(color)
 
         // Completed assignments: filled check, struck-through title, dimmed row.
         if (item.isCompleted) {

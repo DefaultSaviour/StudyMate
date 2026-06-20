@@ -19,10 +19,12 @@ import java.time.LocalDate
 Drives a review session for one deck. Each card is graded Again / Wrong / Correct:
 
   Correct -> SM-2 schedules it further out (Good) and it leaves the session.
-  Wrong   -> SM-2 resets it (lapse, due again tomorrow) and it goes to the BACK
-             of the session queue — you'll see it again before the session ends.
+  Wrong   -> SM-2 resets it (lapse, due again tomorrow) and it leaves the session
+             too — you've graded it, so it won't reappear this session (it'll come
+             back on its next due date).
   Again   -> same lapse scheduling as Wrong, but it goes to the FRONT of the
-             queue so you see it again immediately.
+             queue so you see it again immediately (use it when you want another go
+             right now).
 
 For the SM-2 "when is this next due" maths, Again and Wrong are treated the same
 (both a lapse). Either way CardRepo.reviewCard logs the review for the stats screen.
@@ -119,8 +121,10 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
 
             if (queue.isNotEmpty()) queue.removeFirst()
             when (grade) {
+                // Both Correct and Wrong are final for this session — the card has
+                // been graded and leaves the queue. Only Again brings it straight back.
                 Grade.CORRECT -> doneCount++
-                Grade.WRONG -> queue.addLast(current)    // re-show later this session
+                Grade.WRONG -> doneCount++
                 Grade.AGAIN -> queue.addFirst(current)   // re-show immediately
             }
             if (queue.isEmpty()) {
@@ -154,7 +158,10 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
     // on the soonest upcoming SM-2 due date. No-op if push notifications are off.
     private suspend fun rescheduleReviewReminder() {
         val session = sessionResolver.requireUser() ?: return
-        val nextDue = db.cardDao().getNextDueDate(session.userId, LocalDate.now().toString())
+        // Ignore cards under finished/past-due assignments when picking the next reminder.
+        val nextDue = db.cardDao().getNextDueDateActive(
+            session.userId, LocalDate.now().toString(), java.time.LocalDateTime.now().toString()
+        )
         ReviewReminderScheduler.scheduleNextReview(getApplication(), session.value, nextDue)
     }
 }
