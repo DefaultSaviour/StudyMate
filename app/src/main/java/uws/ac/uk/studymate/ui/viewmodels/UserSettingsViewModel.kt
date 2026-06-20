@@ -39,7 +39,6 @@ data class UserSettingsSummary(
     // Auto-login only makes sense for password accounts (it bypasses the typed
     // password). Hide the row entirely for biometric-only accounts.
     val isPasswordAccount: Boolean,
-    val subjectCount: Int,
     val deckCount: Int,
     val flashcardCount: Int,
     val assignmentCount: Int,
@@ -88,7 +87,6 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
             val user = userWithMeta.user
             val userId = user.id
 
-            val subjects = db.subjectDao().getSubjects(userId)
             val decksWithCards = db.deckDao().getDecksWithCards(userId)
             val assignments = db.assignmentDao().getAssignments(userId)
 
@@ -108,7 +106,6 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                     notificationsEnabled = user.pushNotificationsEnabled ?: false,
                     autoLoginEnabled = user.autoLoginEnabled,
                     isPasswordAccount = user.authMode == SessionManager.AUTH_MODE_PASSWORD,
-                    subjectCount = subjects.size,
                     deckCount = decksWithCards.size,
                     flashcardCount = decksWithCards.sumOf { it.cards.size },
                     assignmentCount = assignments.size,
@@ -255,7 +252,7 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
 
     // Outcome of an export/import op, observed by the Activity to toast the user.
     sealed class DataOpResult {
-        data class ExportSuccess(val subjects: Int, val decks: Int, val cards: Int) : DataOpResult()
+        data class ExportSuccess(val assignments: Int, val decks: Int, val cards: Int) : DataOpResult()
         data class ImportSuccess(val summary: BackupRepo.ImportSummary) : DataOpResult()
         data class Error(val message: String) : DataOpResult()
     }
@@ -282,9 +279,9 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                 } ?: throw java.io.IOException("Couldn't open the file for writing.")
                 _dataOpResult.postValue(
                     DataOpResult.ExportSuccess(
-                        subjects = data.subjects.size,
-                        decks = data.subjects.sumOf { it.decks.size },
-                        cards = data.subjects.sumOf { s -> s.decks.sumOf { it.cards.size } }
+                        assignments = data.assignments.size,
+                        decks = data.assignments.sumOf { it.decks.size },
+                        cards = data.assignments.sumOf { a -> a.decks.sumOf { it.cards.size } }
                     )
                 )
             } catch (e: Exception) {

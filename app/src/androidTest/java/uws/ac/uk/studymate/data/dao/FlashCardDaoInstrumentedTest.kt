@@ -20,9 +20,9 @@ class FlashCardDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun getCards_returnsCardsForThatDeck() = runBlocking {
         val userId = insertUser(email = "cards-one@example.com")
-        val subjectId = insertSubject(userId = userId, name = "French")
-        val firstDeckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
-        val secondDeckId = insertDeck(userId = userId, subjectId = subjectId, name = "Advanced")
+        val subjectId = insertAssignment(userId = userId, title = "French")
+        val firstDeckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Basics")
+        val secondDeckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Advanced")
 
         insertCard(userId = userId, deckId = firstDeckId, front = "Bonjour", back = "Hello")
         insertCard(userId = userId, deckId = firstDeckId, front = "Merci", back = "Thanks")
@@ -40,8 +40,8 @@ class FlashCardDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun updateCard_changesSavedValues() = runBlocking {
         val userId = insertUser(email = "card-update@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Spanish")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Words")
+        val subjectId = insertAssignment(userId = userId, title = "Spanish")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Words")
         insertCard(userId = userId, deckId = deckId, front = "Hola", back = "Hi")
 
         val saved = db.cardDao().getCards(deckId).first()
@@ -59,8 +59,8 @@ class FlashCardDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun deleteCard_removesItFromTheDeck() = runBlocking {
         val userId = insertUser(email = "card-delete@example.com")
-        val subjectId = insertSubject(userId = userId, name = "German")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Words")
+        val subjectId = insertAssignment(userId = userId, title = "German")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Words")
         insertCard(userId = userId, deckId = deckId, front = "Ja", back = "Yes")
 
         val saved = db.cardDao().getCards(deckId).first()

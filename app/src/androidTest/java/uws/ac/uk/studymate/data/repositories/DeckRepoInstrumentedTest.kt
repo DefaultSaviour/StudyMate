@@ -21,12 +21,12 @@ class DeckRepoInstrumentedTest : RoomDbTestBase() {
     fun addDeck_savesTheDeckAndReturnsItsId() = runBlocking {
         val repo = DeckRepo(db)
         val userId = insertUser(email = "deck-repo-save@example.com")
-        val subjectId = insertSubject(userId = userId, name = "History")
+        val assignmentId = insertAssignment(userId = userId, title = "History")
 
         val deckId = repo.addDeck(
             FlashcardDeck(
                 userId = userId,
-                subjectId = subjectId,
+                assignmentId = assignmentId,
                 name = "Dates"
             )
         )
@@ -45,11 +45,11 @@ class DeckRepoInstrumentedTest : RoomDbTestBase() {
     fun deleteDeck_removesTheDeck() = runBlocking {
         val repo = DeckRepo(db)
         val userId = insertUser(email = "deck-repo-delete@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Geography")
+        val assignmentId = insertAssignment(userId = userId, title = "Geography")
         repo.addDeck(
             FlashcardDeck(
                 userId = userId,
-                subjectId = subjectId,
+                assignmentId = assignmentId,
                 name = "Capitals"
             )
         )

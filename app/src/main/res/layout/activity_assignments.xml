@@ -94,27 +94,11 @@
                     android:textSize="13sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/subjectsBtn"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="18dp"
-                    android:gravity="center"
-                    android:text="Subjects"
-                    android:textColor="@color/gold_light"
-                    android:textSize="15sp"
-                    android:backgroundTint="#59000000"
-                    app:strokeColor="@color/gold_light"
-                    app:strokeWidth="1.5dp"
-                    app:cornerRadius="12dp"
-                    app:rippleColor="#33D4BC7E" />
-
-                <com.google.android.material.button.MaterialButton
                     android:id="@+id/createAssignmentBtn"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="18dp"
                     app:icon="@drawable/ic_add"
                     app:iconTint="@color/navy"
                     app:iconGravity="textStart"
@@ -203,7 +187,7 @@
                         android:paddingEnd="14dp"
                         android:paddingTop="5dp"
                         android:paddingBottom="5dp"
-                        android:text="Fill in title, subject and due date"
+                        android:text="Fill in name, colour and due date"
                         android:textColor="@color/gold_light"
                         android:textSize="13sp" />
 
@@ -220,7 +204,7 @@
                             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Assignment title"
+                            android:hint="Assignment name"
                             app:boxStrokeColor="@color/box_stroke_gold"
                             app:hintTextColor="@color/gold_light"
                             android:textColorHint="#99D4BC7E">
@@ -256,7 +240,7 @@
                         android:paddingTop="6dp"
                         android:paddingBottom="6dp"
                         android:letterSpacing="0.15"
-                        android:text="SUBJECT"
+                        android:text="COLOUR"
                         android:textColor="@color/gold_light"
                         android:textSize="12sp" />
 
@@ -466,7 +450,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
-                        android:hint="Assignment title"
+                        android:hint="Assignment name"
                         app:boxStrokeColor="@color/box_stroke_gold"
                         app:hintTextColor="@color/gold_light"
                         android:textColorHint="#99D4BC7E">
@@ -494,7 +478,7 @@
                         android:paddingTop="6dp"
                         android:paddingBottom="6dp"
                         android:letterSpacing="0.15"
-                        android:text="SUBJECT"
+                        android:text="COLOUR"
                         android:textColor="@color/gold_light"
                         android:textSize="12sp" />
 

@@ -21,10 +21,9 @@ updated 09/04/26
  *//////////////////////
 // Holds one assignment that should appear inside a calendar day cell.
 data class CalendarAssignmentEntry(
-    val subjectName: String,
     val assignmentTitle: String,
     val dueAt: LocalDateTime,
-    val subjectColorHex: String?,
+    val colorHex: String?,
     val iconKey: String
 )
 
@@ -73,25 +72,21 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
             val userId = session.userId
             val user = session.value
 
-            // Load the assignments and the subject colors that the calendar needs.
+            // Load the assignments the calendar needs (each carries its own colour now).
             val assignments = db.assignmentDao().getAssignments(userId)
-            val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
 
             val entriesByDate = assignments
                 .mapNotNull { assignment ->
                     val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return@mapNotNull null
-                    val subject = subjectsById[assignment.subjectId]
                     CalendarAssignmentEntry(
-                        subjectName = subject?.name ?: "Unknown subject",
                         assignmentTitle = assignment.title,
                         dueAt = dueAt,
-                        subjectColorHex = subject?.color,
+                        colorHex = assignment.color,
                         iconKey = assignment.icon
                     )
                 }
                 .sortedWith(
                     compareBy<CalendarAssignmentEntry> { it.dueAt }
-                        .thenBy { it.subjectName.lowercase() }
                         .thenBy { it.assignmentTitle.lowercase() }
                 )
                 .groupBy { it.dueAt.toLocalDate() }

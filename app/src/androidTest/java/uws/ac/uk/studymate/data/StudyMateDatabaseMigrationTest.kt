@@ -188,6 +188,51 @@ class StudyMateDatabaseMigrationTest {
         context.getDatabasePath(dbName).delete()
     }
 
+    // 10 -> 11 merges Subject into Assignment (flat model). It is a DESTRUCTIVE
+    // migration for the study tree: it drops Subjects / Subject_Progress, and
+    // rebuilds Assignments (now carrying its own `color`, no `subject_id`) and
+    // Flashcard_Decks (now keyed by `assignment_id`). User data is preserved.
+    @Test
+    fun migration10To11_mergesSubjectIntoAssignment_andRebuildsDecks() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbName = "migration-test-${System.currentTimeMillis()}.db"
+
+        val helper = createHelper(dbName)
+        helper.writableDatabase.use { db ->
+            createVersion10Schema(db)
+            applyMigrations(db, from = 10, to = 11)
+
+            // Subjects / Subject_Progress are gone.
+            assertFalse(tableExists(db, "Subjects"))
+            assertFalse(tableExists(db, "Subject_Progress"))
+
+            // Assignments gained `color` and dropped `subject_id`.
+            val assignmentColumns = readColumnNames(db, "Assignments")
+            assertTrue(assignmentColumns.contains("color"))
+            assertTrue(assignmentColumns.contains("completed_at"))
+            assertFalse(assignmentColumns.contains("subject_id"))
+
+            // Decks now hang off an assignment.
+            val deckColumns = readColumnNames(db, "Flashcard_Decks")
+            assertTrue(deckColumns.contains("assignment_id"))
+            assertFalse(deckColumns.contains("subject_id"))
+
+            // An assignment can be inserted with no subject, carrying its colour.
+            db.execSQL(
+                """
+                INSERT INTO `Assignments` (`user_id`, `title`, `color`, `due_date`, `icon`)
+                VALUES (1, 'Maths - Calculus', '#A855F7', '2026-07-01T09:00', 'calculator')
+                """.trimIndent()
+            )
+            db.query("SELECT color FROM `Assignments` WHERE title = 'Maths - Calculus'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("#A855F7", cursor.getString(0))
+            }
+        }
+
+        context.getDatabasePath(dbName).delete()
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     // Apply each migration in the production MIGRATIONS array, in order, from
@@ -336,6 +381,117 @@ class StudyMateDatabaseMigrationTest {
             )
             """.trimIndent()
         )
+    }
+
+    // The full study tree as it stood at v10 (Subject still a separate table;
+    // assignments and decks keyed by subject_id). Mirrors what Room generated
+    // before the 10->11 merge so the destructive migration has real tables to
+    // drop / clear. FK clauses are omitted — the migration only DROPs/creates
+    // and DELETEs by name.
+    private fun createVersion10Schema(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS `Review_Logs`")
+        db.execSQL("DROP TABLE IF EXISTS `Flash_Cards`")
+        db.execSQL("DROP TABLE IF EXISTS `Flashcard_Decks`")
+        db.execSQL("DROP TABLE IF EXISTS `Subject_Progress`")
+        db.execSQL("DROP TABLE IF EXISTS `Assignments`")
+        db.execSQL("DROP TABLE IF EXISTS `Subjects`")
+        db.execSQL("DROP TABLE IF EXISTS `User`")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `User` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL,
+                `email` TEXT NOT NULL,
+                `password_hash` TEXT NOT NULL,
+                `password_salt` TEXT NOT NULL,
+                `push_notifications_enabled` INTEGER,
+                `created_at` TEXT,
+                `auth_mode` TEXT NOT NULL DEFAULT 'password',
+                `auto_login_enabled` INTEGER NOT NULL DEFAULT 1
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Subjects` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `name` TEXT NOT NULL,
+                `color` TEXT
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Assignments` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `subject_id` INTEGER NOT NULL,
+                `title` TEXT NOT NULL,
+                `due_date` TEXT,
+                `icon` TEXT NOT NULL DEFAULT 'assignment',
+                `completed_at` TEXT
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Subject_Progress` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `subject_id` INTEGER NOT NULL,
+                `completed_tasks` INTEGER NOT NULL,
+                `total_tasks` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Flashcard_Decks` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `subject_id` INTEGER NOT NULL,
+                `name` TEXT NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Flash_Cards` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `deck_id` INTEGER,
+                `front` TEXT NOT NULL,
+                `back` TEXT NOT NULL,
+                `ease_factor` REAL NOT NULL DEFAULT 2.5,
+                `interval_days` INTEGER NOT NULL DEFAULT 0,
+                `repetitions` INTEGER NOT NULL DEFAULT 0,
+                `due_at` TEXT,
+                `last_reviewed_at` TEXT
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Review_Logs` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `card_id` INTEGER,
+                `reviewed_at` TEXT NOT NULL,
+                `grade` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+
+    private fun tableExists(db: SupportSQLiteDatabase, tableName: String): Boolean {
+        db.query(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+            arrayOf(tableName)
+        ).use { cursor ->
+            return cursor.moveToFirst()
+        }
     }
 
     private fun readColumnNames(db: SupportSQLiteDatabase, tableName: String): List<String> {

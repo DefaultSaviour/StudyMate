@@ -2,7 +2,6 @@ package uws.ac.uk.studymate.ui
 
 import uws.ac.uk.studymate.util.ColorUtils
 
-import android.animation.ObjectAnimator
 import android.content.Intent
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.widget.DatePicker
@@ -11,9 +10,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
@@ -33,9 +30,9 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.Assignment
-import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.ui.viewmodels.AssignmentsItem
 import uws.ac.uk.studymate.ui.viewmodels.AssignmentsViewModel
+import uws.ac.uk.studymate.ui.viewmodels.ColorChoice
 import uws.ac.uk.studymate.util.AssignmentIcons
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -45,6 +42,7 @@ import java.time.format.DateTimeFormatter
 Coded by Jamie Coleman
 05/04/26
 redesigned 18/04/26 — wood-glass UI, RecyclerView, inline add/edit/icon panel-swap
+merged 17/06/26 — Subject folded in: the old subject picker is now a colour picker
  *//////////////////////
 class AssignmentsActivity : AppCompatActivity() {
 
@@ -59,11 +57,10 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var recycler: RecyclerView
     private lateinit var emptyText: TextView
     private lateinit var createAssignmentBtn: MaterialButton
-    private lateinit var subjectsBtn: MaterialButton
     private lateinit var adapter: AssignmentListAdapter
 
     private lateinit var addTitleInput: TextInputEditText
-    private lateinit var addSubjectRow: LinearLayout
+    private lateinit var addColorRow: LinearLayout
     private lateinit var addPickDueBtn: MaterialButton
     private lateinit var addPickIconBtn: MaterialButton
     private lateinit var addConfirmBtn: MaterialButton
@@ -71,19 +68,19 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // Progressive-glow guidance on the New-assignment panel: each step's field
     // glows when it's the next required input, and stays locked until then.
-    private lateinit var addSubjectGlowWrap: View
+    private lateinit var addColorGlowWrap: View
     private lateinit var addTitleGlow: PulseRingView
-    private lateinit var addSubjectGlow: PulseRingView
+    private lateinit var addColorGlow: PulseRingView
     private lateinit var addDueGlow: PulseRingView
     private lateinit var addIconGlow: PulseRingView
     private lateinit var addSaveGlow: PulseRingView
     private val addGlows: List<PulseRingView> by lazy {
-        listOf(addTitleGlow, addSubjectGlow, addDueGlow, addIconGlow, addSaveGlow)
+        listOf(addTitleGlow, addColorGlow, addDueGlow, addIconGlow, addSaveGlow)
     }
-    private var subjectStepUnlocked = false
+    private var colorStepUnlocked = false
 
     private lateinit var editTitleInput: TextInputEditText
-    private lateinit var editSubjectRow: LinearLayout
+    private lateinit var editColorRow: LinearLayout
     private lateinit var editPickDueBtn: MaterialButton
     private lateinit var editPickIconBtn: MaterialButton
     private lateinit var editConfirmBtn: MaterialButton
@@ -101,15 +98,15 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var timeConfirmBtn: MaterialButton
     private lateinit var timeBackBtn: MaterialButton
 
-    private var subjects: List<Subject> = emptyList()
+    private var colorChoices: List<ColorChoice> = emptyList()
 
     // Working form state
-    private var addSubject: Subject? = null
+    private var addColor: ColorChoice? = null
     private var addDueDate: LocalDateTime? = null
     private var addIconKey: String? = null
 
     private var editingAssignment: Assignment? = null
-    private var editSubject: Subject? = null
+    private var editColor: ColorChoice? = null
     private var editDueDate: LocalDateTime? = null
     private var editIconKey: String? = null
 
@@ -144,33 +141,23 @@ class AssignmentsActivity : AppCompatActivity() {
         runEntranceAnimation()
 
         vm.assignmentsSummary.observe(this) { summary ->
-            subjects = summary.subjects
+            colorChoices = summary.colorChoices
             adapter.submit(summary.items)
             val isEmpty = summary.items.isEmpty()
 
-            // Can't create an assignment without a subject to file it under, so
-            // gate the button until the user has made their first subject.
-            val hasSubjects = subjects.isNotEmpty()
-            createAssignmentBtn.isEnabled = hasSubjects
-            createAssignmentBtn.alpha = if (hasSubjects) 1f else 0.45f
-
-            emptyText.text = if (hasSubjects) {
-                "No assignments yet — tap Create assignment to add one."
-            } else {
-                "Tap Subjects to add your first subject, then you can create assignments."
-            }
+            emptyText.text = "No assignments yet — tap Create assignment to add one."
             emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
             recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
-            // Refresh swatches when subjects change so the picker stays in sync.
-            buildSubjectSwatches(addSubjectRow) { tappedSubject ->
-                if (!subjectStepUnlocked) return@buildSubjectSwatches
-                addSubject = tappedSubject
-                highlightSelectedSubject(addSubjectRow, tappedSubject)
+            // Refresh swatches in case the colour list ever changes.
+            buildColorSwatches(addColorRow) { tappedColor ->
+                if (!colorStepUnlocked) return@buildColorSwatches
+                addColor = tappedColor
+                highlightSelectedColor(addColorRow, tappedColor)
                 updateAddProgress()
             }
-            buildSubjectSwatches(editSubjectRow) { tappedSubject ->
-                editSubject = tappedSubject
-                highlightSelectedSubject(editSubjectRow, tappedSubject)
+            buildColorSwatches(editColorRow) { tappedColor ->
+                editColor = tappedColor
+                highlightSelectedColor(editColorRow, tappedColor)
                 updateEditIconEnabled()
             }
         }
@@ -201,18 +188,17 @@ class AssignmentsActivity : AppCompatActivity() {
         recycler = findViewById(R.id.assignmentsRecycler)
         emptyText = findViewById(R.id.emptyStateText)
         createAssignmentBtn = findViewById(R.id.createAssignmentBtn)
-        subjectsBtn = findViewById(R.id.subjectsBtn)
 
         addTitleInput = findViewById(R.id.addTitleInput)
-        addSubjectRow = findViewById(R.id.addSubjectRow)
+        addColorRow = findViewById(R.id.addSubjectRow)
         addPickDueBtn = findViewById(R.id.addPickDueBtn)
         addPickIconBtn = findViewById(R.id.addPickIconBtn)
         addConfirmBtn = findViewById(R.id.addConfirmBtn)
         addCancelBtn = findViewById(R.id.addCancelBtn)
 
-        addSubjectGlowWrap = findViewById(R.id.addSubjectGlowWrap)
+        addColorGlowWrap = findViewById(R.id.addSubjectGlowWrap)
         addTitleGlow = findViewById(R.id.addTitleGlow)
-        addSubjectGlow = findViewById(R.id.addSubjectGlow)
+        addColorGlow = findViewById(R.id.addSubjectGlow)
         addDueGlow = findViewById(R.id.addDueGlow)
         addIconGlow = findViewById(R.id.addIconGlow)
         addSaveGlow = findViewById(R.id.addSaveGlow)
@@ -222,7 +208,7 @@ class AssignmentsActivity : AppCompatActivity() {
             .setBoxCornerRadii(r12, r12, r12, r12)
 
         editTitleInput = findViewById(R.id.editTitleInput)
-        editSubjectRow = findViewById(R.id.editSubjectRow)
+        editColorRow = findViewById(R.id.editSubjectRow)
         editPickDueBtn = findViewById(R.id.editPickDueBtn)
         editPickIconBtn = findViewById(R.id.editPickIconBtn)
         editConfirmBtn = findViewById(R.id.editConfirmBtn)
@@ -244,11 +230,10 @@ class AssignmentsActivity : AppCompatActivity() {
         listElems = listOf(
             findViewById<View>(R.id.listTitle)            to -1f,
             findViewById<View>(R.id.listSubText)          to  1f,
-            subjectsBtn                                    to -1f,
-            createAssignmentBtn                            to  1f,
-            findViewById<View>(R.id.listSectionLabel)     to -1f,
-            recycler                                       to  1f,
-            emptyText                                      to -1f
+            createAssignmentBtn                            to -1f,
+            findViewById<View>(R.id.listSectionLabel)     to  1f,
+            recycler                                       to -1f,
+            emptyText                                      to  1f
         )
         addElems = listOf(
             findViewById<View>(R.id.addTitleText)       to -1f,
@@ -270,9 +255,9 @@ class AssignmentsActivity : AppCompatActivity() {
             findViewById<View>(R.id.editSubjectScroll) to -1f,
             findViewById<View>(R.id.editDueLabel)      to  1f,
             editPickDueBtn                              to -1f,
-            editPickIconBtn                             to  1f,
-            editConfirmBtn                              to -1f,
-            editCancelBtn                               to  1f
+            editPickIconBtn                            to  1f,
+            editConfirmBtn                             to -1f,
+            editCancelBtn                              to  1f
         )
         iconElems = listOf(
             findViewById<View>(R.id.iconPanelTitle)   to -1f,
@@ -307,13 +292,6 @@ class AssignmentsActivity : AppCompatActivity() {
 
         createAssignmentBtn.setOnClickListener {
             openAddPanel()
-        }
-
-        // Subjects now live under Assignments — open the existing subject screen.
-        // It finish()es back here, so returning refreshes the subject list and
-        // re-enables "Create assignment" if a subject was just added.
-        subjectsBtn.setOnClickListener {
-            startActivity(Intent().setClassName(packageName, "$packageName.ui.SubjectsActivity"))
         }
 
         addCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
@@ -354,19 +332,19 @@ class AssignmentsActivity : AppCompatActivity() {
 
         addPickIconBtn.setOnClickListener {
             iconPickerOrigin = Panel.ADD
-            populateIconGrid(addSubject?.color)
+            populateIconGrid(addColor?.hex)
             swapToPanel(Panel.ICON)
         }
         editPickIconBtn.setOnClickListener {
             iconPickerOrigin = Panel.EDIT
-            populateIconGrid(editSubject?.color)
+            populateIconGrid(editColor?.hex)
             swapToPanel(Panel.ICON)
         }
 
         addConfirmBtn.setOnClickListener {
             vm.addAssignment(
                 title = addTitleInput.text?.toString().orEmpty(),
-                subject = addSubject,
+                colorHex = addColor?.hex,
                 dueDate = addDueDate?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 iconKey = addIconKey
             )
@@ -376,14 +354,14 @@ class AssignmentsActivity : AppCompatActivity() {
             vm.updateAssignment(
                 original = original,
                 title = editTitleInput.text?.toString().orEmpty(),
-                subject = editSubject,
+                colorHex = editColor?.hex,
                 dueDate = editDueDate?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 iconKey = editIconKey
             )
         }
 
-        // React to title changes so we can ungate the icon button as soon as
-        // all three required fields are filled in.
+        // React to title changes so we can ungate the next step as soon as
+        // all the required fields are filled in.
         addTitleInput.addTextChangedListener(simpleWatcher { updateAddProgress() })
         editTitleInput.addTextChangedListener(simpleWatcher { updateEditIconEnabled() })
     }
@@ -428,39 +406,39 @@ class AssignmentsActivity : AppCompatActivity() {
         }
     }
 
-    // ─────────────────── Subject swatches ───────────────────
+    // ─────────────────── Colour swatches ───────────────────
 
-    private fun buildSubjectSwatches(row: LinearLayout, onTap: (Subject) -> Unit) {
+    private fun buildColorSwatches(row: LinearLayout, onTap: (ColorChoice) -> Unit) {
         row.removeAllViews()
         val density = resources.displayMetrics.density
         val container = (62 * density).toInt()
         val dot = (40 * density).toInt()
         val margin = (8 * density).toInt()
 
-        subjects.forEach { subject ->
+        colorChoices.forEach { choice ->
             val item = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(container, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                     marginEnd = margin
                 }
-                tag = subject
+                tag = choice
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { onTap(subject) }
+                setOnClickListener { onTap(choice) }
             }
 
             val swatch = View(this).apply {
                 layoutParams = LinearLayout.LayoutParams(dot, dot)
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(parseSubjectColor(subject.color))
+                    setColor(parseColor(choice.hex))
                     setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
                 }
             }
 
             val label = TextView(this).apply {
-                text = subject.name
+                text = choice.label
                 textSize = 11f
                 setTextColor(Color.parseColor("#D4BC7E"))
                 maxLines = 1
@@ -477,14 +455,14 @@ class AssignmentsActivity : AppCompatActivity() {
         }
     }
 
-    private fun highlightSelectedSubject(row: LinearLayout, selected: Subject) {
+    private fun highlightSelectedColor(row: LinearLayout, selected: ColorChoice) {
         val density = resources.displayMetrics.density
         for (i in 0 until row.childCount) {
             val item = row.getChildAt(i) as? LinearLayout ?: continue
-            val subject = item.tag as? Subject ?: continue
+            val choice = item.tag as? ColorChoice ?: continue
             val swatch = item.getChildAt(0)
             val bg = swatch.background as? GradientDrawable ?: continue
-            if (subject.id == selected.id) {
+            if (choice.hex.equals(selected.hex, ignoreCase = true)) {
                 bg.setStroke((3 * density).toInt(), Color.parseColor("#FFC4A24A"))
             } else {
                 bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
@@ -499,7 +477,7 @@ class AssignmentsActivity : AppCompatActivity() {
         val density = resources.displayMetrics.density
         val tile = (54 * density).toInt()
         val gap = (8 * density).toInt()
-        val tint = parseSubjectColor(colorHex)
+        val tint = parseColor(colorHex)
         val perRow = 5
 
         AssignmentIcons.options.chunked(perRow).forEachIndexed { rowIndex, group ->
@@ -569,31 +547,31 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // ─────────────────── Form gating ───────────────────
 
-    // Progressive guidance on the New-assignment panel: walk title → subject →
+    // Progressive guidance on the New-assignment panel: walk name → colour →
     // due date → icon → save, unlocking each step only once the ones before it are
-    // done, and glowing the single next-required field. Cancel and the title field
+    // done, and glowing the single next-required field. Cancel and the name field
     // are always available.
     private fun updateAddProgress() {
         val hasTitle = !addTitleInput.text.isNullOrBlank()
-        val hasSubject = addSubject != null
+        val hasColor = addColor != null
         val hasDue = addDueDate != null
         val hasIcon = !addIconKey.isNullOrBlank()
 
-        subjectStepUnlocked = hasTitle
-        addSubjectGlowWrap.alpha = if (hasTitle) 1f else 0.45f
+        colorStepUnlocked = hasTitle
+        addColorGlowWrap.alpha = if (hasTitle) 1f else 0.45f
 
-        addPickDueBtn.isEnabled = hasTitle && hasSubject
+        addPickDueBtn.isEnabled = hasTitle && hasColor
         addPickDueBtn.alpha = if (addPickDueBtn.isEnabled) 1f else 0.45f
 
-        addPickIconBtn.isEnabled = hasTitle && hasSubject && hasDue
+        addPickIconBtn.isEnabled = hasTitle && hasColor && hasDue
         addPickIconBtn.alpha = if (addPickIconBtn.isEnabled) 1f else 0.45f
 
-        addConfirmBtn.isEnabled = hasTitle && hasSubject && hasDue && hasIcon
+        addConfirmBtn.isEnabled = hasTitle && hasColor && hasDue && hasIcon
         addConfirmBtn.alpha = if (addConfirmBtn.isEnabled) 1f else 0.45f
 
         val active = when {
             !hasTitle -> addTitleGlow
-            !hasSubject -> addSubjectGlow
+            !hasColor -> addColorGlow
             !hasDue -> addDueGlow
             !hasIcon -> addIconGlow
             else -> addSaveGlow
@@ -618,7 +596,7 @@ class AssignmentsActivity : AppCompatActivity() {
 
     private fun updateEditIconEnabled() {
         val coreReady = !editTitleInput.text.isNullOrBlank() &&
-                editSubject != null &&
+                editColor != null &&
                 editDueDate != null
         editPickIconBtn.isEnabled = coreReady
         editPickIconBtn.alpha = if (coreReady) 1f else 0.45f
@@ -632,16 +610,16 @@ class AssignmentsActivity : AppCompatActivity() {
 
     private fun openAddPanel() {
         addTitleInput.setText("")
-        addSubject = null
+        addColor = null
         addDueDate = null
         addIconKey = null
         addPickDueBtn.text = "Pick due date"
         addPickIconBtn.text = "Choose icon"
         // Clear any swatch highlight from a previous session.
-        buildSubjectSwatches(addSubjectRow) { tapped ->
-            if (!subjectStepUnlocked) return@buildSubjectSwatches
-            addSubject = tapped
-            highlightSelectedSubject(addSubjectRow, tapped)
+        buildColorSwatches(addColorRow) { tapped ->
+            if (!colorStepUnlocked) return@buildColorSwatches
+            addColor = tapped
+            highlightSelectedColor(addColorRow, tapped)
             updateAddProgress()
         }
         updateAddProgress()
@@ -651,17 +629,17 @@ class AssignmentsActivity : AppCompatActivity() {
     private fun openEditFor(item: AssignmentsItem) {
         editingAssignment = item.assignment
         editTitleInput.setText(item.assignment.title)
-        editSubject = subjects.firstOrNull { it.id == item.assignment.subjectId }
+        editColor = colorChoices.firstOrNull { it.hex.equals(item.assignment.color, ignoreCase = true) }
         editDueDate = item.dueAt
         editIconKey = item.assignment.icon
         editPickDueBtn.text = formatDueButton(item.dueAt)
         refreshIconButtonLabel(editPickIconBtn, item.assignment.icon, isAdd = false)
-        buildSubjectSwatches(editSubjectRow) { tapped ->
-            editSubject = tapped
-            highlightSelectedSubject(editSubjectRow, tapped)
+        buildColorSwatches(editColorRow) { tapped ->
+            editColor = tapped
+            highlightSelectedColor(editColorRow, tapped)
             updateEditIconEnabled()
         }
-        editSubject?.let { highlightSelectedSubject(editSubjectRow, it) }
+        editColor?.let { highlightSelectedColor(editColorRow, it) }
         updateEditIconEnabled()
         swapToPanel(Panel.EDIT)
     }
@@ -669,7 +647,7 @@ class AssignmentsActivity : AppCompatActivity() {
     private fun confirmDelete(item: AssignmentsItem) {
         MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
             .setTitle("Delete assignment")
-            .setMessage("Delete \"${item.assignment.title}\"?")
+            .setMessage("Delete \"${item.assignment.title}\" and its flashcard decks?")
             .setPositiveButton("Delete") { _, _ -> vm.deleteAssignment(item.assignment) }
             .setNegativeButton("Cancel", null)
             .show()
@@ -823,7 +801,7 @@ class AssignmentsActivity : AppCompatActivity() {
 
     // ─────────────────── Helpers ───────────────────
 
-    private fun parseSubjectColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
+    private fun parseColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
 
     private fun simpleWatcher(onChanged: () -> Unit): android.text.TextWatcher {
         return object : android.text.TextWatcher {

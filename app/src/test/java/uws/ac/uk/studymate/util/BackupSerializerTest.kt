@@ -9,24 +9,23 @@ import uws.ac.uk.studymate.util.BackupSerializer.AssignmentNode
 import uws.ac.uk.studymate.util.BackupSerializer.BackupData
 import uws.ac.uk.studymate.util.BackupSerializer.CardNode
 import uws.ac.uk.studymate.util.BackupSerializer.DeckNode
-import uws.ac.uk.studymate.util.BackupSerializer.SubjectNode
 
 /*//////////////////////
 Coded by Jamie Coleman
  17/06/26
  *//////////////////////
-// Unit tests for the backup JSON format. Pure logic, no Android/Room.
+// Unit tests for the backup JSON format (v2, flat: assignments -> decks -> cards).
+// Pure logic, no Android/Room.
 class BackupSerializerTest {
 
     private fun sample() = BackupData(
-        subjects = listOf(
-            SubjectNode(
-                name = "Biology",
+        assignments = listOf(
+            AssignmentNode(
+                title = "Biology - Cells",
                 color = "#C4A24A",
-                assignments = listOf(
-                    AssignmentNode("Essay", "2026-07-01T09:00", "assignment", null),
-                    AssignmentNode("Lab report", null, "science", "2026-06-10T12:00:00Z")
-                ),
+                dueDate = "2026-07-01T09:00",
+                icon = "science",
+                completedAt = null,
                 decks = listOf(
                     DeckNode(
                         name = "Cell Structure",
@@ -37,7 +36,14 @@ class BackupSerializerTest {
                     )
                 )
             ),
-            SubjectNode("History", null, emptyList(), emptyList())
+            AssignmentNode(
+                title = "History essay",
+                color = null,
+                dueDate = "2026-07-02T10:00",
+                icon = "assignment",
+                completedAt = "2026-06-10T12:00:00Z",
+                decks = emptyList()
+            )
         )
     )
 
@@ -54,7 +60,7 @@ class BackupSerializerTest {
         val parsed = BackupSerializer.fromJson(
             BackupSerializer.toJson(sample(), "2026-06-17T12:00:00Z")
         )
-        val card = parsed.subjects[0].decks[0].cards[1]
+        val card = parsed.assignments[0].decks[0].cards[1]
         assertEquals(2.6, card.easeFactor, 0.0001)
         assertEquals(6, card.intervalDays)
         assertEquals(2, card.repetitions)
@@ -63,8 +69,20 @@ class BackupSerializerTest {
     }
 
     @Test
+    fun roundTrip_preservesAssignmentFields() {
+        val parsed = BackupSerializer.fromJson(
+            BackupSerializer.toJson(sample(), "2026-06-17T12:00:00Z")
+        )
+        assertEquals("#C4A24A", parsed.assignments[0].color)
+        assertEquals("2026-07-01T09:00", parsed.assignments[0].dueDate)
+        assertEquals("science", parsed.assignments[0].icon)
+        assertEquals("2026-06-10T12:00:00Z", parsed.assignments[1].completedAt)
+        assertNull(parsed.assignments[1].color)
+    }
+
+    @Test
     fun fromJson_rejectsWrongFormat() {
-        val json = """{"format":"something-else","version":1,"subjects":[]}"""
+        val json = """{"format":"something-else","version":2,"assignments":[]}"""
         assertThrows(BackupSerializer.InvalidBackupException::class.java) {
             BackupSerializer.fromJson(json)
         }
@@ -72,7 +90,16 @@ class BackupSerializerTest {
 
     @Test
     fun fromJson_rejectsFutureVersion() {
-        val json = """{"format":"studymate-backup","version":999,"subjects":[]}"""
+        val json = """{"format":"studymate-backup","version":999,"assignments":[]}"""
+        assertThrows(BackupSerializer.InvalidBackupException::class.java) {
+            BackupSerializer.fromJson(json)
+        }
+    }
+
+    @Test
+    fun fromJson_rejectsOlderIncompatibleVersion() {
+        // v1 (nested subjects) can't map into the flat model — must be rejected.
+        val json = """{"format":"studymate-backup","version":1,"subjects":[]}"""
         assertThrows(BackupSerializer.InvalidBackupException::class.java) {
             BackupSerializer.fromJson(json)
         }
@@ -86,8 +113,8 @@ class BackupSerializerTest {
     }
 
     @Test
-    fun fromJson_rejectsMissingSubjects() {
-        val json = """{"format":"studymate-backup","version":1}"""
+    fun fromJson_rejectsMissingAssignments() {
+        val json = """{"format":"studymate-backup","version":2}"""
         assertThrows(BackupSerializer.InvalidBackupException::class.java) {
             BackupSerializer.fromJson(json)
         }
@@ -95,23 +122,24 @@ class BackupSerializerTest {
 
     @Test
     fun fromJson_toleratesMissingOptionalFields() {
-        // Minimal: a subject with just a name; a card with just front/back.
+        // Minimal: an assignment with just a title; a card with just front/back.
         val json = """
             {
               "format": "studymate-backup",
-              "version": 1,
-              "subjects": [
-                { "name": "Math",
+              "version": 2,
+              "assignments": [
+                { "title": "Math",
                   "decks": [ { "name": "Algebra", "cards": [ { "front": "2+2", "back": "4" } ] } ] }
               ]
             }
         """.trimIndent()
         val parsed = BackupSerializer.fromJson(json)
-        val subject = parsed.subjects.single()
-        assertEquals("Math", subject.name)
-        assertNull(subject.color)
-        assertTrue(subject.assignments.isEmpty())
-        val card = subject.decks.single().cards.single()
+        val assignment = parsed.assignments.single()
+        assertEquals("Math", assignment.title)
+        assertNull(assignment.color)
+        assertNull(assignment.dueDate)
+        assertEquals("assignment", assignment.icon)   // default
+        val card = assignment.decks.single().cards.single()
         assertEquals("2+2", card.front)
         assertEquals(2.5, card.easeFactor, 0.0001)   // default
         assertEquals(0, card.intervalDays)            // default
@@ -119,14 +147,14 @@ class BackupSerializerTest {
     }
 
     @Test
-    fun fromJson_skipsNamelessSubjectsAndEmptyCards() {
+    fun fromJson_skipsNamelessAssignmentsAndEmptyCards() {
         val json = """
             {
               "format": "studymate-backup",
-              "version": 1,
-              "subjects": [
-                { "name": "  " },
-                { "name": "Chem",
+              "version": 2,
+              "assignments": [
+                { "title": "  " },
+                { "title": "Chem",
                   "decks": [ { "name": "Acids", "cards": [
                     { "front": "", "back": "" },
                     { "front": "pH of water?", "back": "7" }
@@ -135,8 +163,9 @@ class BackupSerializerTest {
             }
         """.trimIndent()
         val parsed = BackupSerializer.fromJson(json)
-        assertEquals(1, parsed.subjects.size)
-        assertEquals("Chem", parsed.subjects[0].name)
-        assertEquals(1, parsed.subjects[0].decks[0].cards.size)  // empty card skipped
+        assertEquals(1, parsed.assignments.size)
+        assertEquals("Chem", parsed.assignments[0].title)
+        assertEquals(1, parsed.assignments[0].decks[0].cards.size)  // empty card skipped
+        assertTrue(parsed.assignments[0].decks[0].cards[0].front == "pH of water?")
     }
 }

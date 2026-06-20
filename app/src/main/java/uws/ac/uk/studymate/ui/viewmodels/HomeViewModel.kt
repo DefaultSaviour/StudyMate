@@ -104,12 +104,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val today = LocalDate.now().toString()
             val dueCards = db.cardDao().getDueCards(userId, today)
             val dueDeckIdSet = dueCards.map { it.deckId }.toSet()
-            val subjectsById = db.subjectDao().getSubjects(userId).associateBy { it.id }
+            val assignmentsById = db.assignmentDao().getAssignments(userId).associateBy { it.id }
             val dueDecks = db.deckDao().getDecks(userId)
                 .filter { it.id in dueDeckIdSet }
                 .sortedWith(
                     compareBy(
-                        { subjectsById[it.subjectId]?.name?.lowercase() ?: "" },
+                        { assignmentsById[it.assignmentId]?.title?.lowercase() ?: "" },
                         { it.name.lowercase() }
                     )
                 )

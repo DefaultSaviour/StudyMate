@@ -25,8 +25,8 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     fun addCard_savesTheCard() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "card-repo-save@example.com")
-        val subjectId = insertSubject(userId = userId, name = "French")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
+        val subjectId = insertAssignment(userId = userId, title = "French")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Basics")
 
         repo.addCard(
             FlashCard(
@@ -51,8 +51,8 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     fun updateCard_changesSavedValues() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "card-repo-update@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Italian")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
+        val subjectId = insertAssignment(userId = userId, title = "Italian")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Basics")
         repo.addCard(
             FlashCard(
                 userId = userId,
@@ -78,8 +78,8 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     fun deleteCard_removesTheCard() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "card-repo-delete@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Spanish")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Words")
+        val subjectId = insertAssignment(userId = userId, title = "Spanish")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Words")
         repo.addCard(
             FlashCard(
                 userId = userId,
@@ -102,8 +102,8 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     fun getDueCardsForDeck_returnsOnlyDueOrNewCards() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "card-due@example.com")
-        val subjectId = insertSubject(userId = userId)
-        val deckId = insertDeck(userId = userId, subjectId = subjectId)
+        val subjectId = insertAssignment(userId = userId)
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId)
         val today = LocalDate.now()
 
         insertCard(userId, deckId, front = "new", dueAt = null)
@@ -123,8 +123,8 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     fun reviewCard_updatesScheduleAndWritesLog() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "card-review@example.com")
-        val subjectId = insertSubject(userId = userId)
-        val deckId = insertDeck(userId = userId, subjectId = subjectId)
+        val subjectId = insertAssignment(userId = userId)
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId)
         insertCard(userId, deckId, front = "Q", back = "A")
 
         val today = LocalDate.now()
@@ -145,8 +145,8 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
     fun reviewCard_removesCardFromTodaysDueList() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "card-due-after@example.com")
-        val subjectId = insertSubject(userId = userId)
-        val deckId = insertDeck(userId = userId, subjectId = subjectId)
+        val subjectId = insertAssignment(userId = userId)
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId)
         insertCard(userId, deckId, dueAt = null)
 
         val today = LocalDate.now()

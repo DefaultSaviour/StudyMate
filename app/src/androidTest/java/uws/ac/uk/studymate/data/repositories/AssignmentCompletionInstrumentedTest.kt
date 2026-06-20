@@ -17,8 +17,7 @@ class AssignmentCompletionInstrumentedTest : RoomDbTestBase() {
     @Test
     fun setCompleted_marksDoneThenNotDone() = runBlocking {
         val userId = insertUser()
-        val subjectId = insertSubject(userId)
-        insertAssignment(userId, subjectId, title = "Essay")
+        insertAssignment(userId, title = "Essay")
 
         val repo = AssignmentRepo(db)
         val assignment = repo.getAssignments(userId).first()

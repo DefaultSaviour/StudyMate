@@ -20,8 +20,6 @@ import com.google.android.material.card.MaterialCardView
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.StatsSummary
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsViewModel
-import uws.ac.uk.studymate.ui.viewmodels.SubjectProgressItem
-import uws.ac.uk.studymate.util.ColorUtils
 
 // Read-only dashboard of the user's study progress (flashcard reviews, streak,
 // assignment completion). Rows are built programmatically from StatsSummary so
@@ -32,8 +30,6 @@ class StatisticsActivity : AppCompatActivity() {
 
     private lateinit var flashcardStatsContainer: LinearLayout
     private lateinit var assignmentStatsContainer: LinearLayout
-    private lateinit var subjectProgressContainer: LinearLayout
-    private lateinit var subjectEmptyHint: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,8 +38,6 @@ class StatisticsActivity : AppCompatActivity() {
 
         flashcardStatsContainer = findViewById(R.id.flashcardStatsContainer)
         assignmentStatsContainer = findViewById(R.id.assignmentStatsContainer)
-        subjectProgressContainer = findViewById(R.id.subjectProgressContainer)
-        subjectEmptyHint = findViewById(R.id.subjectEmptyHint)
 
         val card = findViewById<MaterialCardView>(R.id.statsCard)
         val scrollView = findViewById<View>(R.id.statsScrollView)
@@ -86,14 +80,6 @@ class StatisticsActivity : AppCompatActivity() {
         addStatRow(assignmentStatsContainer, "Completed this week", s.assignmentsCompletedThisWeek.toString())
         addStatRow(assignmentStatsContainer, "Still to do", s.assignmentsPending.toString())
         addStatRow(assignmentStatsContainer, "Due this week", s.assignmentsDueThisWeek.toString())
-
-        subjectProgressContainer.removeAllViews()
-        if (s.subjectProgress.isEmpty()) {
-            subjectEmptyHint.visibility = View.VISIBLE
-        } else {
-            subjectEmptyHint.visibility = View.GONE
-            s.subjectProgress.forEach { addSubjectRow(subjectProgressContainer, it) }
-        }
     }
 
     private fun addStatRow(container: LinearLayout, label: String, value: String) {
@@ -119,41 +105,6 @@ class StatisticsActivity : AppCompatActivity() {
             setTypeface(null, Typeface.BOLD)
         }
         row.addView(labelView)
-        row.addView(valueView)
-        container.addView(row)
-    }
-
-    private fun addSubjectRow(container: LinearLayout, item: SubjectProgressItem) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_subject_row)
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(8) }
-        }
-        val dot = View(this).apply {
-            background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_color_dot)
-            (background as? GradientDrawable)?.setColor(ColorUtils.parseOrDefault(item.colorHex))
-            layoutParams = LinearLayout.LayoutParams(dp(12), dp(12)).apply { marginEnd = dp(10) }
-        }
-        val nameView = TextView(this).apply {
-            text = item.name
-            setTextColor(resources.getColor(R.color.surface, theme))
-            textSize = 14f
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val valueView = TextView(this).apply {
-            text = "${item.completed}/${item.total}"
-            setTextColor(resources.getColor(R.color.gold_light, theme))
-            textSize = 14f
-            setTypeface(null, Typeface.BOLD)
-        }
-        row.addView(dot)
-        row.addView(nameView)
         row.addView(valueView)
         container.addView(row)
     }

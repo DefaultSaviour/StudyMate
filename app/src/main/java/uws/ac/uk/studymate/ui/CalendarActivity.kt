@@ -283,7 +283,7 @@ class CalendarActivity : AppCompatActivity() {
                     }
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
-                        setColor(parseColor(entry.subjectColorHex))
+                        setColor(parseColor(entry.colorHex))
                     }
                 }
                 dotsRow.addView(dot)
@@ -348,7 +348,7 @@ class CalendarActivity : AppCompatActivity() {
             ).apply { topMargin = (6 * density).toInt() }
         }
 
-        val color = parseColor(entry.subjectColorHex)
+        val color = parseColor(entry.colorHex)
 
         val badge = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -379,13 +379,6 @@ class CalendarActivity : AppCompatActivity() {
                 text = entry.assignmentTitle
                 textSize = 14f
                 setTextColor(Color.parseColor("#FAF8F5"))
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
-            })
-            addView(TextView(this@CalendarActivity).apply {
-                text = entry.subjectName
-                textSize = 11f
-                setTextColor(Color.parseColor("#D4BC7E"))
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })

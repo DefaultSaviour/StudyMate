@@ -23,12 +23,12 @@ class FlashcardDeckDaoInstrumentedTest : RoomDbTestBase() {
     fun getDecks_returnsOnlyThatUsersDecks() = runBlocking {
         val firstUserId = insertUser(email = "decks-one@example.com")
         val secondUserId = insertUser(email = "decks-two@example.com")
-        val firstSubjectId = insertSubject(userId = firstUserId, name = "Maths")
-        val secondSubjectId = insertSubject(userId = secondUserId, name = "Science")
+        val firstSubjectId = insertAssignment(userId = firstUserId, title = "Maths")
+        val secondSubjectId = insertAssignment(userId = secondUserId, title = "Science")
 
-        insertDeck(userId = firstUserId, subjectId = firstSubjectId, name = "Numbers")
-        insertDeck(userId = firstUserId, subjectId = firstSubjectId, name = "Shapes")
-        insertDeck(userId = secondUserId, subjectId = secondSubjectId, name = "Lab")
+        insertDeck(userId = firstUserId, assignmentId = firstSubjectId, name = "Numbers")
+        insertDeck(userId = firstUserId, assignmentId = firstSubjectId, name = "Shapes")
+        insertDeck(userId = secondUserId, assignmentId = secondSubjectId, name = "Lab")
 
         val decks = db.deckDao().getDecks(firstUserId)
 
@@ -42,8 +42,8 @@ class FlashcardDeckDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun getDecksWithCards_returnsCardsInsideEachDeck() = runBlocking {
         val userId = insertUser(email = "deck-cards@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Geography")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Capitals")
+        val subjectId = insertAssignment(userId = userId, title = "Geography")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Capitals")
 
         insertCard(userId = userId, deckId = deckId, front = "France", back = "Paris")
         insertCard(userId = userId, deckId = deckId, front = "Spain", back = "Madrid")
@@ -60,8 +60,8 @@ class FlashcardDeckDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun deleteDeck_keepsCardsButClearsTheirDeckId() = runBlocking {
         val userId = insertUser(email = "deck-delete@example.com")
-        val subjectId = insertSubject(userId = userId, name = "History")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Dates")
+        val subjectId = insertAssignment(userId = userId, title = "History")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Dates")
         insertCard(userId = userId, deckId = deckId, front = "1066", back = "Norman Conquest")
 
         val savedDeck = db.deckDao().getDecks(userId).first()

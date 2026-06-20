@@ -27,7 +27,6 @@ class AssignmentListAdapter(
         val badge: View = view.findViewById(R.id.iconBadge)
         val icon: ImageView = view.findViewById(R.id.iconImage)
         val title: TextView = view.findViewById(R.id.assignmentTitleText)
-        val subject: TextView = view.findViewById(R.id.assignmentSubjectText)
         val due: TextView = view.findViewById(R.id.assignmentDueText)
         val doneBtn: MaterialButton = view.findViewById(R.id.doneBtn)
         val editBtn: MaterialButton = view.findViewById(R.id.editBtn)
@@ -48,10 +47,9 @@ class AssignmentListAdapter(
     override fun onBindViewHolder(holder: Row, position: Int) {
         val item = items[position]
         holder.title.text = item.assignment.title
-        holder.subject.text = item.subjectName
         holder.due.text = "Due: ${AssignmentDateTimeUtils.formatDueDate(item.dueAt)}"
 
-        val color = ColorUtils.parseOrDefault(item.subjectColorHex)
+        val color = ColorUtils.parseOrDefault(item.colorHex)
         (holder.badge.background as? GradientDrawable)?.setColor(color)
         holder.icon.setImageResource(AssignmentIcons.drawableForKey(item.iconKey))
         holder.icon.setColorFilter(Color.WHITE)

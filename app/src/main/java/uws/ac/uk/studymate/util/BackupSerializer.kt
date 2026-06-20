@@ -7,37 +7,34 @@ import org.json.JSONObject
 /*//////////////////////
 Coded by Jamie Coleman
  17/06/26
+ v2 17/06/26 — Subject merged into Assignment, so the format is now flat:
+               assignments[] -> decks[] -> cards[] (no subjects layer).
  *//////////////////////
 // Converts a user's study data to/from the StudyMate backup JSON format.
 //
-// The format is a NESTED tree (subjects -> assignments + decks -> cards). It
-// deliberately carries NO database IDs: primary keys are auto-generated and
-// device-local, so they are meaningless on another device. Relationships are
-// expressed purely by nesting, then re-stamped with the importing user's id and
-// freshly generated parent ids when the backup is restored (see BackupRepo).
+// The format is a NESTED tree (assignments -> decks -> cards). It deliberately
+// carries NO database IDs: primary keys are auto-generated and device-local, so
+// they are meaningless on another device. Relationships are expressed purely by
+// nesting, then re-stamped with the importing user's id and freshly generated
+// parent ids when the backup is restored (see BackupRepo).
 //
 // Pure logic over plain data classes (no Room / Android), so it is unit-testable.
 // Uses org.json, which ships with Android — no extra runtime dependency.
 object BackupSerializer {
 
     const val FORMAT = "studymate-backup"
-    const val VERSION = 1
+    const val VERSION = 2
 
     // ── Plain DTOs mirroring the nested backup format ──
-    data class BackupData(val subjects: List<SubjectNode>)
-
-    data class SubjectNode(
-        val name: String,
-        val color: String?,
-        val assignments: List<AssignmentNode>,
-        val decks: List<DeckNode>
-    )
+    data class BackupData(val assignments: List<AssignmentNode>)
 
     data class AssignmentNode(
         val title: String,
+        val color: String?,
         val dueDate: String?,
         val icon: String,
-        val completedAt: String?
+        val completedAt: String?,
+        val decks: List<DeckNode>
     )
 
     data class DeckNode(
@@ -65,25 +62,17 @@ object BackupSerializer {
         root.put("version", VERSION)
         root.put("exportedAt", exportedAt)
 
-        val subjects = JSONArray()
-        for (s in data.subjects) {
-            val so = JSONObject()
-            so.put("name", s.name)
-            so.put("color", s.color ?: JSONObject.NULL)
-
-            val assignments = JSONArray()
-            for (a in s.assignments) {
-                val ao = JSONObject()
-                ao.put("title", a.title)
-                ao.put("dueDate", a.dueDate ?: JSONObject.NULL)
-                ao.put("icon", a.icon)
-                ao.put("completedAt", a.completedAt ?: JSONObject.NULL)
-                assignments.put(ao)
-            }
-            so.put("assignments", assignments)
+        val assignments = JSONArray()
+        for (a in data.assignments) {
+            val ao = JSONObject()
+            ao.put("title", a.title)
+            ao.put("color", a.color ?: JSONObject.NULL)
+            ao.put("dueDate", a.dueDate ?: JSONObject.NULL)
+            ao.put("icon", a.icon)
+            ao.put("completedAt", a.completedAt ?: JSONObject.NULL)
 
             val decks = JSONArray()
-            for (d in s.decks) {
+            for (d in a.decks) {
                 val deckObj = JSONObject()
                 deckObj.put("name", d.name)
                 val cards = JSONArray()
@@ -101,11 +90,11 @@ object BackupSerializer {
                 deckObj.put("cards", cards)
                 decks.put(deckObj)
             }
-            so.put("decks", decks)
+            ao.put("decks", decks)
 
-            subjects.put(so)
+            assignments.put(ao)
         }
-        root.put("subjects", subjects)
+        root.put("assignments", assignments)
         return root.toString(2)
     }
 
@@ -121,48 +110,39 @@ object BackupSerializer {
             throw InvalidBackupException("That file isn't a StudyMate backup.")
         }
         val version = root.optInt("version", -1)
-        if (version < 1 || version > VERSION) {
+        if (version < 1) {
+            throw InvalidBackupException("This backup is missing its version.")
+        }
+        if (version > VERSION) {
             throw InvalidBackupException("This backup was made by a newer version of StudyMate.")
         }
-        if (!root.has("subjects")) {
+        if (version < VERSION) {
+            // v1 nested subjects above assignments and had no due date on the top
+            // level — there is no clean mapping into the new flat model.
+            throw InvalidBackupException("This backup was made by an older, incompatible version of StudyMate.")
+        }
+        if (!root.has("assignments")) {
             throw InvalidBackupException("This backup is missing its data.")
         }
 
-        val subjectsJson = root.optJSONArray("subjects") ?: JSONArray()
-        val subjects = ArrayList<SubjectNode>(subjectsJson.length())
-        for (i in 0 until subjectsJson.length()) {
-            val so = subjectsJson.getJSONObject(i)
-            val name = so.optString("name").trim()
-            if (name.isEmpty()) continue   // skip nameless subjects rather than fail the whole import
-            subjects.add(
-                SubjectNode(
-                    name = name,
-                    color = so.optStringOrNull("color"),
-                    assignments = parseAssignments(so.optJSONArray("assignments")),
-                    decks = parseDecks(so.optJSONArray("decks"))
-                )
-            )
-        }
-        return BackupData(subjects)
-    }
-
-    private fun parseAssignments(arr: JSONArray?): List<AssignmentNode> {
-        if (arr == null) return emptyList()
-        val out = ArrayList<AssignmentNode>(arr.length())
-        for (i in 0 until arr.length()) {
-            val ao = arr.getJSONObject(i)
+        val assignmentsJson = root.optJSONArray("assignments") ?: JSONArray()
+        val assignments = ArrayList<AssignmentNode>(assignmentsJson.length())
+        for (i in 0 until assignmentsJson.length()) {
+            val ao = assignmentsJson.getJSONObject(i)
             val title = ao.optString("title").trim()
-            if (title.isEmpty()) continue
-            out.add(
+            if (title.isEmpty()) continue   // skip nameless assignments rather than fail the whole import
+            assignments.add(
                 AssignmentNode(
                     title = title,
+                    color = ao.optStringOrNull("color"),
                     dueDate = ao.optStringOrNull("dueDate"),
                     icon = ao.optString("icon", "assignment").ifBlank { "assignment" },
-                    completedAt = ao.optStringOrNull("completedAt")
+                    completedAt = ao.optStringOrNull("completedAt"),
+                    decks = parseDecks(ao.optJSONArray("decks"))
                 )
             )
         }
-        return out
+        return BackupData(assignments)
     }
 
     private fun parseDecks(arr: JSONArray?): List<DeckNode> {

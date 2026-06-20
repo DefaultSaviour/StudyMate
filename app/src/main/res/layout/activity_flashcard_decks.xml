@@ -184,7 +184,7 @@
                         android:paddingEnd="14dp"
                         android:paddingTop="5dp"
                         android:paddingBottom="5dp"
-                        android:text="Name your deck and pick its subject"
+                        android:text="Name your deck and pick its assignment"
                         android:textColor="@color/gold_light"
                         android:textSize="13sp" />
 
@@ -237,7 +237,7 @@
                         android:paddingTop="6dp"
                         android:paddingBottom="6dp"
                         android:letterSpacing="0.15"
-                        android:text="SUBJECT"
+                        android:text="ASSIGNMENT"
                         android:textColor="@color/gold_light"
                         android:textSize="12sp" />
 
@@ -399,7 +399,7 @@
                         android:paddingTop="6dp"
                         android:paddingBottom="6dp"
                         android:letterSpacing="0.15"
-                        android:text="SUBJECT"
+                        android:text="ASSIGNMENT"
                         android:textColor="@color/gold_light"
                         android:textSize="12sp" />
 
