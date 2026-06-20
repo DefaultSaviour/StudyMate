@@ -8,8 +8,8 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.NestedScrollView
@@ -36,6 +36,13 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var homeVm: HomeViewModel
     private var isPushNotificationsDialogShowing = false
+
+    // After the user opts in to reminders we fire the real OS POST_NOTIFICATIONS
+    // dialog (API 33+). Delivery is re-checked at fire time, so we don't need the
+    // result here — granting just lets notifications actually show.
+    private val postNotificationsLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { /* no-op: worker re-verifies permission when it fires */ }
 
     // Cached from the latest dashboard load so the "Review due decks" button knows
     // which decks (in order) to walk through when tapped.
@@ -238,21 +245,34 @@ class HomeActivity : AppCompatActivity() {
         startActivity(loginIntent)
     }
 
-    // Ask the user if they want push notifications now that they are past the login screen.
+    // Ask the user if they want push notifications now that they are past the login
+    // screen. Themed to match the wood-glass UI; tapping Yes records the preference
+    // and then fires the real Android permission dialog (API 33+).
     private fun showPushNotificationsChoice(user: User) {
         isPushNotificationsDialogShowing = true
 
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
             .setTitle(R.string.push_notifications_prompt_title)
             .setMessage(R.string.push_notifications_prompt_message)
             .setCancelable(false)
             .setPositiveButton(R.string.yes_button) { _, _ ->
                 savePushNotificationsChoice(user.id, true)
+                requestSystemNotificationPermissionIfNeeded()
             }
             .setNegativeButton(R.string.no_button) { _, _ ->
                 savePushNotificationsChoice(user.id, false)
             }
             .show()
+    }
+
+    // On API 33+ a runtime permission gates delivery — request it once the user has
+    // opted in. Pre-33 has no such permission (notifications are on by default).
+    private fun requestSystemNotificationPermissionIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.POST_NOTIFICATIONS
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) postNotificationsLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
     // Save the user's choice and keep the home screen open.

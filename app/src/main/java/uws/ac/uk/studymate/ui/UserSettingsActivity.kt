@@ -316,7 +316,7 @@ class UserSettingsActivity : AppCompatActivity() {
         logoutBtn.setOnClickListener {
             MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
                 .setTitle("Sign out")
-                .setMessage("You'll need to enter your email and password again to sign back in.")
+                .setMessage("You'll need to enter your username and password again to sign back in.")
                 .setPositiveButton("Sign out") { _, _ ->
                     // Keep the encrypted biometric credentials — they're how
                     // the user signs back in. Only clear them on account

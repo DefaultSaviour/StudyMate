@@ -30,7 +30,9 @@
     <color name="text_hint">#A8956A</color>
 
     <!-- Semantic -->
-    <color name="error_text">#DC2626</color>
+    <!-- Muted salmon-red (the app's caution colour) — readable over dark wood;
+         the old #DC2626 was too dark to read on the wood-glass screens. -->
+    <color name="error_text">#E8A48A</color>
     <color name="success_text">#16A34A</color>
     <color name="divider">#E7DED0</color>
 </resources>

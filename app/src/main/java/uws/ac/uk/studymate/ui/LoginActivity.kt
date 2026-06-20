@@ -544,7 +544,7 @@ class LoginActivity : AppCompatActivity() {
         loginVm.errorMessage.observe(this) { msg ->
             if (msg != null) {
                 loginMessage.text = msg
-                loginMessage.setTextColor("#C62828".toColorInt())
+                loginMessage.setTextColor("#E8A48A".toColorInt())
                 loginMessage.visibility = View.VISIBLE
             } else {
                 loginMessage.visibility = View.GONE
@@ -565,7 +565,7 @@ class LoginActivity : AppCompatActivity() {
             }
             val target = if (signupPasswordPanel.visibility == View.VISIBLE) pwMessage else regMessage
             target.text = msg
-            target.setTextColor("#C62828".toColorInt())
+            target.setTextColor("#E8A48A".toColorInt())
             target.visibility = View.VISIBLE
         }
     }
@@ -628,14 +628,14 @@ class LoginActivity : AppCompatActivity() {
     private fun showLoginMessage(msg: String) {
         val v = findViewById<TextView>(R.id.loginMessage)
         v.text = msg
-        v.setTextColor("#C62828".toColorInt())
+        v.setTextColor("#E8A48A".toColorInt())
         v.visibility = View.VISIBLE
     }
 
     private fun showRegMessage(msg: String) {
         val v = findViewById<TextView>(R.id.regMessage)
         v.text = msg
-        v.setTextColor("#C62828".toColorInt())
+        v.setTextColor("#E8A48A".toColorInt())
         v.visibility = View.VISIBLE
     }
 
