@@ -85,6 +85,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/PasswordUtils.kt` | PBKDF2 hashing; used only during registration and login |
 | `util/BackupSerializer.kt` | Pure (Android-free) converter for the data-backup JSON format (`toJson`/`fromJson` over plain DTOs); uses built-in `org.json`, throws `InvalidBackupException` on bad files. Unit-tested in `BackupSerializerTest`. See "Data backup (export / import)" |
 | `data/repositories/BackupRepo.kt` | Reads a user's whole study tree into backup DTOs (`export`) and restores one under a user (`import`, transactional, merge-by-name); re-stamps all FKs since the format carries no ids |
+| `data/repositories/SampleContentSeeder.kt` | First-run content (0.9E): `seed(userId)` inserts the "Getting Started" assignment + "How StudyMate works" tutorial deck (6 due cards) under a new account, in one transaction (same insert pattern as `BackupRepo`). Called from `RegisterViewModel` for **every** newly created account. See "First-run onboarding" |
+| `ui/OnboardingActivity.kt` | First-run wood-glass **4-page swipe carousel** (0.9E); shown by `LoginActivity` on `registrationSuccess`. 3 intro slides + a CTA slide whose primary button ("Try the sample deck") launches a real review of the seeded deck (`ReviewDeckActivity` with `EXTRA_FROM_ONBOARDING`, which returns to Home when done); Skip (any page) goes straight to Home. Backed by `OnboardingViewModel` (resolves the seeded deck). See "First-run onboarding" |
 | `util/KeyboardInsets.kt` | Adds IME-height bottom padding so text fields aren't hidden by the keyboard (edge-to-edge fix — see "Keyboard / IME insets") |
 | `util/Keyboard.kt` | `Keyboard.hide(activity)` — dismisses the soft keyboard + clears focus. Called from a global `onActivityPaused` hook and on panel-swaps / swatch taps so the IME never lingers over the next screen (see "Keyboard / IME insets") |
 | `util/OrbField.kt` | Runtime generator for the ambient floating orbs — measures the wood that frames a glass card (top band + side gutters on tablets) and scatters a space-appropriate, non-overlapping set into it (jittered grid, keep-out around the top-right button, anchored so they follow the card under the keyboard, total capped at 16). Replaced all per-screen static orbs except Login. See "Ambient floating orbs" |
@@ -193,6 +195,50 @@ where it lives. Surfaced in **Settings → DATA** ("Export my data" / "Import da
   import, merge UI, and any networked/class-code distribution. These are subsets of
   the same insert plumbing if ever wanted. **Not migrated:** `Review_Logs` (so
   study streaks reset on a restored device) and derived stats.
+
+## First-run onboarding (0.9E)
+
+A brand-new account no longer lands on an empty Home. On account creation the app
+**seeds a sample deck** and then shows a **4-page swipe carousel** — three short
+intro slides followed by a CTA slide offering a guided first action: actually
+reviewing that deck. So the app is explained *and* the core flip-and-grade loop is
+learned by doing in the real UI. **No schema change** (DB stays v11); this is purely
+a VM hook + new Activities/VMs.
+
+- **Trigger = account creation, not "first launch".** The welcome screen is launched
+  only from `LoginActivity`'s `registerVm.registrationSuccess` observer (→ `openOnboarding()`).
+  Signing into an existing account and every cold-launch fast-path still go straight
+  to `openHome()`. There is **no persisted "seen" flag** — `registrationSuccess` fires
+  once per account, so no guard is needed. (If the process is killed mid-onboarding the
+  account already exists + session is set, so relaunch just resumes at Home.)
+- **Sample deck (`data/repositories/SampleContentSeeder.kt`).** `seed(userId)` runs in
+  one `db.withTransaction` (same insert pattern as `BackupRepo`) and inserts a
+  "Getting Started" assignment (`icon = "english"`, a blue `#5B8DEF`) with one
+  "How StudyMate works" deck of **6 tutorial cards**. Cards are left at `dueAt = null`
+  (= due now) so the dashboard's "Review due decks" button lights up immediately as a
+  live demo. The assignment's **due date is deliberately +1 hour** (not days): the
+  short window means it can never fire assignment reminders (T-7d/T-1d/day-of all land
+  in the past) alongside the user's real notifications, and it drops out of the review
+  surfaces shortly after the guided first review (a finished/past-due assignment is
+  excluded from auto-review — 0.9C). Seeded for **every new account** (it's the user's
+  own data, deletable from the Flashcards screen) — called from **both** signup paths in
+  `RegisterViewModel` (`createPasswordUser` / `createBiometricUser`) before posting
+  success. Covered by `SampleContentSeederInstrumentedTest`.
+- **Carousel (`ui/OnboardingActivity.kt` + `OnboardingViewModel.kt` +
+  `res/layout/activity_onboarding.xml`).** Standard wood-glass screen (3-layer bg using
+  `bg_dashboard` as a placeholder until a dedicated `bg_onboarding.jpg` is supplied,
+  capped/centred card, `OrientationLock`, `OrbField.scatter`, entrance slide-up). **4
+  pages** in a `FrameLayout`; navigation is a `GestureDetector` **fling** (swipe) **plus**
+  the primary button, with 4 dot indicators (`onboarding_dot`, tinted gold/faded). Pages
+  0–2 are intro slides (primary = "Next"); page 3 is the CTA (primary = "Try the sample
+  deck"). The VM resolves the seeded deck by name (`getByName` → `getDecksForAssignment`).
+  "Try the sample deck" launches `ReviewDeckActivity` with `EXTRA_FROM_ONBOARDING`; **Skip
+  (any page)** → Home. **No ViewPager2 dependency** — kept the dep surface flat,
+  consistent with the panel-swap idiom used elsewhere.
+- **Guided review return path.** `ReviewDeckActivity` reads `EXTRA_FROM_ONBOARDING`: when
+  set, the top back arrow and a repurposed **"Go to dashboard"** button on the `Done`
+  state route to Home (`NEW_TASK | CLEAR_TASK`) instead of `finish()`-ing back to the
+  (already finished) welcome screen. Normal deck/queue review entry is unchanged.
 
 ## UI & Theming
 
@@ -660,8 +706,10 @@ one API level). Known gaps to close before widening the audience:
   "Data backup (export / import)"). Full study tree to/from a user-picked file via
   SAF, no backend. **Still pending:** per-deck Share to a file, and CSV
   (teacher-authored) deck import — both subsets of the same insert plumbing.
-- **Empty-state polish** — the "consistent empty-state illustration" item above;
-  first-run with zero subjects/decks is the first thing a new user sees.
+- **First-run onboarding — shipped in 0.9E.** New accounts get a pre-loaded sample
+  deck + a 3-page intro carousel, so the app is never empty on day one (see "First-run
+  onboarding"). **Still pending:** the "consistent empty-state illustration" for screens
+  the user later empties out themselves (deletes all decks/assignments).
 - **Accessibility pass** — content descriptions on icon buttons, touch-target
   sizes, text-scaling / large-font behaviour.
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.

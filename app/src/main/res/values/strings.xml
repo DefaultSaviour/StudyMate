@@ -108,4 +108,20 @@ Streak: 0 day(s)</string>
     <string name="enter_front_text_message">Enter the front text</string>
     <string name="enter_back_text_message">Enter the back text</string>
     <string name="session_expired_message">Session expired</string>
+
+    <!-- First-run onboarding: 3 intro slides → CTA slide → guided sample-deck review (0.9E) -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_skip_for_now">Skip for now</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_try_button">Try the sample deck</string>
+    <string name="onboarding_go_to_dashboard">Go to dashboard</string>
+
+    <string name="onboarding_page1_title">Stay on top of your work</string>
+    <string name="onboarding_page1_body">Add assignments with a colour, icon and due date. On-device reminders keep deadlines from sneaking up on you.</string>
+    <string name="onboarding_page2_title">Remember more, study less</string>
+    <string name="onboarding_page2_body">Build flashcard decks and review them with spaced repetition — each card returns right before you\'d forget it.</string>
+    <string name="onboarding_page3_title">Private by design</string>
+    <string name="onboarding_page3_body">No online account, no ads, no tracking. Your study data stays on your device.</string>
+    <string name="onboarding_page4_title">Try it now</string>
+    <string name="onboarding_page4_body">We\'ve added a sample deck — \"How StudyMate works\". Want to run a quick review to see the flip-and-grade flow?</string>
 </resources>

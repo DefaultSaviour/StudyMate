@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/navy">
+
+    <!-- Wood photo, centerCrop so it never stretches (placeholder bg_dashboard
+         until a dedicated bg_onboarding is supplied). -->
+    <ImageView
+        android:id="@+id/bgImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_dashboard"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Veil + bottom navy fade over the photo -->
+    <View
+        android:id="@+id/bgOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_wood_overlay"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/headerGuide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.16" />
+
+    <!-- ===== GLASS CARD ===== -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/onboardingCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="#59000000"
+        app:cardForegroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.StudyMate.LoginCard"
+        app:layout_constraintWidth_max="@dimen/card_max_width"
+        app:layout_constraintTop_toBottomOf="@id/headerGuide"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/onboardingContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="20dp">
+
+            <!-- Swipeable page area -->
+            <FrameLayout
+                android:id="@+id/pageContainer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <!-- Page 1 -->
+                <LinearLayout
+                    android:id="@+id/page0"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:src="@drawable/ic_check_circle"
+                        app:tint="@color/gold_light"
+                        android:contentDescription="@null"
+                        android:layout_marginBottom="28dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page1_title"
+                        android:gravity="center"
+                        android:textColor="@color/surface"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="14dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page1_body"
+                        android:gravity="center"
+                        android:textColor="#D9FAF8F5"
+                        android:textSize="16sp"
+                        android:lineSpacingExtra="4dp" />
+
+                </LinearLayout>
+
+                <!-- Page 2 -->
+                <LinearLayout
+                    android:id="@+id/page1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="invisible">
+
+                    <ImageView
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:src="@drawable/ic_subject_psychology"
+                        app:tint="@color/gold_light"
+                        android:contentDescription="@null"
+                        android:layout_marginBottom="28dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page2_title"
+                        android:gravity="center"
+                        android:textColor="@color/surface"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="14dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page2_body"
+                        android:gravity="center"
+                        android:textColor="#D9FAF8F5"
+                        android:textSize="16sp"
+                        android:lineSpacingExtra="4dp" />
+
+                </LinearLayout>
+
+                <!-- Page 3 -->
+                <LinearLayout
+                    android:id="@+id/page2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="invisible">
+
+                    <ImageView
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:src="@drawable/ic_lock"
+                        app:tint="@color/gold_light"
+                        android:contentDescription="@null"
+                        android:layout_marginBottom="28dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page3_title"
+                        android:gravity="center"
+                        android:textColor="@color/surface"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="14dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page3_body"
+                        android:gravity="center"
+                        android:textColor="#D9FAF8F5"
+                        android:textSize="16sp"
+                        android:lineSpacingExtra="4dp" />
+
+                </LinearLayout>
+
+                <!-- Page 4 — call to action -->
+                <LinearLayout
+                    android:id="@+id/page3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="invisible">
+
+                    <ImageView
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:src="@drawable/ic_studymate_logo"
+                        app:tint="@color/gold_light"
+                        android:contentDescription="@null"
+                        android:layout_marginBottom="28dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page4_title"
+                        android:gravity="center"
+                        android:textColor="@color/surface"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="14dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/onboarding_page4_body"
+                        android:gravity="center"
+                        android:textColor="#D9FAF8F5"
+                        android:textSize="16sp"
+                        android:lineSpacingExtra="4dp" />
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+            <!-- Progress dots -->
+            <LinearLayout
+                android:id="@+id/dotsRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="20dp">
+
+                <ImageView
+                    android:id="@+id/dot0"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:src="@drawable/onboarding_dot"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="@null" />
+
+                <ImageView
+                    android:id="@+id/dot1"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:src="@drawable/onboarding_dot"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="@null" />
+
+                <ImageView
+                    android:id="@+id/dot2"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:src="@drawable/onboarding_dot"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="@null" />
+
+                <ImageView
+                    android:id="@+id/dot3"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:src="@drawable/onboarding_dot"
+                    android:contentDescription="@null" />
+
+            </LinearLayout>
+
+            <!-- Skip + Next/CTA row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/skipBtn"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onboarding_skip"
+                    android:textColor="@color/gold_light"
+                    app:rippleColor="#33D4BC7E" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/nextBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="52dp"
+                    android:text="@string/onboarding_next"
+                    android:textStyle="bold"
+                    android:textColor="@color/navy"
+                    android:backgroundTint="@color/gold"
+                    android:minWidth="140dp"
+                    app:cornerRadius="12dp"
+                    tools:ignore="UnusedAttribute" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

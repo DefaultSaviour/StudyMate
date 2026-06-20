@@ -76,14 +76,21 @@
 
     <!-- Confirmation / alert dialogs themed to match the wood-glass UI. -->
     <style name="Theme.StudyMate.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="android:windowBackground">@drawable/bg_dialog_dark</item>
-        <!-- The M3 MaterialAlertDialog paints its panel from colorSurface (+ an
-             elevation tint), NOT windowBackground — a translucent surface plus the
-             gold elevation overlay was rendering as a light lavender panel. Use a
-             solid dark surface and turn the overlay off so the dialog is properly
-             dark like the rest of the wood-glass UI. -->
+        <!-- The M3 (Material 1.12) MaterialAlertDialog paints its panel from the
+             colorSurfaceContainer* token family — NOT colorSurface, and NOT
+             windowBackground (windowBackground is ignored for a MaterialAlertDialog).
+             Our base theme's surface is the cream colour, so those tokens resolved to
+             a light lavender panel; making them transparent removed the panel entirely
+             (the activity showed through). So set the whole container family to a solid
+             dark navy_mid — a clean opaque dark panel that matches the app — and keep
+             the elevation overlay OFF so nothing re-tints it lighter. -->
         <item name="android:colorBackground">@color/navy_mid</item>
         <item name="colorSurface">@color/navy_mid</item>
+        <item name="colorSurfaceContainer">@color/navy_mid</item>
+        <item name="colorSurfaceContainerLow">@color/navy_mid</item>
+        <item name="colorSurfaceContainerLowest">@color/navy_mid</item>
+        <item name="colorSurfaceContainerHigh">@color/navy_mid</item>
+        <item name="colorSurfaceContainerHighest">@color/navy_mid</item>
         <item name="elevationOverlayEnabled">false</item>
         <item name="colorOnSurface">@color/gold_light</item>
         <item name="colorOnSurfaceVariant">@color/gold_light</item>

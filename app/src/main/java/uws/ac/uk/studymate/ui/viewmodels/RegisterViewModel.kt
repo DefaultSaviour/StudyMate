@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
+import uws.ac.uk.studymate.data.repositories.SampleContentSeeder
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionManager
 import uws.ac.uk.studymate.util.TextSanitizer
@@ -25,6 +26,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
     private val db = StudyMateDatabase.getInstance(application)
     private val repo = UserRepo(db)
+    private val sampleSeeder = SampleContentSeeder(db)
     private val sessionManager = SessionManager(application)
 
     private val _registrationSuccess = MutableLiveData<Boolean>()
@@ -77,6 +79,8 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             )
             sessionManager.login(newUserId)
             sessionManager.setLastUserId(newUserId)
+            // Pre-load the first-run sample deck so the new account isn't empty (0.9E).
+            sampleSeeder.seed(newUserId)
             _errorMessage.postValue(null)
             _registrationSuccess.postValue(true)
         }
@@ -112,6 +116,8 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             )
             sessionManager.login(newUserId)
             sessionManager.setLastUserId(newUserId)
+            // Pre-load the first-run sample deck so the new account isn't empty (0.9E).
+            sampleSeeder.seed(newUserId)
             _errorMessage.postValue(null)
             _biometricCredentials.postValue(BiometricCredentials(newUserId, email, password))
             _registrationSuccess.postValue(true)
