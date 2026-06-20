@@ -85,6 +85,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/PasswordUtils.kt` | PBKDF2 hashing; used only during registration and login |
 | `util/BackupSerializer.kt` | Pure (Android-free) converter for the data-backup JSON format (`toJson`/`fromJson` over plain DTOs); uses built-in `org.json`, throws `InvalidBackupException` on bad files. Unit-tested in `BackupSerializerTest`. See "Data backup (export / import)" |
 | `data/repositories/BackupRepo.kt` | Reads a user's whole study tree into backup DTOs (`export`) and restores one under a user (`import`, transactional, merge-by-name); re-stamps all FKs since the format carries no ids |
+| `util/CsvCardParser.kt` | Pure (Android-free) CSV/TSV → front/back parser for flashcard import (0.9F). Comma/tab auto-detect, RFC-4180-ish quoting, header-row skip, first-two-columns, `MAX_CARDS` cap. Unit-tested in `CsvCardParserTest`. See "Flashcard CSV import" |
 | `data/repositories/SampleContentSeeder.kt` | First-run content (0.9E): `seed(userId)` inserts the "Getting Started" assignment + "How StudyMate works" tutorial deck (6 due cards) under a new account, in one transaction (same insert pattern as `BackupRepo`). Called from `RegisterViewModel` for **every** newly created account. See "First-run onboarding" |
 | `ui/OnboardingActivity.kt` | First-run wood-glass **4-page swipe carousel** (0.9E); shown by `LoginActivity` on `registrationSuccess`. 3 intro slides + a CTA slide whose primary button ("Try the sample deck") launches a real review of the seeded deck (`ReviewDeckActivity` with `EXTRA_FROM_ONBOARDING`, which returns to Home when done); Skip (any page) goes straight to Home. Backed by `OnboardingViewModel` (resolves the seeded deck). See "First-run onboarding" |
 | `util/KeyboardInsets.kt` | Adds IME-height bottom padding so text fields aren't hidden by the keyboard (edge-to-edge fix — see "Keyboard / IME insets") |
@@ -191,10 +192,51 @@ where it lives. Surfaced in **Settings → DATA** ("Export my data" / "Import da
   on API 30+. The VM does file I/O via `contentResolver.openOutputStream` /
   `openInputStream` on `Dispatchers.IO`, resolves the user via `SessionUserResolver`,
   and emits a `DataOpResult` (Export/Import success or Error) the Activity toasts.
-- **Out of scope (v1, deferred):** per-deck *Share*, CSV (teacher-authored) deck
-  import, merge UI, and any networked/class-code distribution. These are subsets of
-  the same insert plumbing if ever wanted. **Not migrated:** `Review_Logs` (so
-  study streaks reset on a restored device) and derived stats.
+- **Out of scope (v1, deferred):** per-deck *Share*, merge UI, and any
+  networked/class-code distribution. These are subsets of the same insert plumbing if
+  ever wanted. **Not migrated:** `Review_Logs` (so study streaks reset on a restored
+  device) and derived stats. (CSV card import shipped in 0.9F — see below.)
+
+## Flashcard CSV import (0.9F)
+
+Lets a user bring cards in from a file they authored elsewhere (Quizlet / Anki / a
+spreadsheet) instead of hand-typing them. **Distinct from the JSON account backup
+above:** that's a same-app round-trip of the whole tree; this is the interchange path
+for *external* content, and appends cards to one deck.
+
+- **Entry point:** per-deck — two buttons sharing a row on the `DeckCardsActivity`
+  list panel: **"Import CSV"** (file) and **"Paste cards"** (clipboard). The open deck
+  is the target, so there's no assignment/deck picker. (To make a brand-new deck from a
+  file: create the deck, open it, import.)
+- **Paste path (the everyday Quizlet route):** "Paste cards" reads the clipboard
+  (`ClipboardManager`) and runs the text through the **same `CsvCardParser`** — so
+  Quizlet's "Copy text" export (Tab between term/definition) imports with **no file at
+  all**: Quizlet → Copy text → StudyMate deck → Paste cards. `DeckCardsViewModel.importFromText`
+  shares the parse/insert/toast logic with `importCsv` (`importParsedText`). The file
+  path stays for Anki/spreadsheet users who already have a `.csv`/`.txt`.
+- **Picker:** a Storage Access Framework `ActivityResultContracts.OpenDocument()`
+  launcher (same pattern as the Settings backup import), MIME-filtered to
+  `text/csv`, `text/comma-separated-values`, `text/tab-separated-values`, `text/plain`,
+  `*/*` (providers mislabel CSV — the JSON importer widened to `*/*` for the same reason).
+  Read-only; nothing is persisted.
+- **Parser (`util/CsvCardParser.kt`):** pure Kotlin, **no new dependency** (`org.json`
+  is not involved). Auto-detects comma vs tab (Anki/Quizlet often tab) from the first
+  line; RFC-4180-ish quoting (quoted fields may hold the delimiter, newlines, and `""`
+  escaped quotes); skips a header row (`front/back`, `question/answer`,
+  `term/definition`); takes the **first two columns** as front/back and ignores extras
+  (tags etc.); strips a leading BOM; runs each field through `TextSanitizer.multiLine`;
+  skips blank lines silently and counts rows with a missing front/back as `skipped`;
+  caps at `MAX_CARDS = 2000`. Returns `Result(cards, skipped)` — never throws (an
+  unparseable file yields no cards). Unit-tested in `CsvCardParserTest`.
+- **Insert:** `DeckCardsViewModel.importCsv(resolver, uri)` reads the file on
+  `Dispatchers.IO`, parses, maps to `FlashCard`s (default SM-2 state, `dueAt = null` →
+  due now) and calls `CardRepo.addCards(...)` (one `db.withTransaction` bulk insert,
+  mirrors `BackupRepo`/`SampleContentSeeder`). Reports via the existing `_message`
+  toast ("Imported N cards" / "… · skipped M bad rows" / "No cards found in that file"
+  / "Couldn't read that file"), then reloads the list. **Additive only** — no dedupe,
+  no overwrite.
+- **Deferred:** semicolon-delimited (some locales) and CSV *export*; a
+  create-deck-from-file shortcut; per-row preview/edit.
 
 ## First-run onboarding (0.9E)
 
@@ -704,8 +746,8 @@ one API level). Known gaps to close before widening the audience:
 ### 0.9 — polish & growth features
 - **Export / import — JSON account backup shipped in 0.9** (Settings → DATA; see
   "Data backup (export / import)"). Full study tree to/from a user-picked file via
-  SAF, no backend. **Still pending:** per-deck Share to a file, and CSV
-  (teacher-authored) deck import — both subsets of the same insert plumbing.
+  SAF, no backend. **Still pending:** per-deck Share to a file. (CSV deck import
+  shipped in 0.9F — see below.)
 - **First-run onboarding — shipped in 0.9E.** New accounts get a pre-loaded sample
   deck + a 3-page intro carousel, so the app is never empty on day one (see "First-run
   onboarding"). **Still pending:** the "consistent empty-state illustration" for screens
@@ -713,9 +755,9 @@ one API level). Known gaps to close before widening the audience:
 - **Accessibility pass** — content descriptions on icon buttons, touch-target
   sizes, text-scaling / large-font behaviour.
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
-- **Flashcard import** — CSV / Quizlet / Anki to remove hand-entry friction. (JSON
-  account-backup import already shipped in 0.9; CSV is the remaining teacher-
-  authoring path.)
+- **Flashcard import — CSV/TSV shipped in 0.9F** (per-deck "Import cards from CSV";
+  Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). **Still pending:**
+  CSV *export* / per-deck Share.
 - **Tablet / large-screen layouts — basic support shipped in 0.8.5** (centred
   column on full-bleed wood). A future pass could go further: true multi-pane
   layouts that *use* the extra width (e.g. list + detail) rather than centring a

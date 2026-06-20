@@ -1,6 +1,8 @@
 package uws.ac.uk.studymate.ui.viewmodels
 
 import android.app.Application
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,6 +13,7 @@ import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.repositories.CardRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
+import uws.ac.uk.studymate.util.CsvCardParser
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.TextSanitizer
 import java.time.LocalDate
@@ -96,6 +99,72 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
             _message.postValue("Card added")
             reload()
         }
+    }
+
+    // Import cards from a CSV/TSV file the user picked (Quizlet/Anki/spreadsheet).
+    // Reads the file off the UI thread, then hands the text to the shared importer.
+    fun importCsv(resolver: ContentResolver, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+
+            val raw = try {
+                resolver.openInputStream(uri)?.use { input ->
+                    input.bufferedReader(Charsets.UTF_8).readText()
+                }
+            } catch (_: Exception) {
+                null
+            }
+            if (raw == null) {
+                _message.postValue("Couldn't read that file")
+                return@launch
+            }
+
+            importParsedText(raw, session.userId, emptyMessage = "No cards found in that file")
+        }
+    }
+
+    // Import cards from text the user pasted from the clipboard (e.g. Quizlet's
+    // "Copy text" export). Same parser as the file path — no file needed.
+    fun importFromText(raw: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            if (raw.isBlank()) {
+                _message.postValue("Nothing on the clipboard to paste")
+                return@launch
+            }
+            importParsedText(raw, session.userId, emptyMessage = "No cards found on the clipboard")
+        }
+    }
+
+    // Shared CSV/TSV import: parse, append as new cards, toast the outcome, reload.
+    private suspend fun importParsedText(raw: String, userId: Int, emptyMessage: String) {
+        val result = CsvCardParser.parse(raw)
+        if (result.cards.isEmpty()) {
+            _message.postValue(emptyMessage)
+            return
+        }
+
+        cardRepo.addCards(
+            result.cards.map { (front, back) ->
+                FlashCard(userId = userId, deckId = deckId, front = front, back = back)
+            }
+        )
+
+        val n = result.cards.size
+        val base = "Imported $n card${if (n == 1) "" else "s"}"
+        _message.postValue(
+            if (result.skipped > 0) "$base · skipped ${result.skipped} bad row${if (result.skipped == 1) "" else "s"}"
+            else base
+        )
+        reload()
     }
 
     fun updateCard(original: FlashCard, front: String, back: String) {

@@ -108,6 +108,8 @@ Streak: 0 day(s)</string>
     <string name="enter_front_text_message">Enter the front text</string>
     <string name="enter_back_text_message">Enter the back text</string>
     <string name="session_expired_message">Session expired</string>
+    <string name="import_cards_csv_button">Import CSV</string>
+    <string name="paste_cards_button">Paste cards</string>
 
     <!-- First-run onboarding: 3 intro slides → CTA slide → guided sample-deck review (0.9E) -->
     <string name="onboarding_skip">Skip</string>

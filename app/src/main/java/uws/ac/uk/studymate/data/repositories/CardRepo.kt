@@ -1,5 +1,6 @@
 package uws.ac.uk.studymate.data.repositories
 
+import androidx.room.withTransaction
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.entities.ReviewLog
@@ -16,6 +17,12 @@ class CardRepo(private val db: StudyMateDatabase) {
 
     // Save a new flashcard to the database.
     suspend fun addCard(card: FlashCard) = db.cardDao().insert(card)
+
+    // Save many flashcards in one transaction (used by CSV import). Additive —
+    // every card is inserted as new; nothing existing is touched.
+    suspend fun addCards(cards: List<FlashCard>) = db.withTransaction {
+        cards.forEach { db.cardDao().insert(it) }
+    }
 
     // Update an existing flashcard's content.
     suspend fun updateCard(card: FlashCard) = db.cardDao().update(card)
