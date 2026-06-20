@@ -28,7 +28,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
-import uws.ac.uk.studymate.data.entities.Subject
+import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.ui.viewmodels.DeckListItem
 import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksSummary
 import uws.ac.uk.studymate.ui.viewmodels.FlashcardDecksViewModel
@@ -64,7 +64,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
     private val addGlows: List<PulseRingView> by lazy {
         listOf(addNameGlow, addSubjectGlow, addSaveGlow)
     }
-    private var subjectStepUnlocked = false
+    private var assignmentStepUnlocked = false
 
     private lateinit var editNameInput: TextInputEditText
     private lateinit var editSubjectRow: LinearLayout
@@ -73,9 +73,9 @@ class FlashcardDecksActivity : AppCompatActivity() {
 
     private lateinit var adapter: DeckListAdapter
 
-    private var subjects: List<Subject> = emptyList()
-    private var addSubject: Subject? = null
-    private var editSubject: Subject? = null
+    private var assignments: List<Assignment> = emptyList()
+    private var addAssignment: Assignment? = null
+    private var editAssignment: Assignment? = null
     private var editingDeck: FlashcardDeck? = null
 
     private enum class Panel { LIST, ADD, EDIT }
@@ -198,15 +198,15 @@ class FlashcardDecksActivity : AppCompatActivity() {
         editCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
 
         addConfirmBtn.setOnClickListener {
-            if (subjects.isEmpty()) {
-                Toast.makeText(this, "Add a subject before creating a deck", Toast.LENGTH_SHORT).show()
+            if (assignments.isEmpty()) {
+                Toast.makeText(this, "Add an assignment before creating a deck", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            vm.createDeck(addNameInput.text?.toString().orEmpty(), addSubject)
+            vm.createDeck(addNameInput.text?.toString().orEmpty(), addAssignment)
         }
         editConfirmBtn.setOnClickListener {
             val original = editingDeck ?: return@setOnClickListener
-            vm.updateDeck(original, editNameInput.text?.toString().orEmpty(), editSubject)
+            vm.updateDeck(original, editNameInput.text?.toString().orEmpty(), editAssignment)
         }
 
         // Recompute the New-deck progressive glow as the name is typed.
@@ -247,57 +247,60 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // ─────────────────── Data ───────────────────
 
     private fun applySummary(summary: FlashcardDecksSummary) {
-        subjects = summary.subjects
+        assignments = summary.assignments
         adapter.submit(summary.items)
         val isEmpty = summary.items.isEmpty()
         emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
         recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
 
-        buildSubjectSwatches(addSubjectRow) { tapped ->
-            if (!subjectStepUnlocked) return@buildSubjectSwatches
-            addSubject = tapped
-            highlightSelectedSubject(addSubjectRow, tapped)
+        buildAssignmentSwatches(addSubjectRow) { tapped ->
+            if (!assignmentStepUnlocked) return@buildAssignmentSwatches
+            addAssignment = tapped
+            highlightSelectedAssignment(addSubjectRow, tapped)
             updateAddProgress()
         }
-        buildSubjectSwatches(editSubjectRow) { tapped ->
-            editSubject = tapped
-            highlightSelectedSubject(editSubjectRow, tapped)
+        buildAssignmentSwatches(editSubjectRow) { tapped ->
+            editAssignment = tapped
+            highlightSelectedAssignment(editSubjectRow, tapped)
         }
     }
 
-    // ─────────────────── Subject swatches ───────────────────
+    // ─────────────────── Assignment swatches ───────────────────
+    // (Decks file under an assignment; the picker shows the user's assignments,
+    //  each as a colour dot + name — the swatch row view ids are still the old
+    //  *Subject* ids in the layout, kept to avoid churn.)
 
-    private fun buildSubjectSwatches(row: LinearLayout, onTap: (Subject) -> Unit) {
+    private fun buildAssignmentSwatches(row: LinearLayout, onTap: (Assignment) -> Unit) {
         row.removeAllViews()
         val density = resources.displayMetrics.density
         val container = (62 * density).toInt()
         val dot = (40 * density).toInt()
         val margin = (8 * density).toInt()
 
-        subjects.forEach { subject ->
+        assignments.forEach { assignment ->
             val item = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(container, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                     marginEnd = margin
                 }
-                tag = subject
+                tag = assignment
                 isClickable = true
                 isFocusable = true
-                setOnClickListener { onTap(subject) }
+                setOnClickListener { onTap(assignment) }
             }
 
             val swatch = View(this).apply {
                 layoutParams = LinearLayout.LayoutParams(dot, dot)
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(parseSubjectColor(subject.color))
+                    setColor(parseSubjectColor(assignment.color))
                     setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
                 }
             }
 
             val label = TextView(this).apply {
-                text = subject.name
+                text = assignment.title
                 textSize = 11f
                 setTextColor(Color.parseColor("#D4BC7E"))
                 maxLines = 1
@@ -314,14 +317,14 @@ class FlashcardDecksActivity : AppCompatActivity() {
         }
     }
 
-    private fun highlightSelectedSubject(row: LinearLayout, selected: Subject) {
+    private fun highlightSelectedAssignment(row: LinearLayout, selected: Assignment) {
         val density = resources.displayMetrics.density
         for (i in 0 until row.childCount) {
             val item = row.getChildAt(i) as? LinearLayout ?: continue
-            val subject = item.tag as? Subject ?: continue
+            val assignment = item.tag as? Assignment ?: continue
             val swatch = item.getChildAt(0)
             val bg = swatch.background as? GradientDrawable ?: continue
-            if (subject.id == selected.id) {
+            if (assignment.id == selected.id) {
                 bg.setStroke((3 * density).toInt(), Color.parseColor("#FFC4A24A"))
             } else {
                 bg.setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
@@ -332,13 +335,13 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // ─────────────────── Open add / edit / delete ───────────────────
 
     private fun openAddPanel() {
-        if (subjects.isEmpty()) {
-            Toast.makeText(this, "Add a subject before creating a deck", Toast.LENGTH_SHORT).show()
+        if (assignments.isEmpty()) {
+            Toast.makeText(this, "Add an assignment before creating a deck", Toast.LENGTH_SHORT).show()
             return
         }
         addNameInput.setText("")
-        // No subject pre-selected — the user must pick one (it's the second step).
-        addSubject = null
+        // No assignment pre-selected — the user must pick one (it's the second step).
+        addAssignment = null
         clearSubjectHighlight(addSubjectRow)
         updateAddProgress()
         swapToPanel(Panel.ADD)
@@ -358,17 +361,17 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // breathing gold glow. Cancel and the name field are always available.
     private fun updateAddProgress() {
         val hasName = !addNameInput.text.isNullOrBlank()
-        val hasSubject = addSubject != null
+        val hasAssignment = addAssignment != null
 
-        subjectStepUnlocked = hasName
+        assignmentStepUnlocked = hasName
         addSubjectGlowWrap.alpha = if (hasName) 1f else 0.45f
 
-        addConfirmBtn.isEnabled = hasName && hasSubject
+        addConfirmBtn.isEnabled = hasName && hasAssignment
         addConfirmBtn.alpha = if (addConfirmBtn.isEnabled) 1f else 0.45f
 
         val active = when {
             !hasName -> addNameGlow
-            !hasSubject -> addSubjectGlow
+            !hasAssignment -> addSubjectGlow
             else -> addSaveGlow
         }
         setActiveGlow(active)
@@ -391,9 +394,9 @@ class FlashcardDecksActivity : AppCompatActivity() {
     private fun openEditFor(item: DeckListItem) {
         editingDeck = item.deck
         editNameInput.setText(item.deck.name)
-        editSubject = subjects.firstOrNull { it.id == item.deck.subjectId }
-            ?: subjects.firstOrNull()
-        editSubject?.let { highlightSelectedSubject(editSubjectRow, it) }
+        editAssignment = assignments.firstOrNull { it.id == item.deck.assignmentId }
+            ?: assignments.firstOrNull()
+        editAssignment?.let { highlightSelectedAssignment(editSubjectRow, it) }
         swapToPanel(Panel.EDIT)
     }
 

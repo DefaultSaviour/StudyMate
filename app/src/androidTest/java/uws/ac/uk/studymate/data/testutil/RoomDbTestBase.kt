@@ -9,8 +9,6 @@ import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.entities.ReviewLog
-import uws.ac.uk.studymate.data.entities.Subject
-import uws.ac.uk.studymate.data.entities.SubjectProgress
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.data.entities.UserSettings
 import uws.ac.uk.studymate.data.entities.UserStats
@@ -93,24 +91,12 @@ abstract class RoomDbTestBase {
         )
     }
 
-    protected suspend fun insertSubject(
-        userId: Int,
-        name: String = "Maths",
-        color: String? = "#FF0000"
-    ): Int {
-        return db.subjectDao().insert(
-            Subject(
-                userId = userId,
-                name = name,
-                color = color
-            )
-        ).toInt()
-    }
-
+    // Subject was merged into Assignment (v11): an assignment is now the single
+    // top-level study item, carrying its own colour, and decks hang off it.
     protected suspend fun insertAssignment(
         userId: Int,
-        subjectId: Int,
         title: String = "Essay",
+        color: String? = "#FF0000",
         dueDate: String = "2026-05-01T09:00",
         icon: String = "calculator",
         completedAt: String? = null
@@ -118,8 +104,8 @@ abstract class RoomDbTestBase {
         return db.assignmentDao().insert(
             Assignment(
                 userId = userId,
-                subjectId = subjectId,
                 title = title,
+                color = color,
                 dueDate = dueDate,
                 icon = icon,
                 completedAt = completedAt
@@ -129,13 +115,13 @@ abstract class RoomDbTestBase {
 
     protected suspend fun insertDeck(
         userId: Int,
-        subjectId: Int,
+        assignmentId: Int,
         name: String = "Week 1"
     ): Int {
         return db.deckDao().insert(
             FlashcardDeck(
                 userId = userId,
-                subjectId = subjectId,
+                assignmentId = assignmentId,
                 name = name
             )
         ).toInt()
@@ -179,20 +165,5 @@ abstract class RoomDbTestBase {
         )
     }
 
-    protected suspend fun insertProgress(
-        userId: Int,
-        subjectId: Int,
-        completedTasks: Int = 1,
-        totalTasks: Int = 3
-    ) {
-        db.subjectProgressDao().insert(
-            SubjectProgress(
-                userId = userId,
-                subjectId = subjectId,
-                completedTasks = completedTasks,
-                totalTasks = totalTasks
-            )
-        )
-    }
 }
 

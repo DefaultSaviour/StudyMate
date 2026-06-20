@@ -135,10 +135,9 @@ class UserSettingsActivity : AppCompatActivity() {
 
             val deckWord = if (summary.deckCount == 1) "deck" else "decks"
             val cardWord = if (summary.flashcardCount == 1) "card" else "cards"
-            val subjectWord = if (summary.subjectCount == 1) "subject" else "subjects"
-            libraryText.text = "${summary.subjectCount} $subjectWord • ${summary.deckCount} $deckWord • ${summary.flashcardCount} $cardWord"
-
             val assignmentWord = if (summary.assignmentCount == 1) "assignment" else "assignments"
+            libraryText.text = "${summary.assignmentCount} $assignmentWord • ${summary.deckCount} $deckWord • ${summary.flashcardCount} $cardWord"
+
             val dueText = when (summary.assignmentsDueThisWeek) {
                 0 -> "none due this week"
                 1 -> "1 due this week"
@@ -211,10 +210,10 @@ class UserSettingsActivity : AppCompatActivity() {
             if (result == null) return@observe
             val msg = when (result) {
                 is UserSettingsViewModel.DataOpResult.ExportSuccess ->
-                    "Backup saved — ${result.subjects} subjects, ${result.decks} decks, ${result.cards} cards"
+                    "Backup saved — ${result.assignments} assignments, ${result.decks} decks, ${result.cards} cards"
                 is UserSettingsViewModel.DataOpResult.ImportSuccess -> {
                     val s = result.summary
-                    "Imported ${s.subjects} new subjects, ${s.decks} decks, ${s.cards} cards"
+                    "Imported ${s.assignments} new assignments, ${s.decks} decks, ${s.cards} cards"
                 }
                 is UserSettingsViewModel.DataOpResult.Error -> result.message
             }

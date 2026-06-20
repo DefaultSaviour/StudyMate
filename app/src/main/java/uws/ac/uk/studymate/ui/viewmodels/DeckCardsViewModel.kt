@@ -18,7 +18,7 @@ import java.time.temporal.ChronoUnit
 
 data class DeckCardsSummary(
     val deckName: String,
-    val subjectName: String,
+    val assignmentName: String,
     val cards: List<FlashCard>,
     val dueText: String   // "6 cards due now" / "Next review tomorrow" / "Next review in 3 days" / ""
 )
@@ -57,12 +57,12 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
             }
             val cards = cardRepo.getCards(deckId).sortedBy { it.id }
             val deck = db.deckDao().getDecks(session.userId).firstOrNull { it.id == deckId }
-            val subjectName = deck?.let {
-                db.subjectDao().getSubjects(session.userId).firstOrNull { s -> s.id == it.subjectId }?.name
+            val assignmentName = deck?.let {
+                db.assignmentDao().getAssignments(session.userId).firstOrNull { a -> a.id == it.assignmentId }?.title
             } ?: "Unassigned"
             val today = LocalDate.now()
             val dueText = dueTextFor(cards.map { it.dueAt }, today, today.toString())
-            _summary.postValue(DeckCardsSummary(deck?.name ?: deckName, subjectName, cards, dueText))
+            _summary.postValue(DeckCardsSummary(deck?.name ?: deckName, assignmentName, cards, dueText))
             _sessionExpired.postValue(false)
         }
     }

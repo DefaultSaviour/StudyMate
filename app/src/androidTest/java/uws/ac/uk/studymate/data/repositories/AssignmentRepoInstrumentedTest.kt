@@ -21,13 +21,12 @@ class AssignmentRepoInstrumentedTest : RoomDbTestBase() {
     fun addAssignment_savesTheAssignment() = runBlocking {
         val repo = AssignmentRepo(db)
         val userId = insertUser(email = "assignment-repo-save@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Maths")
 
         repo.addAssignment(
             Assignment(
                 userId = userId,
-                subjectId = subjectId,
                 title = "Worksheet",
+                color = "#FF0000",
                 dueDate = "2026-06-01T10:00",
                 icon = "calculator"
             )
@@ -48,14 +47,12 @@ class AssignmentRepoInstrumentedTest : RoomDbTestBase() {
         val repo = AssignmentRepo(db)
         val firstUserId = insertUser(email = "assignment-repo-one@example.com")
         val secondUserId = insertUser(email = "assignment-repo-two@example.com")
-        val firstSubjectId = insertSubject(userId = firstUserId, name = "Science")
-        val secondSubjectId = insertSubject(userId = secondUserId, name = "History")
 
         repo.addAssignment(
             Assignment(
                 userId = firstUserId,
-                subjectId = firstSubjectId,
                 title = "Later",
+                color = "#FF0000",
                 dueDate = "2026-07-03T12:00",
                 icon = "book"
             )
@@ -63,8 +60,8 @@ class AssignmentRepoInstrumentedTest : RoomDbTestBase() {
         repo.addAssignment(
             Assignment(
                 userId = firstUserId,
-                subjectId = firstSubjectId,
                 title = "Sooner",
+                color = "#FF0000",
                 dueDate = "2026-07-01T09:00",
                 icon = "book"
             )
@@ -72,8 +69,8 @@ class AssignmentRepoInstrumentedTest : RoomDbTestBase() {
         repo.addAssignment(
             Assignment(
                 userId = secondUserId,
-                subjectId = secondSubjectId,
                 title = "Other User",
+                color = "#FF0000",
                 dueDate = "2026-06-01T09:00",
                 icon = "book"
             )

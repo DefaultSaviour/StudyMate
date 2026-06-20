@@ -19,9 +19,10 @@ interface AssignmentDao {
     @Query("SELECT * FROM Assignments WHERE user_id = :userId ORDER BY due_date ASC")
     suspend fun getAssignments(userId: Int): List<Assignment>
 
-    // Get all assignments belonging to one subject. Used by the backup export.
-    @Query("SELECT * FROM Assignments WHERE subject_id = :subjectId")
-    suspend fun getAssignmentsForSubject(subjectId: Int): List<Assignment>
+    // Find one assignment by name for a user, ignoring letter case. Used by the
+    // backup import to merge into an existing assignment rather than duplicating.
+    @Query("SELECT * FROM Assignments WHERE user_id = :userId AND LOWER(title) = LOWER(:name) LIMIT 1")
+    suspend fun getByName(userId: Int, name: String): Assignment?
 
     // Look up a single assignment by ID. Used by the notification worker to
     // verify the assignment still exists at fire time.

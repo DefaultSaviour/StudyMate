@@ -5,9 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## About StudyMate
 
 An Android study-companion app for students. Core features:
-- **Subjects** — create named subject groups
-- **Assignments** — track due dates and completion per subject
-- **Flashcards** — create decks of question/answer cards per subject; review with **SM-2 spaced repetition** (Again / Wrong / Correct)
+- **Assignments** — the single top-level study item (e.g. "Maths - Calculus"). Each has a name, a colour, an icon, a **required** due date, and a completion state. (As of **v11** the old separate *Subject* concept is folded in — there is no Subjects table or screen any more; an assignment carries its own colour and owns its decks directly.)
+- **Flashcards** — create decks of question/answer cards under an assignment; review with **SM-2 spaced repetition** (Again / Wrong / Correct)
 - **Statistics** — study dashboard: cards due/reviewed, study streak, mature cards, and assignment completion (all computed live)
 - **Calendar** — view assignments by date
 - **Sign-in** — multi-user accounts (unique username), with optional one-device biometric / screen-lock quick sign-in (see "Authentication & Sign-in")
@@ -57,9 +56,9 @@ LoginActivity / RegisterActivity → LoginViewModel / RegisterViewModel
                                           ↓
 HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewModel / ...
                                           ↓
-                              Repositories (UserRepo, SubjectRepo, ...)
+                              Repositories (UserRepo, AssignmentRepo, ...)
                                           ↓
-                                  Room DAOs → StudyMateDatabase (v10)
+                                  Room DAOs → StudyMateDatabase (v11)
 ```
 
 **Session flow:** `LoginActivity` writes a session via `SessionManager` (SharedPreferences). Every ViewModel that needs the current user calls `SessionUserResolver.resolveUser()` to load the `User` entity — do not read SharedPreferences directly in ViewModels.
@@ -70,10 +69,11 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 | Path | Purpose |
 |------|---------|
-| `data/StudyMateDatabase.kt` | Room singleton, v10, exposes all DAOs; migrations `MIGRATION_4_5` … `MIGRATION_9_10` and the `MIGRATIONS` array live here |
+| `data/StudyMateDatabase.kt` | Room singleton, v11, exposes all DAOs; migrations `MIGRATION_4_5` … `MIGRATION_10_11` and the `MIGRATIONS` array live here |
+| `data/entities/Assignments.kt` | The merged top-level entity (`Assignment`): `title`, `color`, `dueDate`, `icon`, `completedAt`. FK → `User` only. Decks FK to it. (Was two tables — `Subject` was merged in at v11.) |
 | `util/SpacedRepetition.kt` | Pure-Kotlin SM-2 scheduler (ease/interval/repetitions → next due date); maps the 4 review buttons to SM-2 quality. Unit-tested |
 | `data/entities/` | Room `@Entity` classes — one file per table |
-| `data/relations/` | `@Relation` data classes for one-to-many queries (e.g. `SubjectWithAssignments`) |
+| `data/relations/` | `@Relation` data classes for one-to-many queries (e.g. `DeckWithCards`) |
 | `data/repositories/` | All DB access goes through repos; methods are `suspend` functions |
 | `ui/viewmodels/` | One ViewModel per screen; use `viewModelScope` + `Dispatchers.IO` for repo calls |
 | `StudyMateApplication.kt` | `Application` subclass — creates the `assignment_reminders` and `review_reminders` notification channels on startup; registered via `android:name` in the manifest |
@@ -94,10 +94,10 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 ## Database Conventions
 
-- Database version is **10**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
-- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only).
+- Database version is **11**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
+- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only), `10→11` (**merge Subject into Assignment** — **DESTRUCTIVE for the study tree**: drops `Subjects` + `Subject_Progress`, rebuilds `Assignments` with its own `color` and no `subject_id`, rebuilds `Flashcard_Decks` keyed by `assignment_id`; clears `Flash_Cards`/`Review_Logs`. `User`/settings/stats are kept. No row-by-row mapping was sensible — a subject had no due date, and decks could belong to a subject spanning several assignments — so the tree is wiped and rebuilt, agreed with the user pre-1.0).
 - The `User` table's user-facing identifier is **`name`** (unique). `email` is now an internal placeholder, not user-visible. `auth_mode` is `password` or `biometric_only`.
-- Foreign keys use `CASCADE` delete — deleting a `User` removes all their subjects, assignments, flashcards, etc.
+- Foreign keys use `CASCADE` delete — deleting a `User` removes all their assignments, decks, cards, etc.; deleting an `Assignment` removes its decks (and their cards).
 - DAOs use `LOWER()` for case-insensitive lookups.
 - Multi-table queries use `@Transaction` on the DAO method.
 
@@ -105,7 +105,7 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 Instrumented tests live in `app/src/androidTest/`. All DAO and Repository tests extend `RoomDbTestBase` which provides:
 - An in-memory Room database (no migrations applied)
-- Helper insert methods: `insertUser()`, `insertSubject()`, `insertAssignment()`, etc.
+- Helper insert methods: `insertUser()`, `insertAssignment()` (carries `color`, no parent), `insertDeck(userId, assignmentId)`, etc. (`insertSubject`/`insertProgress` were removed at v11.)
 
 Migration tests (`StudyMateDatabaseMigrationTest`) use `MigrationTestHelper` with the real on-disk database and must cover every new migration.
 
@@ -156,26 +156,29 @@ Manual, on-device JSON backup + restore of a user's whole study tree. **No
 backend, no network** — the app writes a file and reads one back; the OS handles
 where it lives. Surfaced in **Settings → DATA** ("Export my data" / "Import data").
 
-- **Format (`util/BackupSerializer.kt`):** a **nested** tree —
-  `subjects[] → { assignments[], decks[] → cards[] }` — carrying **no database
-  ids** (PKs are `autoGenerate` and device-local, so meaningless elsewhere).
-  Relationships are implicit in the nesting. Root has `format:"studymate-backup"`,
-  `version` (current **1**), `exportedAt`. Card scheduling state (ease/interval/
-  reps/dueAt/lastReviewedAt) and assignment `completedAt` **are** kept (this is the
-  user's own data for migration). `fromJson` rejects wrong format / future version
-  / malformed JSON with `InvalidBackupException`; tolerates missing optional fields
-  and skips nameless subjects / empty cards. Pure Kotlin over `org.json` (built
-  into Android — **no new runtime dependency**); unit-tested in `BackupSerializerTest`.
+- **Format (`util/BackupSerializer.kt`):** a **flat nested** tree —
+  `assignments[] → { color, dueDate, icon, completedAt, decks[] → cards[] }` —
+  carrying **no database ids** (PKs are `autoGenerate` and device-local, so
+  meaningless elsewhere). Relationships are implicit in the nesting. Root has
+  `format:"studymate-backup"`, `version` (current **2**), `exportedAt`. Card
+  scheduling state (ease/interval/reps/dueAt/lastReviewedAt) and assignment
+  `completedAt`/`color` **are** kept (this is the user's own data for migration).
+  `fromJson` rejects wrong format / newer version / **older incompatible version**
+  (v1 had nested subjects above assignments — no clean map into the flat model, so
+  v1 import was deliberately dropped) / malformed JSON with `InvalidBackupException`;
+  tolerates missing optional fields and skips nameless assignments / empty cards.
+  Pure Kotlin over `org.json` (built into Android — **no new runtime dependency**);
+  unit-tested in `BackupSerializerTest`.
   > `org.json` is a *stub* on the JVM test classpath, so `testImplementation("org.json:json:…")`
   > is added (test-only) so the serializer can be unit-tested.
 - **DB I/O (`data/repositories/BackupRepo.kt`):** `export(userId)` walks
-  `subjectDao.getSubjects` → `getAssignmentsForSubject` / `getDecksForSubject` →
+  `assignmentDao.getAssignments` → `deckDao.getDecksForAssignment` →
   `cardDao.getCards`. `import(userId, data)` runs in a single `db.withTransaction`
-  (a bad file is a no-op): **subjects merge by name** (case-insensitive
-  `getByName`, reuse else create), **decks/assignments/cards always create** under
-  the resolved subject, **all FKs re-stamped** with the current user + freshly
-  generated parent ids. Additive — never deletes existing data. Returns an
-  `ImportSummary` (counts) for the toast.
+  (a bad file is a no-op): **assignments merge by name** (case-insensitive
+  `getByName`, reuse else create), **decks/cards always create** under the resolved
+  assignment, **all FKs re-stamped** with the current user + freshly generated
+  parent ids. Additive — never deletes existing data. Returns an `ImportSummary`
+  (counts) for the toast.
 - **UI (`UserSettingsActivity` + `UserSettingsViewModel`):** two Storage Access
   Framework launchers — `CreateDocument("application/json")` (export, default name
   `studymate_backup_<date>.json`) and `OpenDocument()` (import, accepts
@@ -229,9 +232,9 @@ Chain multiple gates from one recompute function. On Assignments:
 - Both checks live in the same `updateAddProgress()` / `updateEditIconEnabled()` call so any field change recomputes the gating in one pass. Call this function from the date picker confirm, icon picker confirm, subject swatch tap, and the title text watcher.
 
 ### Progressive-glow guidance (the three "create" panels)
-The **New assignment**, **New subject**, and **New deck** panels walk the user through their required fields one at a time, with the next step lit by the breathing gold glow.
+The **New assignment** and **New deck** panels walk the user through their required fields one at a time, with the next step lit by the breathing gold glow.
 
-- **Order:** assignment = title → subject → due date → icon → save; subject = name → colour → save; deck = name → subject → save.
+- **Order:** assignment = name → colour → due date → icon → save; deck = name → assignment → save. (The assignment form's "colour" step reuses the swatch-row layout that was the old subject picker — its view ids are still `addSubjectRow`/`editSubjectRow` etc.)
 - **Gating:** every control past the current step is disabled (`isEnabled=false` for buttons, a `…StepUnlocked` flag + `alpha=0.45` for the swatch/colour rows whose taps are ignored until unlocked). Only the name field and **Cancel** are always available. One `updateAddProgress()` per screen recomputes the whole chain; it's called from the name `TextWatcher`, every picker confirm/tap, `openAddPanel`, and on every swap **to** the ADD panel (and `stopAllAddGlows()` when leaving it, so the glow only animates while that panel shows).
 - **Glow:** each step's field is wrapped in a `FrameLayout` (with `clipChildren=false`) holding the field plus a [`PulseRingView`](#) overlay; `setActiveGlow(view)` shows + animates exactly the next-required one and stops/hides the rest. The glow blooms slightly outside the field, so the ScrollView + its inner `LinearLayout` also keep `clipChildren/clipToPadding=false`.
 - **Corner alignment:** the glow's ring is a fixed 12dp radius, so every glow target is given 12dp corners — `app:cornerRadius="12dp"` on the buttons, `setBoxCornerRadii(12dp…)` in code on the title `TextInputLayout`, and `@drawable/bg_glow_field` (12dp outlined box) wrapping the previously-borderless selectors (assignment subject swatches, deck subject swatches, subject colour row).
@@ -566,10 +569,10 @@ private fun sanitizeSingleLine(raw: String): String {
         .trim()
 }
 ```
-Call this instead of `.trim()` on incoming text — collapses any pasted multi-line content into a single space-separated line before validation. Used in `SubjectsViewModel` and `AssignmentsViewModel`.
+Call this instead of `.trim()` on incoming text — collapses any pasted multi-line content into a single space-separated line before validation. Used in `AssignmentsViewModel` and `FlashcardDecksViewModel`.
 
 ### Calendar day-list overflow guard
-The day-detail panel's assignment rows are built programmatically — title / subject / time TextViews **must** set `maxLines = 1` + `ellipsize = TextUtils.TruncateAt.END`. Without it, a long title wraps to multiple lines and breaks the no-scroll layout budget.
+The day-detail panel's assignment rows are built programmatically — title / time TextViews **must** set `maxLines = 1` + `ellipsize = TextUtils.TruncateAt.END`. Without it, a long title wraps to multiple lines and breaks the no-scroll layout budget.
 
 ### Entrance animation (screen open)
 - Glass card slides up from 280 dp off-screen: `PathInterpolator(0,0,0.2,1)`, 700 ms, 60 ms delay.
@@ -594,15 +597,14 @@ The login screen is the established reference. Every other screen should be brou
 9. Keep all ViewModels and data layer **untouched** — only `res/layout/`, `res/drawable/`, `res/values/`, and the Activity/Fragment's visual setup code change.
 
 ### Screen checklist
-- [x] **Home / Dashboard** — main landing after login; wood bg, glass card with NEXT DUE + 5 nav buttons (Assignments, Flashcards, Calendar, Statistics, **Review due decks**), 6 orbs in wood band above, settings icon outside the card top-right. **Subjects is no longer a dashboard button** — it lives inside the Assignments screen (mirrors how Flashcards owns its decks under one dashboard entry). The slot Subjects freed is now occupied by the Review-due-decks button (see "Review due decks" below).
-- [x] **Subjects list** — RecyclerView of glass-row items (colour dot + name + assignment count + edit/delete icons), single gold "Create subject" primary button, inline add + edit panel-swap, back-arrow icon outside card top-right. **Reached from the Assignments screen's "Subjects" button** (not the dashboard); `SubjectsActivity.openHome()` is `finish()`, so back returns to Assignments.
-- [ ] **Subject detail** — wood bg, glass header card with subject name/icon, assignment list below
-- [x] **Assignments list** — RecyclerView of upcoming assignments (subject-coloured icon badge + title + subject + due), inline add + edit + icon-picker panel-swap, "Choose icon" gated behind title+subject+due completion, icon tiles tinted with the selected subject's colour. Hosts a secondary **"Subjects" button** (opens `SubjectsActivity`) and **gates "Create assignment"** (disabled + 0.45 alpha) until at least one subject exists; the empty state then prompts the user to add a subject first.
+- [x] **Home / Dashboard** — main landing after login; wood bg, glass card with NEXT DUE + 5 nav buttons (Assignments, Flashcards, Calendar, Statistics, **Review due decks**), 6 orbs in wood band above, settings icon outside the card top-right.
+- [x] **~~Subjects list~~ — REMOVED (v11).** `SubjectsActivity`/`SubjectsViewModel`/`SubjectListAdapter` + `activity_subjects.xml`/`item_subject.xml` deleted. Subject was merged into Assignment; there is no separate subjects screen. The "Subjects" button on the Assignments screen is gone.
+- [x] **Assignments list** — the single top-level hub. RecyclerView of upcoming assignments (own-coloured icon badge + name + due), inline add + edit + icon-picker panel-swap. The add/edit form gathers **name → colour → due date → icon → save** (the old subject picker is now a **colour picker**, ported from Subjects). "Choose icon" gates behind name+colour+due; "Save" behind all four. "Create assignment" is always available (no parent needed).
 - [x] **Assignment detail / edit** — folded into the Assignments screen as the edit panel (no separate activity); old `AddAssignmentActivity` and `AddAssignmentViewModel` deleted
-- [x] **Flashcard decks list** — RecyclerView of glass-row decks (subject dot + deck name + "Subject • N cards • N due" subtitle + edit/delete), gold "Create new deck" primary button, inline add + edit panel-swap, tapping a deck opens `DeckCardsActivity`, back-arrow icon outside card top-right. The row shows only a short "N due" badge; the "Next review …" wording lives inside the deck screen (see Notifications → deck due indicator)
+- [x] **Flashcard decks list** — RecyclerView of glass-row decks (assignment colour dot + deck name + "Assignment • N cards • N due" subtitle + edit/delete), gold "Create new deck" primary button, inline add + edit panel-swap (the deck's parent picker lists the user's **assignments**), tapping a deck opens `DeckCardsActivity`, back-arrow icon outside card top-right. The row shows only a short "N due" badge; the "Next review …" wording lives inside the deck screen (see Notifications → deck due indicator)
 - [x] **Flashcard study / flip view** — `ReviewDeckActivity` (backed by `ReviewDeckViewModel`) runs an **SM-2 review session**: walks the deck's *due* cards one at a time, "Show answer" flips to the back, then **three grade buttons — Again / Wrong / Correct**. **Correct** schedules the card further out (SM-2 Good) and it leaves the session; **Again** re-shows the card immediately (front of the session queue); **Wrong** re-shows it later (back of the queue). Both Again and Wrong count as a lapse for the SM-2 schedule (reset, due tomorrow). The session runs on an `ArrayDeque`, so a missed card keeps coming back until graded Correct. Each grade writes a `Review_Logs` row via `CardRepo.reviewCard`. "All caught up" state when nothing is due, with a "Review all cards anyway" fallback. (Replaced the old Prev/Next browse flow.)
 - [x] **Deck detail + manage cards** — consolidated 7 old activities (`DeckOptions`, `AlterDeck`, `AddCard`, `EditCard`, `ModifyCards`, `RemoveCards`, `ReviewDeck`) into 3: `DeckDetailActivity` (Review + Manage Cards), `DeckCardsActivity` (RecyclerView of cards with inline add/edit panel-swap), `ReviewDeckActivity` (restyled). Delete-deck stays on the main Flashcards list only.
-- [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), assignment completed/pending/due-this-week, and per-subject completed/total. Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
+- [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), and assignment completed/pending/due-this-week. (The per-subject breakdown was **dropped at v11** — there are no subjects to group by any more.) Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
   - **No "overdue" concept.** An assignment counts as **complete** when `completedAt != null` **OR its due date has passed** (`StatisticsViewModel.isComplete`). A passed deadline is treated as done, not overdue — there is no overdue row/state anywhere. "Completed this week" covers both manual completion (within 7d of `completedAt`) and auto-completion (due date within the last 7d).
 - [x] **Calendar** — wood bg, glass card with month grid + day-detail panel-swap; always 6-row grid (consistent height), today gets a gold ring, past days at 50% alpha, days with assignments show up to 3 subject-coloured dots; tap → swaps to read-only day list (max 9 rows, "+N more" footer), no edit/delete (jump to Assignments)
 - [x] **Settings / Profile** — wood-glass card with three sections (ACCOUNT, AT A GLANCE, PREFERENCES) using mini glass-card rows; muted-red outlined "Sign out" button with themed confirm dialog; absorbed the small library/assignment counts that used to be on the Statistics screen

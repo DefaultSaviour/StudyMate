@@ -220,7 +220,7 @@ class DeckCardsActivity : AppCompatActivity() {
         titleText.text = summary.deckName
         deckName = summary.deckName
         val cardWord = if (summary.cards.size == 1) "card" else "cards"
-        val base = "${summary.subjectName} • ${summary.cards.size} $cardWord"
+        val base = "${summary.assignmentName} • ${summary.cards.size} $cardWord"
         subText.text = if (summary.dueText.isNotEmpty()) "$base\n${summary.dueText}" else base
         adapter.submit(summary.cards)
         val isEmpty = summary.cards.isEmpty()

@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
-import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.SessionUserResolver
@@ -24,13 +23,6 @@ Computes the statistics dashboard live from the database (User_Stats is not used
 — it was never kept up to date). Mirrors the "AT A GLANCE" approach in
 UserSettingsViewModel: resolve the user, then count.
  *//////////////////////
-data class SubjectProgressItem(
-    val name: String,
-    val colorHex: String?,
-    val completed: Int,
-    val total: Int
-)
-
 data class StatsSummary(
     val cardsDue: Int,
     val reviewedToday: Int,
@@ -41,15 +33,13 @@ data class StatsSummary(
     val assignmentsCompleted: Int,
     val assignmentsCompletedThisWeek: Int,
     val assignmentsPending: Int,
-    val assignmentsDueThisWeek: Int,
-    val subjectProgress: List<SubjectProgressItem>
+    val assignmentsDueThisWeek: Int
 )
 
 class StatisticsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = StudyMateDatabase.getInstance(application)
     private val userRepo = UserRepo(db)
-    private val subjectRepo = SubjectRepo(db)
     private val sessionResolver = SessionUserResolver(application, userRepo)
 
     private val _summary = MutableLiveData<StatsSummary>()
@@ -112,19 +102,6 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
                 !due.isBefore(now) && due.isBefore(weekFromNow)
             }
 
-            // ── Per-subject completion ──
-            val subjects = subjectRepo.getSubjects(userId).sortedBy { it.name.lowercase() }
-            val bySubject = assignments.groupBy { it.subjectId }
-            val subjectProgress = subjects.map { s ->
-                val list = bySubject[s.id].orEmpty()
-                SubjectProgressItem(
-                    name = s.name,
-                    colorHex = s.color,
-                    completed = list.count { isComplete(it) },
-                    total = list.size
-                )
-            }
-
             _summary.postValue(
                 StatsSummary(
                     cardsDue = cardsDue,
@@ -136,8 +113,7 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
                     assignmentsCompleted = completedList.size,
                     assignmentsCompletedThisWeek = completedThisWeek,
                     assignmentsPending = pendingList.size,
-                    assignmentsDueThisWeek = dueThisWeek,
-                    subjectProgress = subjectProgress
+                    assignmentsDueThisWeek = dueThisWeek
                 )
             )
             _sessionExpired.postValue(false)

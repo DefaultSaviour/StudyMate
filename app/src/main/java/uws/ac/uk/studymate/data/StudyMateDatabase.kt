@@ -19,15 +19,13 @@ Coded by Jamie Coleman
         User::class,
         UserSettings::class,
         UserStats::class,
-        Subject::class,
-        SubjectProgress::class,
         Assignment::class,
         FlashcardDeck::class,
         FlashCard::class,
         ReviewLog::class
     ],
     exportSchema = false,
-    version = 10
+    version = 11
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -35,8 +33,6 @@ abstract class StudyMateDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun userSettingsDao(): UserSettingsDao
     abstract fun userStatsDao(): UserStatsDao
-    abstract fun subjectDao(): SubjectDao
-    abstract fun subjectProgressDao(): SubjectProgressDao
     abstract fun assignmentDao(): AssignmentDao
     abstract fun deckDao(): FlashcardDeckDao
     abstract fun cardDao(): FlashCardDao
@@ -147,7 +143,63 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+        // Merge Subject into Assignment (flat study model):
+        //   - Assignment becomes the single top-level item: it gains its own
+        //     `color` and no longer references a subject.
+        //   - Flashcard_Decks now hang off an assignment (`assignment_id`) instead
+        //     of a subject.
+        //   - The Subjects and Subject_Progress tables are removed entirely.
+        // This is a STRUCTURAL change with no sensible row-by-row mapping (a
+        // subject had no due date, now required; decks could belong to a subject
+        // with several assignments), so the whole study tree is wiped and rebuilt.
+        // User accounts / settings / stats are kept. Decided with the user
+        // (pre-1.0, throwaway test data) over a fragile best-effort migration.
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Clear children first so dropping parents can't trip a FK check.
+                db.execSQL("DELETE FROM `Review_Logs`")
+                db.execSQL("DELETE FROM `Flash_Cards`")
+                db.execSQL("DROP TABLE IF EXISTS `Flashcard_Decks`")
+                db.execSQL("DROP TABLE IF EXISTS `Subject_Progress`")
+                db.execSQL("DROP TABLE IF EXISTS `Assignments`")
+                db.execSQL("DROP TABLE IF EXISTS `Subjects`")
+
+                // Recreate the merged Assignments table (Subject folded in).
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `Assignments` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `color` TEXT,
+                        `due_date` TEXT,
+                        `icon` TEXT NOT NULL DEFAULT 'assignment',
+                        `completed_at` TEXT,
+                        FOREIGN KEY(`user_id`) REFERENCES `User`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Assignments_user_id` ON `Assignments` (`user_id`)")
+
+                // Recreate Flashcard_Decks pointing at an assignment.
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `Flashcard_Decks` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL,
+                        `assignment_id` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        FOREIGN KEY(`user_id`) REFERENCES `User`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`assignment_id`) REFERENCES `Assignments`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Flashcard_Decks_user_id` ON `Flashcard_Decks` (`user_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Flashcard_Decks_assignment_id` ON `Flashcard_Decks` (`assignment_id`)")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile

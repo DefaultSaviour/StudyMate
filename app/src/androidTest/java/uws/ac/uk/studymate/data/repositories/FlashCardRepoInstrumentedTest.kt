@@ -21,8 +21,8 @@ class FlashCardRepoInstrumentedTest : RoomDbTestBase() {
     fun addCard_savesTheCard() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "flashcard-repo-save@example.com")
-        val subjectId = insertSubject(userId = userId, name = "German")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Words")
+        val subjectId = insertAssignment(userId = userId, title = "German")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Words")
 
         repo.addCard(
             FlashCard(
@@ -46,8 +46,8 @@ class FlashCardRepoInstrumentedTest : RoomDbTestBase() {
     fun updateCard_changesSavedValues() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "flashcard-repo-update@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Italian")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
+        val subjectId = insertAssignment(userId = userId, title = "Italian")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Basics")
         repo.addCard(
             FlashCard(
                 userId = userId,
@@ -73,8 +73,8 @@ class FlashCardRepoInstrumentedTest : RoomDbTestBase() {
     fun deleteCard_removesTheCard() = runBlocking {
         val repo = CardRepo(db)
         val userId = insertUser(email = "flashcard-repo-delete@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Latin")
-        val deckId = insertDeck(userId = userId, subjectId = subjectId, name = "Basics")
+        val subjectId = insertAssignment(userId = userId, title = "Latin")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Basics")
         repo.addCard(
             FlashCard(
                 userId = userId,

@@ -43,14 +43,6 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/assignmentSubjectText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textColor="@color/gold_light"
-            android:textSize="12sp" />
-
-        <TextView
             android:id="@+id/assignmentDueText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

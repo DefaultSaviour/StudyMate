@@ -9,9 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
-import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.AssignmentRepo
-import uws.ac.uk.studymate.data.repositories.SubjectRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
@@ -24,12 +22,18 @@ import java.time.LocalDateTime
 Coded by Jamie Coleman
 05/04/26
 consolidated 18/04/26 — list + add + edit + delete in one ViewModel for the wood-glass redesign
+merged 17/06/26 — Subject folded in; an assignment now carries its own colour
  *//////////////////////
+// One named colour the add/edit form can show as a swatch (was on Subjects).
+data class ColorChoice(
+    val label: String,
+    val hex: String
+)
+
 data class AssignmentsItem(
     val assignment: Assignment,
     val dueAt: LocalDateTime,
-    val subjectName: String,
-    val subjectColorHex: String?,
+    val colorHex: String?,
     val iconKey: String,
     val isCompleted: Boolean
 )
@@ -37,14 +41,13 @@ data class AssignmentsItem(
 data class AssignmentsSummary(
     val titleText: String,
     val items: List<AssignmentsItem>,
-    val subjects: List<Subject>
+    val colorChoices: List<ColorChoice>
 )
 
 class AssignmentsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = StudyMateDatabase.getInstance(application)
     private val userRepo = UserRepo(db)
-    private val subjectRepo = SubjectRepo(db)
     private val assignmentRepo = AssignmentRepo(db)
     private val sessionResolver = SessionUserResolver(application, userRepo)
 
@@ -65,30 +68,25 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                 return@launch
             }
 
-            val userId = session.userId
-            val user = session.value
-
-            val assignments = db.assignmentDao().getAssignments(userId)
-            val subjects = subjectRepo.getSubjects(userId).sortedBy { it.name.lowercase() }
-            val subjectsById = subjects.associateBy { it.id }
+            val assignments = db.assignmentDao().getAssignments(session.userId)
             val summary = AssignmentsSummary(
                 titleText = "Assignments",
-                items = buildUpcomingAssignments(assignments, subjectsById),
-                subjects = subjects
+                items = buildUpcomingAssignments(assignments),
+                colorChoices = buildColorChoices()
             )
             _assignmentsSummary.postValue(summary)
             _sessionExpired.postValue(false)
         }
     }
 
-    fun addAssignment(title: String, subject: Subject?, dueDate: String?, iconKey: String?) {
+    fun addAssignment(title: String, colorHex: String?, dueDate: String?, iconKey: String?) {
         val trimmedTitle = TextSanitizer.singleLine(title)
         if (trimmedTitle.isEmpty()) {
-            _message.value = "Enter an assignment title"
+            _message.value = "Enter an assignment name"
             return
         }
-        if (subject == null) {
-            _message.value = "Choose a subject first"
+        if (colorHex.isNullOrBlank()) {
+            _message.value = "Choose a colour"
             return
         }
         if (dueDate.isNullOrBlank()) {
@@ -107,8 +105,8 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
 
             val toInsert = Assignment(
                 userId = session.userId,
-                subjectId = subject.id,
                 title = trimmedTitle,
+                color = colorHex,
                 dueDate = dueDate,
                 icon = savedIconKey
             )
@@ -126,17 +124,17 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
     fun updateAssignment(
         original: Assignment,
         title: String,
-        subject: Subject?,
+        colorHex: String?,
         dueDate: String?,
         iconKey: String?
     ) {
         val trimmedTitle = TextSanitizer.singleLine(title)
         if (trimmedTitle.isEmpty()) {
-            _message.value = "Enter an assignment title"
+            _message.value = "Enter an assignment name"
             return
         }
-        if (subject == null) {
-            _message.value = "Choose a subject first"
+        if (colorHex.isNullOrBlank()) {
+            _message.value = "Choose a colour"
             return
         }
         if (dueDate.isNullOrBlank()) {
@@ -154,8 +152,8 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
             }
 
             val updated = original.copy(
-                subjectId = subject.id,
                 title = trimmedTitle,
+                color = colorHex,
                 dueDate = dueDate,
                 icon = savedIconKey
             )
@@ -211,22 +209,17 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    private fun buildUpcomingAssignments(
-        assignments: List<Assignment>,
-        subjectsById: Map<Int, Subject>
-    ): List<AssignmentsItem> {
+    private fun buildUpcomingAssignments(assignments: List<Assignment>): List<AssignmentsItem> {
         val now = LocalDateTime.now()
         return assignments
             .mapNotNull { assignment ->
                 val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return@mapNotNull null
                 if (dueAt.isBefore(now)) return@mapNotNull null
 
-                val subject = subjectsById[assignment.subjectId]
                 AssignmentsItem(
                     assignment = assignment,
                     dueAt = dueAt,
-                    subjectName = subject?.name ?: "Unknown subject",
-                    subjectColorHex = subject?.color,
+                    colorHex = assignment.color,
                     iconKey = assignment.icon,
                     isCompleted = assignment.completedAt != null
                 )
@@ -235,8 +228,19 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                 // Completed assignments sink to the bottom; otherwise by due date.
                 compareBy<AssignmentsItem> { it.isCompleted }
                     .thenBy { it.dueAt }
-                    .thenBy { it.subjectName.lowercase() }
                     .thenBy { it.assignment.title.lowercase() }
             )
+    }
+
+    // The small fixed list of colour names the add/edit form can use (was Subjects).
+    private fun buildColorChoices(): List<ColorChoice> {
+        return listOf(
+            ColorChoice(label = "Purple", hex = "#A855F7"),
+            ColorChoice(label = "Pink", hex = "#EC4899"),
+            ColorChoice(label = "Blue", hex = "#3B82F6"),
+            ColorChoice(label = "Yellow", hex = "#EAB308"),
+            ColorChoice(label = "Green", hex = "#22C55E"),
+            ColorChoice(label = "Orange", hex = "#F97316")
+        )
     }
 }

@@ -8,8 +8,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
+import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
-import uws.ac.uk.studymate.data.entities.Subject
 import uws.ac.uk.studymate.data.repositories.DeckRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.SessionUserResolver
@@ -18,12 +18,13 @@ import java.time.LocalDate
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
-redesigned 18/04/26 — flat list + add/edit panel-swap to match Subjects/Assignments
+redesigned 18/04/26 — flat list + add/edit panel-swap to match Assignments
+merged 17/06/26 — decks now belong to an Assignment (Subject merged away)
 *//////////////////////
 data class DeckListItem(
     val deck: FlashcardDeck,
-    val subjectName: String,
-    val subjectColorHex: String?,
+    val assignmentName: String,
+    val assignmentColorHex: String?,
     val cardCount: Int,
     val dueText: String   // short badge for the list row: "6 due" if any are due now, else ""
 )
@@ -31,7 +32,7 @@ data class DeckListItem(
 data class FlashcardDecksSummary(
     val titleText: String,
     val items: List<DeckListItem>,
-    val subjects: List<Subject>
+    val assignments: List<Assignment>
 )
 
 class FlashcardDecksViewModel(application: Application) : AndroidViewModel(application) {
@@ -62,25 +63,25 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             }
 
             val userId = session.userId
-            val subjects = db.subjectDao().getSubjects(userId).sortedBy { it.name.lowercase() }
-            val subjectsById = subjects.associateBy { it.id }
+            val assignments = db.assignmentDao().getAssignments(userId).sortedBy { it.title.lowercase() }
+            val assignmentsById = assignments.associateBy { it.id }
             val decksWithCards = db.deckDao().getDecksWithCards(userId)
             val today = LocalDate.now()
             val todayStr = today.toString()
 
             val items = decksWithCards
                 .map { dwc ->
-                    val subject = subjectsById[dwc.deck.subjectId]
+                    val assignment = assignmentsById[dwc.deck.assignmentId]
                     DeckListItem(
                         deck = dwc.deck,
-                        subjectName = subject?.name ?: "Unknown subject",
-                        subjectColorHex = subject?.color,
+                        assignmentName = assignment?.title ?: "Unknown assignment",
+                        assignmentColorHex = assignment?.color,
                         cardCount = dwc.cards.size,
                         dueText = dueBadgeFor(dwc.cards.map { it.dueAt }, todayStr)
                     )
                 }
                 .sortedWith(
-                    compareBy<DeckListItem> { it.subjectName.lowercase() }
+                    compareBy<DeckListItem> { it.assignmentName.lowercase() }
                         .thenBy { it.deck.name.lowercase() }
                 )
 
@@ -88,21 +89,21 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
                 FlashcardDecksSummary(
                     titleText = "Flashcards",
                     items = items,
-                    subjects = subjects
+                    assignments = assignments
                 )
             )
             _sessionExpired.postValue(false)
         }
     }
 
-    fun createDeck(name: String, subject: Subject?) {
+    fun createDeck(name: String, assignment: Assignment?) {
         val trimmedName = TextSanitizer.singleLine(name)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
         }
-        if (subject == null) {
-            _message.value = "Choose a subject first"
+        if (assignment == null) {
+            _message.value = "Choose an assignment first"
             return
         }
 
@@ -116,7 +117,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             val newId = deckRepo.addDeck(
                 FlashcardDeck(
                     userId = session.userId,
-                    subjectId = subject.id,
+                    assignmentId = assignment.id,
                     name = trimmedName
                 )
             )
@@ -125,14 +126,14 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    fun updateDeck(original: FlashcardDeck, newName: String, subject: Subject?) {
+    fun updateDeck(original: FlashcardDeck, newName: String, assignment: Assignment?) {
         val trimmedName = TextSanitizer.singleLine(newName)
         if (trimmedName.isEmpty()) {
             _message.value = "Enter a deck name"
             return
         }
-        if (subject == null) {
-            _message.value = "Choose a subject first"
+        if (assignment == null) {
+            _message.value = "Choose an assignment first"
             return
         }
 
@@ -142,7 +143,7 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
                 _sessionExpired.postValue(true)
                 return@launch
             }
-            deckRepo.updateDeck(original.copy(name = trimmedName, subjectId = subject.id))
+            deckRepo.updateDeck(original.copy(name = trimmedName, assignmentId = assignment.id))
             _message.postValue("Deck updated")
             loadScreen()
         }

@@ -20,12 +20,10 @@ class AssignmentDaoInstrumentedTest : RoomDbTestBase() {
     fun getAssignments_returnsOnlyThatUsersAssignmentsInDueDateOrder() = runBlocking {
         val firstUserId = insertUser(email = "assignments-one@example.com")
         val secondUserId = insertUser(email = "assignments-two@example.com")
-        val firstSubjectId = insertSubject(userId = firstUserId, name = "Maths")
-        val secondSubjectId = insertSubject(userId = secondUserId, name = "Science")
 
-        insertAssignment(userId = firstUserId, subjectId = firstSubjectId, title = "Later", dueDate = "2026-05-10T12:00")
-        insertAssignment(userId = firstUserId, subjectId = firstSubjectId, title = "Sooner", dueDate = "2026-05-01T12:00")
-        insertAssignment(userId = secondUserId, subjectId = secondSubjectId, title = "Other User", dueDate = "2026-04-01T12:00")
+        insertAssignment(userId = firstUserId, title = "Later", dueDate = "2026-05-10T12:00")
+        insertAssignment(userId = firstUserId, title = "Sooner", dueDate = "2026-05-01T12:00")
+        insertAssignment(userId = secondUserId, title = "Other User", dueDate = "2026-04-01T12:00")
 
         val assignments = db.assignmentDao().getAssignments(firstUserId)
 
@@ -40,8 +38,7 @@ class AssignmentDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun updateAssignment_changesSavedValues() = runBlocking {
         val userId = insertUser(email = "assignment-update@example.com")
-        val subjectId = insertSubject(userId = userId, name = "English")
-        insertAssignment(userId = userId, subjectId = subjectId, title = "Draft", dueDate = "2026-05-01T09:00")
+        insertAssignment(userId = userId, title = "Draft", dueDate = "2026-05-01T09:00")
 
         val saved = db.assignmentDao().getAssignments(userId).first()
         db.assignmentDao().update(
@@ -65,8 +62,7 @@ class AssignmentDaoInstrumentedTest : RoomDbTestBase() {
     @Test
     fun deleteAssignment_removesItFromTheList() = runBlocking {
         val userId = insertUser(email = "assignment-delete@example.com")
-        val subjectId = insertSubject(userId = userId, name = "Art")
-        insertAssignment(userId = userId, subjectId = subjectId, title = "Poster")
+        insertAssignment(userId = userId, title = "Poster")
 
         val saved = db.assignmentDao().getAssignments(userId).first()
         db.assignmentDao().delete(saved)
