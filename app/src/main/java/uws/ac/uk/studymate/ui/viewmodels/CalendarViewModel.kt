@@ -21,6 +21,7 @@ updated 09/04/26
  *//////////////////////
 // Holds one assignment that should appear inside a calendar day cell.
 data class CalendarAssignmentEntry(
+    val assignmentId: Int,
     val assignmentTitle: String,
     val dueAt: LocalDateTime,
     val colorHex: String?,
@@ -79,6 +80,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                 .mapNotNull { assignment ->
                     val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return@mapNotNull null
                     CalendarAssignmentEntry(
+                        assignmentId = assignment.id,
                         assignmentTitle = assignment.title,
                         dueAt = dueAt,
                         colorHex = assignment.color,

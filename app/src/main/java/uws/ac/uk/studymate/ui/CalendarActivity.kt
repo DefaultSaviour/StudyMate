@@ -346,26 +346,26 @@ class CalendarActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = (6 * density).toInt() }
+            // Tapping the assignment opens its flashcard decks.
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { openDecksFor(entry) }
         }
 
         val color = parseColor(entry.colorHex)
 
+        // Just the icon in the assignment's colour — no badge background or outline.
         val badge = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 (38 * density).toInt(), (38 * density).toInt()
             )
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 10f * density
-                setColor(color)
-            }
             addView(
                 ImageView(this@CalendarActivity).apply {
                     layoutParams = FrameLayout.LayoutParams(
-                        (22 * density).toInt(), (22 * density).toInt(), Gravity.CENTER
+                        (26 * density).toInt(), (26 * density).toInt(), Gravity.CENTER
                     )
                     setImageResource(AssignmentIcons.drawableForKey(entry.iconKey))
-                    setColorFilter(Color.WHITE)
+                    setColorFilter(color)
                 }
             )
         }
@@ -448,6 +448,15 @@ class CalendarActivity : AppCompatActivity() {
 
     // ───────── Orbs / helpers ─────────
 
+
+    // Open the Flashcards decks screen scoped to the tapped assignment.
+    private fun openDecksFor(entry: CalendarAssignmentEntry) {
+        startActivity(
+            Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity")
+                .putExtra("scoped_assignment_id", entry.assignmentId)
+                .putExtra("scoped_assignment_name", entry.assignmentTitle)
+        )
+    }
 
     private fun openLogin() {
         val i = Intent(this, LoginActivity::class.java).apply {

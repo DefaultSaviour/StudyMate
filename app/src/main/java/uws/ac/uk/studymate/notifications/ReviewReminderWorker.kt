@@ -18,6 +18,7 @@ import uws.ac.uk.studymate.StudyMateApplication
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.ui.LoginActivity
 import java.time.LocalDate
+import java.time.LocalDateTime
 /*//////////////////////
 Fires one "flashcards are due" notification. Re-verifies state at fire time:
 the user still exists, still has push notifications enabled, and actually has
@@ -36,7 +37,11 @@ class ReviewReminderWorker(
         val user = db.userDao().getById(userId) ?: return@withContext Result.success()
         if (user.pushNotificationsEnabled != true) return@withContext Result.success()
 
-        val dueCount = db.cardDao().countDue(userId, LocalDate.now().toString())
+        // Only count cards whose assignment is still active — finished/past-due
+        // assignments no longer nag for review.
+        val dueCount = db.cardDao().countDueActive(
+            userId, LocalDate.now().toString(), LocalDateTime.now().toString()
+        )
         if (dueCount <= 0) return@withContext Result.success()
 
         postNotification(user.name, dueCount, userId)

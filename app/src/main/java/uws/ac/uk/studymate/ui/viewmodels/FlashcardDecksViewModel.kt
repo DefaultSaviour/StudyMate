@@ -12,9 +12,11 @@ import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.data.repositories.DeckRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.TextSanitizer
 import java.time.LocalDate
+import java.time.LocalDateTime
 /*//////////////////////
 Coded by Jamie Coleman
 17/04/26
@@ -26,7 +28,8 @@ data class DeckListItem(
     val assignmentName: String,
     val assignmentColorHex: String?,
     val cardCount: Int,
-    val dueText: String   // short badge for the list row: "6 due" if any are due now, else ""
+    val dueText: String,  // short badge for the list row: "6 due" if any are due now, else ""
+    val isCompleted: Boolean = false  // owning assignment is done / past due → shown in its own subsection
 )
 
 data class FlashcardDecksSummary(
@@ -54,7 +57,9 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
     private val _createdDeckId = MutableLiveData<Int?>()
     val createdDeckId: LiveData<Int?> = _createdDeckId
 
-    fun loadScreen() {
+    // When filterAssignmentId is non-null the list is scoped to that one assignment
+    // (used when the Flashcards screen is opened from a calendar assignment).
+    fun loadScreen(filterAssignmentId: Int? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             val session = sessionResolver.requireUser()
             if (session == null) {
@@ -66,22 +71,29 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             val assignments = db.assignmentDao().getAssignments(userId).sortedBy { it.title.lowercase() }
             val assignmentsById = assignments.associateBy { it.id }
             val decksWithCards = db.deckDao().getDecksWithCards(userId)
+                .filter { filterAssignmentId == null || it.deck.assignmentId == filterAssignmentId }
             val today = LocalDate.now()
             val todayStr = today.toString()
+            val now = LocalDateTime.now()
 
             val items = decksWithCards
                 .map { dwc ->
                     val assignment = assignmentsById[dwc.deck.assignmentId]
+                    val completed = isAssignmentCompleted(assignment, now)
                     DeckListItem(
                         deck = dwc.deck,
                         assignmentName = assignment?.title ?: "Unknown assignment",
                         assignmentColorHex = assignment?.color,
                         cardCount = dwc.cards.size,
-                        dueText = dueBadgeFor(dwc.cards.map { it.dueAt }, todayStr)
+                        // A completed assignment's deck is out of review, so don't show a "due" badge.
+                        dueText = if (completed) "" else dueBadgeFor(dwc.cards.map { it.dueAt }, todayStr),
+                        isCompleted = completed
                     )
                 }
                 .sortedWith(
-                    compareBy<DeckListItem> { it.assignmentName.lowercase() }
+                    // Active decks first, then completed ones; each group by assignment + deck name.
+                    compareBy<DeckListItem> { it.isCompleted }
+                        .thenBy { it.assignmentName.lowercase() }
                         .thenBy { it.deck.name.lowercase() }
                 )
 
@@ -160,6 +172,15 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             _message.postValue("Deck deleted")
             loadScreen()
         }
+    }
+
+    // An assignment counts as completed once it's manually marked done OR its due
+    // date has passed (same rule as the Statistics screen).
+    private fun isAssignmentCompleted(assignment: Assignment?, now: LocalDateTime): Boolean {
+        if (assignment == null) return false
+        if (assignment.completedAt != null) return true
+        val due = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return false
+        return due.isBefore(now)
     }
 
     // Short badge for the deck list row: "6 due" when cards are due now, else "".
