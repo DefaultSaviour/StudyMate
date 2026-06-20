@@ -1,8 +1,13 @@
 package uws.ac.uk.studymate.ui
 
 import android.animation.ObjectAnimator
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
@@ -41,6 +46,11 @@ class DeckCardsActivity : AppCompatActivity() {
     private lateinit var emptyText: TextView
     private lateinit var addCardBtn: MaterialButton
     private lateinit var reviewBtn: MaterialButton
+    private lateinit var importCsvBtn: MaterialButton
+    private lateinit var pasteCardsBtn: MaterialButton
+
+    // SAF picker for CSV/TSV import; registered in onCreate.
+    private lateinit var csvPickerLauncher: ActivityResultLauncher<Array<String>>
 
     private lateinit var addFront: TextInputEditText
     private lateinit var addBack: TextInputEditText
@@ -76,6 +86,14 @@ class DeckCardsActivity : AppCompatActivity() {
         deckName = intent.getStringExtra("deck_name") ?: "Deck"
 
         vm = ViewModelProvider(this)[DeckCardsViewModel::class.java]
+
+        // Many providers mislabel CSV, so accept the common types plus */* (same
+        // widening the JSON backup importer uses). The picker is read-only.
+        csvPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocument()
+        ) { uri: Uri? ->
+            if (uri != null) vm.importCsv(contentResolver, uri)
+        }
 
         bindViews()
         titleText.text = deckName
@@ -125,6 +143,8 @@ class DeckCardsActivity : AppCompatActivity() {
         emptyText = findViewById(R.id.emptyStateText)
         addCardBtn = findViewById(R.id.addCardBtn)
         reviewBtn = findViewById(R.id.reviewBtn)
+        importCsvBtn = findViewById(R.id.importCsvBtn)
+        pasteCardsBtn = findViewById(R.id.pasteCardsBtn)
 
         addFront = findViewById(R.id.addFrontInput)
         addBack = findViewById(R.id.addBackInput)
@@ -140,7 +160,8 @@ class DeckCardsActivity : AppCompatActivity() {
             titleText                                    to -1f,
             subText                                       to  1f,
             findViewById<View>(R.id.actionRow)           to -1f,
-            findViewById<View>(R.id.listSectionLabel)    to  1f,
+            findViewById<View>(R.id.importRow)           to  1f,
+            findViewById<View>(R.id.listSectionLabel)    to -1f,
             recycler                                      to -1f,
             emptyText                                     to  1f
         )
@@ -175,6 +196,18 @@ class DeckCardsActivity : AppCompatActivity() {
     private fun setupClicks() {
         findViewById<MaterialButton>(R.id.backBtn).setOnClickListener { finish() }
         addCardBtn.setOnClickListener { openAddPanel() }
+        importCsvBtn.setOnClickListener {
+            csvPickerLauncher.launch(
+                arrayOf(
+                    "text/csv",
+                    "text/comma-separated-values",
+                    "text/tab-separated-values",
+                    "text/plain",
+                    "*/*"
+                )
+            )
+        }
+        pasteCardsBtn.setOnClickListener { importFromClipboard() }
         reviewBtn.setOnClickListener {
             startActivity(
                 Intent().setClassName(packageName, "$packageName.ui.ReviewDeckActivity")
@@ -319,6 +352,18 @@ class DeckCardsActivity : AppCompatActivity() {
         Panel.EDIT -> editElems
     }
 
+
+    // Read the clipboard and import its text as cards (e.g. Quizlet's "Copy text").
+    private fun importFromClipboard() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val clip = clipboard?.primaryClip
+        val text = if (clip != null && clip.itemCount > 0) {
+            clip.getItemAt(0).coerceToText(this).toString()
+        } else {
+            ""
+        }
+        vm.importFromText(text)
+    }
 
     private fun openLogin() {
         startActivity(Intent(this, LoginActivity::class.java).apply {

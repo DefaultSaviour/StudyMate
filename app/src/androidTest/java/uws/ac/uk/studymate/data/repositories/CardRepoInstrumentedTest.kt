@@ -154,5 +154,28 @@ class CardRepoInstrumentedTest : RoomDbTestBase() {
 
         assertEquals(0, repo.getDueCardsForDeck(deckId, today).size)
     }
+
+    // CRDREP7
+    // Bulk insert (used by CSV import) saves every card under the right deck/user.
+    @Test
+    fun addCards_savesAllUnderDeck() = runBlocking {
+        val repo = CardRepo(db)
+        val userId = insertUser(email = "card-bulk@example.com")
+        val subjectId = insertAssignment(userId = userId, title = "German")
+        val deckId = insertDeck(userId = userId, assignmentId = subjectId, name = "Imported")
+
+        repo.addCards(
+            listOf(
+                FlashCard(userId = userId, deckId = deckId, front = "eins", back = "one"),
+                FlashCard(userId = userId, deckId = deckId, front = "zwei", back = "two"),
+                FlashCard(userId = userId, deckId = deckId, front = "drei", back = "three")
+            )
+        )
+
+        val cards = repo.getCards(deckId)
+        assertEquals(3, cards.size)
+        assertTrue(cards.all { it.userId == userId && it.deckId == deckId })
+        assertTrue(cards.any { it.front == "zwei" && it.back == "two" })
+    }
 }
 
