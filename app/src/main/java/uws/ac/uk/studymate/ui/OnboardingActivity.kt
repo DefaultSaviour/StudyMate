@@ -181,6 +181,8 @@ class OnboardingActivity : AppCompatActivity() {
     // Home when done (EXTRA_FROM_ONBOARDING). Falls back to Home if the deck is
     // somehow missing or not resolved yet.
     private fun startGuidedReview() {
+        // Onboarding is done — the sample assignment has served its purpose.
+        vm.completeSampleAssignment()
         val deck = sampleDeck
         if (deck == null) {
             goHome()
@@ -196,6 +198,9 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun goHome() {
+        // Leaving onboarding (Skip, or the CTA fallback when the deck is missing) —
+        // mark the sample assignment done. Idempotent, so a double-call is harmless.
+        vm.completeSampleAssignment()
         startActivity(Intent(this, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         })

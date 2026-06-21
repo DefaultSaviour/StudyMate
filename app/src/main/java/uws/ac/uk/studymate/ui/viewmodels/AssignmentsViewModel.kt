@@ -71,7 +71,7 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
             val assignments = db.assignmentDao().getAssignments(session.userId)
             val summary = AssignmentsSummary(
                 titleText = "Assignments",
-                items = buildUpcomingAssignments(assignments),
+                items = buildAssignmentItems(assignments),
                 colorChoices = buildColorChoices()
             )
             _assignmentsSummary.postValue(summary)
@@ -209,19 +209,22 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    private fun buildUpcomingAssignments(assignments: List<Assignment>): List<AssignmentsItem> {
+    private fun buildAssignmentItems(assignments: List<Assignment>): List<AssignmentsItem> {
         val now = LocalDateTime.now()
         return assignments
             .mapNotNull { assignment ->
                 val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return@mapNotNull null
-                if (dueAt.isBefore(now)) return@mapNotNull null
 
+                // No "overdue": a past-due assignment is shown as completed, not hidden,
+                // so the user can still see and delete it.
                 AssignmentsItem(
                     assignment = assignment,
                     dueAt = dueAt,
                     colorHex = assignment.color,
                     iconKey = assignment.icon,
-                    isCompleted = assignment.completedAt != null
+                    isCompleted = AssignmentDateTimeUtils.isComplete(
+                        assignment.completedAt, assignment.dueDate, now
+                    )
                 )
             }
             .sortedWith(

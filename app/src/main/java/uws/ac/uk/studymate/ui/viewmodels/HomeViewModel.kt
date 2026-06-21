@@ -159,21 +159,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 //        }
 //    }
 
-    // Find the next assignment with a readable due date.
-    // Prefer an upcoming assignment, but fall back to the most recent overdue one when needed.
+    // Find the soonest upcoming assignment that isn't already complete. There is no
+    // "overdue" state — a past-due assignment counts as done, so it's never shown here.
     private fun findNextDueAssignment(assignments: List<Assignment>): Pair<Assignment, LocalDateTime>? {
-        val datedAssignments = assignments.mapNotNull { assignment ->
-            AssignmentDateTimeUtils.parseDueDate(assignment.dueDate)?.let { dueAt -> assignment to dueAt }
-        }
-
         val now = LocalDateTime.now()
-        val upcoming = datedAssignments
-            .filter { (_, dueAt) -> !dueAt.isBefore(now) }
+        return assignments
+            .mapNotNull { assignment ->
+                val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return@mapNotNull null
+                if (AssignmentDateTimeUtils.isComplete(assignment.completedAt, assignment.dueDate, now)) {
+                    return@mapNotNull null
+                }
+                assignment to dueAt
+            }
             .minByOrNull { (_, dueAt) -> dueAt }
-
-        return upcoming ?: datedAssignments
-            .filter { (_, dueAt) -> dueAt.isBefore(now) }
-            .maxByOrNull { (_, dueAt) -> dueAt }
     }
 
     // Turn the due date into a clear countdown string for the top of the dashboard.
@@ -182,11 +180,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             return "No due assignments yet"
         }
 
-        val now = LocalDateTime.now()
-        val duration = Duration.between(now, dueAt)
+        val duration = Duration.between(LocalDateTime.now(), dueAt)
 
+        // findNextDueAssignment only returns upcoming, not-yet-complete assignments, so
+        // the duration is positive. Guard anyway — there is no "overdue" wording.
         return if (duration.isNegative) {
-            "Overdue by ${formatDuration(duration.abs())}"
+            "No due assignments yet"
         } else {
             "Due in ${formatDuration(duration)}"
         }

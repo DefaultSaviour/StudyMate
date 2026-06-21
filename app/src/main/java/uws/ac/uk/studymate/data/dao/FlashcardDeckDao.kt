@@ -20,6 +20,11 @@ interface FlashcardDeckDao {
     @Query("SELECT * FROM Flashcard_Decks WHERE user_id = :userId")
     suspend fun getDecks(userId: Int): List<FlashcardDeck>
 
+    // Look up a single deck by id; null if it no longer exists. Used by the review
+    // screen to find the deck's parent assignment (completed decks don't reschedule).
+    @Query("SELECT * FROM Flashcard_Decks WHERE id = :deckId")
+    suspend fun getDeck(deckId: Int): FlashcardDeck?
+
     // Get all decks belonging to one assignment. Used by the backup export.
     @Query("SELECT * FROM Flashcard_Decks WHERE assignment_id = :assignmentId")
     suspend fun getDecksForAssignment(assignmentId: Int): List<FlashcardDeck>
