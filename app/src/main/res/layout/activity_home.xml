@@ -30,13 +30,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Guideline: card starts ~16% from top so the wood band above shows the orbs -->
+    <!-- Guideline: card starts ~13% from top so the wood band above shows the orbs
+         (slightly higher than other screens to give the dashboard's six buttons room
+         without scrolling on shorter phones). -->
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/headerGuide"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.16" />
+        app:layout_constraintGuide_percent="0.13" />
 
     <!-- ===== GLASS CARD — nearly full screen ===== -->
 
@@ -70,7 +72,7 @@
                 android:clipToPadding="false"
                 android:paddingStart="24dp"
                 android:paddingEnd="24dp"
-                android:paddingTop="20dp"
+                android:paddingTop="14dp"
                 android:paddingBottom="0dp">
 
                 <!-- Next due section -->
@@ -127,8 +129,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="#33FAF8F5"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="14dp" />
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="12dp" />
 
                 <!-- Section label with pill background -->
                 <TextView
@@ -152,7 +154,7 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:text="Assignments"
                     android:textColor="@color/gold_light"
                     android:textSize="18sp"
@@ -168,7 +170,7 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:text="Flashcards"
                     android:textColor="@color/gold_light"
                     android:textSize="18sp"
@@ -184,7 +186,7 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:text="Calendar"
                     android:textColor="@color/gold_light"
                     android:textSize="18sp"
@@ -200,8 +202,24 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:text="Statistics"
+                    android:textColor="@color/gold_light"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:backgroundTint="#59000000"
+                    app:strokeColor="@color/gold_light"
+                    app:strokeWidth="1dp"
+                    app:cornerRadius="12dp"
+                    app:rippleColor="#33D4BC7E" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/focusTimerBtn"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/focus_timer_button"
                     android:textColor="@color/gold_light"
                     android:textSize="18sp"
                     android:gravity="center"
@@ -218,7 +236,7 @@
                     android:id="@+id/reviewDueContainer"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:clipChildren="false"
                     android:clipToPadding="false">
 

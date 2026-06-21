@@ -79,6 +79,7 @@ class HomeActivity : AppCompatActivity() {
         val flashcardsBtn = findViewById<Button>(R.id.flashcardsBtn)
         val calendarBtn = findViewById<Button>(R.id.calendarBtn)
         val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
+        val focusTimerBtn = findViewById<Button>(R.id.focusTimerBtn)
         val reviewDueBtn = findViewById<Button>(R.id.reviewDueBtn)
         val reviewDueGlow = findViewById<PulseRingView>(R.id.reviewDueGlow)
         // Disabled for now: this testing-only ClearAllData button used to wipe every table.
@@ -165,6 +166,11 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.StatisticsActivity"))
         }
 
+        // Open the focus / Pomodoro study timer.
+        focusTimerBtn.setOnClickListener {
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.FocusTimerActivity"))
+        }
+
         // Review every due deck back-to-back: hand the ordered deck queue to the review
         // screen, which finishes one deck then immediately starts the next.
         reviewDueBtn.setOnClickListener {
@@ -203,7 +209,7 @@ class HomeActivity : AppCompatActivity() {
         val reviewDueContainer = findViewById<View>(R.id.reviewDueContainer)
         val staggerViews = listOf(
             nextDueContainer, navDivider, navSectionLabel,
-            assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn, reviewDueContainer
+            assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn, focusTimerBtn, reviewDueContainer
         )
         staggerViews.forEach { v ->
             v.alpha = 0f

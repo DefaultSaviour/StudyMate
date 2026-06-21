@@ -111,6 +111,34 @@ Streak: 0 day(s)</string>
     <string name="import_cards_csv_button">Import CSV</string>
     <string name="paste_cards_button">Paste cards</string>
 
+    <!-- Focus / Pomodoro timer (0.9G) -->
+    <string name="focus_timer_button">Focus timer</string>
+    <string name="focus_timer_title">Focus timer</string>
+    <string name="focus_timer_subtitle">Stay in the zone — Pomodoro study sessions</string>
+    <string name="focus_phase_focus">FOCUS</string>
+    <string name="focus_phase_break">BREAK</string>
+    <string name="focus_phase_done">DONE</string>
+    <string name="focus_round_default">Round 1 of 4</string>
+    <string name="focus_round_format">Round %1$d of %2$d</string>
+    <string name="focus_session_complete">Session complete</string>
+    <string name="focus_set_study">study time</string>
+    <string name="focus_set_break">break time</string>
+    <string name="focus_set_rounds">rounds</string>
+    <string name="focus_edit_study">Set study time (minutes)</string>
+    <string name="focus_edit_break">Set break time (minutes)</string>
+    <string name="focus_edit_rounds">Number of rounds</string>
+    <string name="focus_edit_apply">Apply</string>
+    <string name="focus_start">Start</string>
+    <string name="focus_resume">Resume</string>
+    <string name="focus_pause">Pause</string>
+    <string name="focus_start_again">Start again</string>
+    <string name="focus_end_round">End round</string>
+    <string name="focus_end_break">End break</string>
+    <string name="focus_end">End</string>
+    <string name="focus_timer_focus_done">Focus block done — time for a break.</string>
+    <string name="focus_timer_break_done">Break over — back to focus.</string>
+    <string name="focus_timer_session_done">Session complete — great work!</string>
+
     <!-- First-run onboarding: 3 intro slides → CTA slide → guided sample-deck review (0.9E) -->
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_skip_for_now">Skip for now</string>

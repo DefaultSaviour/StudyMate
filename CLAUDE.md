@@ -95,6 +95,9 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `ui/PulseRingView.kt` | Custom `View` that paints a soft, slowly breathing gold halo around a rounded-rect ring. Overlaid on the dashboard "Review due decks" button and on each next-required field of the three "create" panels (see "Review due decks" and "Progressive-glow guidance") |
 | `notifications/AssignmentReminderScheduler.kt` | Schedules / cancels per-assignment reminder work (see "Notifications") |
 | `notifications/AssignmentReminderWorker.kt` | `CoroutineWorker` that re-verifies state at fire time and posts the notification |
+| `util/FocusTimerEngine.kt` | Pure (Android-free) Pomodoro state machine (0.9G): `Phase`/`Config`/`TimerState`, `advance`/`phaseDurationSeconds`/`initial`. The rules only — the VM owns the clock. Unit-tested in `FocusTimerEngineTest`. See "Focus / Pomodoro timer" |
+| `notifications/FocusTimerScheduler.kt` / `FocusTimerWorker.kt` | One unique WorkManager one-shot that posts the focus-timer phase-complete notification (0.9G). Background fallback only — the screen chimes/buzzes itself at the exact boundary. See "Focus / Pomodoro timer" |
+| `ui/FocusTimerActivity.kt` + `ui/viewmodels/FocusTimerViewModel.kt` | Wood-glass focus-timer screen + its VM (timestamp-based countdown, survives rotation / leave-return via SharedPreferences). Reached from the Home "Focus timer" button. See "Focus / Pomodoro timer" |
 
 ## Database Conventions
 
@@ -237,6 +240,60 @@ for *external* content, and appends cards to one deck.
   no overwrite.
 - **Deferred:** semicolon-delimited (some locales) and CSV *export*; a
   create-deck-from-file shortcut; per-row preview/edit.
+
+## Focus / Pomodoro timer (0.9G)
+
+An in-app study-session timer — the focused-work half of studying, between captures
+(assignments) and recall (reviews). Fully **offline / no account / no DB** (DB stays
+v11; settings live in a small SharedPreferences). Lives entirely in the wood-glass
+design system (a normal Activity — no widget/RemoteViews constraints). **No new Gradle
+dependency** (WorkManager + coroutines already present); one new normal permission
+(`VIBRATE`).
+
+- **Entry point:** a **"Focus timer"** outlined button on the Home dashboard
+  (`activity_home.xml`, styled like `statisticsBtn`, in the entrance-stagger list),
+  wired in `HomeActivity` to launch `FocusTimerActivity`. (The dashboard's six
+  study-area buttons are spaced at 10dp with the card guideline at 13% to fit without
+  scrolling on shorter phones.)
+- **Session model:** alternates **FOCUS ⇄ BREAK** for `rounds` rounds, then **DONE**
+  (`FOCUS r1 → BREAK r1 → … → FOCUS rN → BREAK rN → DONE`). Config is **three always-on
+  editable boxes** under the labels *study time / break time / rounds*
+  (defaults 25 / 5 / 4) — tap a box to edit just that value in a themed single-field
+  `MaterialAlertDialogBuilder` (no presets/Custom button); the boxes grey out while a
+  session is **in progress (running OR paused)** — editable only at the idle start or
+  once finished.
+  Last-used config persists. Controls: **Start/Pause** (→ Resume / Start again),
+  **End round / End break** (skip the current phase) and **End** (stops the whole
+  session, back to idle — `vm.reset()`); both End buttons are disabled until the session
+  has started. A
+  `PulseRingView` breathes around the big `MM:SS` countdown while running. (No separate
+  long-break — deferred.)
+- **`util/FocusTimerEngine`** — pure, Android-free rules only (`advance` /
+  `phaseDurationSeconds` / `initial`); unit-tested (`FocusTimerEngineTest`). Mirrors
+  `util/SpacedRepetition`.
+- **`FocusTimerViewModel`** — owns the wall clock. **Timestamp-based:** a ~250 ms
+  `viewModelScope` tick recomputes remaining from a monotonic `elapsedRealtime`
+  phase-end and persists the remaining to SharedPreferences (`focus_timer`) on each
+  whole-second change. **Runs in background, stops on close:** while the process is
+  alive (backgrounded / screen off) the same VM keeps ticking and the WorkManager
+  notification still fires; a config change (rotation) keeps the VM so it's unaffected.
+  But on a **cold start** (the app was closed / the process killed) `restore()` comes
+  back **paused** at the last persisted remaining — it never catches up — and cancels
+  any queued phase-end notification. On each boundary it posts a `phaseEvent` (the
+  Activity buzzes via `Vibrator`) and reschedules the background notification.
+- **Phase-complete alert:** new **`focus_timer`** notification channel
+  (`StudyMateApplication`, IMPORTANCE_HIGH). The notification is fired by a **single
+  unique WorkManager one-shot** (`FocusTimerScheduler` + `FocusTimerWorker`, REPLACE on
+  each (re)schedule, `cancel` on pause/reset/skip) — this is the **minimised-app
+  fallback** (timing is best-effort; Doze can defer it). While the screen is alive the
+  in-screen vibration is the primary cue. Independent of the study-reminder
+  `pushNotificationsEnabled` toggle (user-initiated), but still gated by OS
+  `POST_NOTIFICATIONS`. Tapping the notification reopens `FocusTimerActivity` (needs no
+  session/DB).
+- **Deferred:** a precise always-running **foreground-service** timer (a user-timer FGS
+  on API 34+ has no natural `foregroundServiceType` — `specialUse` draws Play scrutiny,
+  not worth it for v1); a long break after N rounds; linking a session to a deck/
+  assignment; logging focus minutes into Statistics.
 
 ## First-run onboarding (0.9E)
 
@@ -746,18 +803,19 @@ one API level). Known gaps to close before widening the audience:
 ### 0.9 — polish & growth features
 - **Export / import — JSON account backup shipped in 0.9** (Settings → DATA; see
   "Data backup (export / import)"). Full study tree to/from a user-picked file via
-  SAF, no backend. **Still pending:** per-deck Share to a file. (CSV deck import
-  shipped in 0.9F — see below.)
+  SAF, no backend. (CSV deck import shipped in 0.9F — see below.)
 - **First-run onboarding — shipped in 0.9E.** New accounts get a pre-loaded sample
   deck + a 3-page intro carousel, so the app is never empty on day one (see "First-run
   onboarding"). **Still pending:** the "consistent empty-state illustration" for screens
   the user later empties out themselves (deletes all decks/assignments).
+- **Focus / Pomodoro timer — shipped in 0.9G** (Home → "Focus timer"; see "Focus /
+  Pomodoro timer"). In-app study-session timer, fully offline.
 - **Accessibility pass** — content descriptions on icon buttons, touch-target
   sizes, text-scaling / large-font behaviour.
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
 - **Flashcard import — CSV/TSV shipped in 0.9F** (per-deck "Import cards from CSV";
-  Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). **Still pending:**
-  CSV *export* / per-deck Share.
+  Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). CSV *export* /
+  per-deck Share was considered and **dropped** (low expected use, decided with Jamie).
 - **Tablet / large-screen layouts — basic support shipped in 0.8.5** (centred
   column on full-bleed wood). A future pass could go further: true multi-pane
   layouts that *use* the extra width (e.g. list + detail) rather than centring a

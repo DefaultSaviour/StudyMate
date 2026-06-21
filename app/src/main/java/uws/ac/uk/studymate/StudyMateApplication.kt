@@ -21,6 +21,7 @@ class StudyMateApplication : Application() {
         super.onCreate()
         createAssignmentReminderChannel()
         createReviewReminderChannel()
+        createFocusTimerChannel()
         registerKeyboardDismissOnPause()
     }
 
@@ -62,11 +63,25 @@ class StudyMateApplication : Application() {
         notificationManager().createNotificationChannel(channel)
     }
 
+    private fun createFocusTimerChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_FOCUS_TIMER,
+            "Focus timer",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Alerts when a focus block or break ends in the Pomodoro timer."
+            enableLights(true)
+            enableVibration(true)
+        }
+        notificationManager().createNotificationChannel(channel)
+    }
+
     private fun notificationManager() =
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
     companion object {
         const val CHANNEL_ASSIGNMENT_REMINDERS = "assignment_reminders"
         const val CHANNEL_REVIEW_REMINDERS = "review_reminders"
+        const val CHANNEL_FOCUS_TIMER = "focus_timer"
     }
 }
