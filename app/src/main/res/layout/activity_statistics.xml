@@ -98,6 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
+                    android:accessibilityHeading="true"
                     android:text="FLASHCARDS"
                     android:textColor="@color/gold_light"
                     android:textSize="12sp"
@@ -111,6 +112,7 @@
 
                 <TextView
                     android:id="@+id/assignmentsLabel"
+                    android:accessibilityHeading="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
@@ -154,7 +156,7 @@
         app:strokeWidth="1dp"
         app:cornerRadius="26dp"
         app:rippleColor="#33D4BC7E"
-        android:contentDescription="Back"
+        android:contentDescription="@string/cd_back"
         app:layout_constraintBottom_toTopOf="@id/statsCard"
         app:layout_constraintEnd_toEndOf="@id/statsCard"
         android:layout_marginBottom="12dp"

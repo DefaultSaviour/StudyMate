@@ -154,4 +154,34 @@ Streak: 0 day(s)</string>
     <string name="onboarding_page3_body">No online account, no ads, no tracking. Your study data stays on your device.</string>
     <string name="onboarding_page4_title">Try it now</string>
     <string name="onboarding_page4_body">We\'ve added a sample deck — \"How StudyMate works\". Want to run a quick review to see the flip-and-grade flow?</string>
+
+    <!-- Accessibility content descriptions (0.9H). cd_ = spoken by TalkBack only. -->
+    <string name="cd_back">Back</string>
+    <string name="cd_back_home">Back to home</string>
+    <string name="cd_home">Home</string>
+    <string name="cd_edit_deck">Edit deck</string>
+    <string name="cd_delete_deck">Delete deck</string>
+    <string name="cd_edit_card">Edit card</string>
+    <string name="cd_delete_card">Delete card</string>
+    <string name="cd_edit_account">Edit account</string>
+    <string name="cd_delete_account">Delete account</string>
+    <string name="cd_previous_month">Previous month</string>
+    <string name="cd_next_month">Next month</string>
+    <!-- Calendar day cells (date string is built in code, e.g. "Today, 15 June"). -->
+    <string name="cd_today_prefix">Today, %1$s</string>
+    <string name="cd_day_no_assignments">%1$s, no assignments due</string>
+    <plurals name="cd_day_assignments">
+        <item quantity="one">%1$s, %2$d assignment due</item>
+        <item quantity="other">%1$s, %2$d assignments due</item>
+    </plurals>
+    <string name="cd_calendar_assignment_row">%1$s, due %2$s, opens flashcard decks</string>
+    <!-- Assignment list rows. -->
+    <string name="cd_mark_done">Mark %1$s as done</string>
+    <string name="cd_mark_not_done">Mark %1$s as not done</string>
+    <string name="cd_edit_assignment">Edit %1$s</string>
+    <string name="cd_delete_assignment">Delete %1$s</string>
+    <!-- Deck list row (name, then subtitle). -->
+    <string name="cd_open_deck">%1$s, %2$s, opens deck</string>
+    <!-- Statistics rows: "Reviewed today, 6". -->
+    <string name="cd_stat_row">%1$s, %2$s</string>
 </resources>

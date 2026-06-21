@@ -5,4 +5,9 @@
          override this to cap + centre the card on a full-bleed wood background
          (tablet "Option 1" support) — see CLAUDE.md "Large-screen / tablet layout". -->
     <dimen name="card_max_width">2000dp</dimen>
+
+    <!-- Minimum accessible touch target (Material / Play pre-launch requirement).
+         Icon buttons keep their small visible iconSize but get a 48dp tappable
+         frame. See CLAUDE.md "Accessibility". -->
+    <dimen name="min_touch_target">48dp</dimen>
 </resources>

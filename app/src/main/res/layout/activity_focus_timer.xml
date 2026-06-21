@@ -6,14 +6,13 @@
     android:layout_height="match_parent"
     android:background="@color/navy">
 
-    <!-- Wood photo, centerCrop so it never stretches. Placeholder bg_dashboard
-         until a dedicated bg_focus.jpg is supplied. -->
+    <!-- Wood photo, centerCrop so it never stretches. Dedicated focus-timer background. -->
     <ImageView
         android:id="@+id/bgImage"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/bg_dashboard"
+        android:src="@drawable/bg_focustimer"
         android:contentDescription="@null"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -100,6 +99,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="28dp"
+                    android:accessibilityHeading="true"
                     android:background="@drawable/bg_text_pill"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
@@ -345,7 +345,7 @@
         app:strokeWidth="1dp"
         app:cornerRadius="26dp"
         app:rippleColor="#33D4BC7E"
-        android:contentDescription="Back"
+        android:contentDescription="@string/cd_back"
         app:layout_constraintBottom_toTopOf="@id/focusCard"
         app:layout_constraintEnd_toEndOf="@id/focusCard"
         android:layout_marginBottom="12dp"

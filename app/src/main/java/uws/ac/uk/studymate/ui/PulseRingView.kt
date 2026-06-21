@@ -28,6 +28,11 @@ class PulseRingView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
+    init {
+        // Purely decorative glow — TalkBack should never land on it.
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
     private val density = resources.displayMetrics.density
     private val cornerRadius = 12f * density
     private val inset = 1.5f * density             // sit right on the button border

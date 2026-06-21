@@ -58,7 +58,10 @@ class DeckListAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
-            is DeckRow.Header -> (holder as HeaderVH).title.text = row.title
+            is DeckRow.Header -> (holder as HeaderVH).title.apply {
+                text = row.title
+                isAccessibilityHeading = true
+            }
             is DeckRow.Deck -> bindDeck(holder as DeckVH, row.item)
         }
     }
@@ -75,6 +78,12 @@ class DeckListAdapter(
 
         val color = ColorUtils.parseOrDefault(item.assignmentColorHex)
         (holder.colorDot.background as? GradientDrawable)?.setColor(color)
+        // The colour dot is decorative — the assignment name is already in the subtitle.
+        holder.colorDot.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+
+        // Read the row's tap target as one node: "<deck>, <subtitle>, opens deck".
+        holder.root.contentDescription =
+            holder.root.context.getString(R.string.cd_open_deck, item.deck.name, holder.subtitle.text)
 
         // Completed-assignment decks read as muted so the active ones stand out.
         holder.root.alpha = if (item.isCompleted) 0.55f else 1f

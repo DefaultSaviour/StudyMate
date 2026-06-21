@@ -104,6 +104,12 @@ class StatisticsActivity : AppCompatActivity() {
             textSize = 18f
             setTypeface(null, Typeface.BOLD)
         }
+        // Accessibility: read the pair as one node ("Reviewed today, 6") rather than
+        // TalkBack stopping on the label and the number separately.
+        labelView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        valueView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        row.contentDescription = getString(R.string.cd_stat_row, label, value)
+
         row.addView(labelView)
         row.addView(valueView)
         container.addView(row)
