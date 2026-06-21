@@ -704,6 +704,39 @@ android:minWidth="0dp"
 ```
 Reference: the Again / Wrong / Correct grade buttons in `activity_review_deck.xml`.
 
+### Accessibility (0.9H)
+Conventions to keep the app usable with TalkBack and large fonts (and to keep the
+Play pre-launch report clean). The accessibility lint checks (`ContentDescription`,
+`TouchTargetSizeCheck`, `KeyboardInaccessibleWidget`, `ClickableViewAccessibility`)
+are **at zero** — keep them there.
+- **Touch targets ≥ 48dp.** Icon buttons use `@dimen/min_touch_target` (48dp) for
+  the tappable frame while keeping a small `app:iconSize` — the icon stays visually
+  small, only the hit area grows. Applied to the assignment/deck/card row buttons and
+  the calendar month-nav arrows. (Top-bar back/settings buttons were already 52dp.)
+- **Content descriptions live in `strings.xml`** with a `cd_` prefix (no hardcoded
+  literals — hardcoded `contentDescription` trips `HardcodedText`). Dynamic ones take
+  placeholders (`cd_mark_done` = "Mark %1$s as done", `cd_open_deck`, `cd_calendar_*`).
+- **Programmatically-built views must set descriptions in code.** Calendar day cells
+  (`CalendarActivity.createDayCell`) and day-detail rows (`buildAssignmentRow`) build a
+  spoken description ("Today, 15 June, 2 assignments due" / "<title>, due <time>, opens
+  flashcard decks") and hide their children with
+  `importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS` so the
+  whole cell/row reads as **one** TalkBack node. Same pattern for the Statistics rows
+  (`StatisticsActivity.addStatRow`: "Reviewed today, 6"). RecyclerView rows set the
+  state-dependent / titled descriptions in the adapter (`AssignmentListAdapter` flips
+  the done button between `cd_mark_done`/`cd_mark_not_done`; `DeckListAdapter` sets the
+  row summary).
+- **Mark decoration non-important.** Orbs (`util/OrbField`), `PulseRingView` glows (set
+  in its `init`), the login `logoIcon`, and colour dots / tinted row icons all set
+  `importantForAccessibility="no"` so TalkBack skips them.
+- **Section labels are headings.** `android:accessibilityHeading="true"` on the
+  Settings (ACCOUNT/PREFERENCES/AT A GLANCE), Statistics (FLASHCARDS/ASSIGNMENTS) and
+  focus-timer phase labels, and on the decks "COMPLETED ASSIGNMENTS" header (set in
+  `DeckListAdapter`) — lets TalkBack jump between sections. (Safe at minSdk 30.)
+- **Deferred:** full RTL / localisation (the ~140 remaining `HardcodedText` warnings on
+  `android:text` are that, out of scope here); a high-contrast theme; switch-access /
+  custom row actions.
+
 ### Input sanitisation (single-line text fields)
 Two-layer defence so a user can't sneak newlines / tabs / long pastes into single-line fields:
 
@@ -810,8 +843,11 @@ one API level). Known gaps to close before widening the audience:
   the user later empties out themselves (deletes all decks/assignments).
 - **Focus / Pomodoro timer — shipped in 0.9G** (Home → "Focus timer"; see "Focus /
   Pomodoro timer"). In-app study-session timer, fully offline.
-- **Accessibility pass** — content descriptions on icon buttons, touch-target
-  sizes, text-scaling / large-font behaviour.
+- **Accessibility pass — shipped in 0.9H.** 48dp touch targets, content descriptions
+  (incl. programmatically-built calendar/stats views), decorative-view exclusions, and
+  heading semantics for TalkBack; the accessibility lint checks are at zero. See
+  "Accessibility (0.9H)" in the design system. Deferred: full localisation / RTL, a
+  high-contrast theme.
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
 - **Flashcard import — CSV/TSV shipped in 0.9F** (per-deck "Import cards from CSV";
   Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). CSV *export* /

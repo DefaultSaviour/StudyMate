@@ -48,18 +48,27 @@ class AssignmentListAdapter(
         holder.due.text = "Due: ${AssignmentDateTimeUtils.formatDueDate(item.dueAt)}"
 
         // Just the icon in the assignment's colour — no badge background or outline.
+        // It's decorative for TalkBack (the title carries the meaning).
         val color = ColorUtils.parseOrDefault(item.colorHex)
         holder.badge.background = null
         holder.icon.setImageResource(AssignmentIcons.drawableForKey(item.iconKey))
         holder.icon.setColorFilter(color)
+        holder.icon.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+
+        val ctx = holder.itemView.context
+        val title = item.assignment.title
+        holder.editBtn.contentDescription = ctx.getString(R.string.cd_edit_assignment, title)
+        holder.deleteBtn.contentDescription = ctx.getString(R.string.cd_delete_assignment, title)
 
         // Completed assignments: filled check, struck-through title, dimmed row.
         if (item.isCompleted) {
             holder.doneBtn.setIconResource(R.drawable.ic_check_circle)
+            holder.doneBtn.contentDescription = ctx.getString(R.string.cd_mark_not_done, title)
             holder.title.paintFlags = holder.title.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.itemView.alpha = 0.55f
         } else {
             holder.doneBtn.setIconResource(R.drawable.ic_circle_outline)
+            holder.doneBtn.contentDescription = ctx.getString(R.string.cd_mark_done, title)
             holder.title.paintFlags = holder.title.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.itemView.alpha = 1f
         }

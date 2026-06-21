@@ -194,7 +194,9 @@ object OrbField {
             setPadding(p, p, p, p)
             scaleType = ImageView.ScaleType.FIT_CENTER
             alpha = (30..44).random() / 100f
+            // Pure decoration — keep TalkBack out of the wood band entirely.
             contentDescription = null
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         val lp = ConstraintLayout.LayoutParams(size, size).apply {
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID

@@ -150,10 +150,14 @@ class CalendarActivity : AppCompatActivity() {
 
     private fun buildWeekdayHeader() {
         weekdayHeaderRow.removeAllViews()
-        listOf("M", "T", "W", "T", "F", "S", "S").forEach { label ->
+        val labels = listOf("M", "T", "W", "T", "F", "S", "S")
+        val full = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        labels.forEachIndexed { i, label ->
             weekdayHeaderRow.addView(
                 TextView(this).apply {
                     text = label
+                    // Spell the day out for TalkBack — a bare "T" reads ambiguously.
+                    contentDescription = full[i]
                     gravity = Gravity.CENTER
                     setTextColor(Color.parseColor("#D4BC7E"))
                     textSize = 12f
@@ -199,6 +203,8 @@ class CalendarActivity : AppCompatActivity() {
     private fun createBlankCell(): View {
         return View(this).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+            // Padding day — nothing for TalkBack to land on.
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
     }
 
@@ -289,6 +295,18 @@ class CalendarActivity : AppCompatActivity() {
                 dotsRow.addView(dot)
             }
             column.addView(dotsRow)
+        }
+
+        // Accessibility: let the whole cell read as one node ("Today, 15 June, 2
+        // assignments due") instead of TalkBack landing on the bare day number and
+        // the colour dots separately.
+        column.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        val dateLabel = date.format(DateTimeFormatter.ofPattern("d MMMM"))
+        val spokenDate = if (isToday) getString(R.string.cd_today_prefix, dateLabel) else dateLabel
+        container.contentDescription = if (hasEntries) {
+            resources.getQuantityString(R.plurals.cd_day_assignments, entries.size, spokenDate, entries.size)
+        } else {
+            getString(R.string.cd_day_no_assignments, spokenDate)
         }
 
         container.addView(column)
@@ -389,6 +407,16 @@ class CalendarActivity : AppCompatActivity() {
                 maxLines = 1
             })
         }
+
+        // Accessibility: read the row as one node and announce that it's actionable,
+        // rather than TalkBack stopping on the colour icon and each text line.
+        badge.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        text.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        row.contentDescription = getString(
+            R.string.cd_calendar_assignment_row,
+            entry.assignmentTitle,
+            AssignmentDateTimeUtils.formatDueTime(entry.dueAt)
+        )
 
         row.addView(badge)
         row.addView(text)

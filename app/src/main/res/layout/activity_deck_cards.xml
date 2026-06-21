@@ -500,7 +500,7 @@
         app:strokeWidth="1dp"
         app:cornerRadius="26dp"
         app:rippleColor="#33D4BC7E"
-        android:contentDescription="Back"
+        android:contentDescription="@string/cd_back"
         app:layout_constraintBottom_toTopOf="@id/cardsCard"
         app:layout_constraintEnd_toEndOf="@id/cardsCard"
         android:layout_marginBottom="12dp"

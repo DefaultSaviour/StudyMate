@@ -476,7 +476,7 @@
         app:strokeWidth="1dp"
         app:cornerRadius="26dp"
         app:rippleColor="#33D4BC7E"
-        android:contentDescription="Back to home"
+        android:contentDescription="@string/cd_back_home"
         app:layout_constraintBottom_toTopOf="@id/decksCard"
         app:layout_constraintEnd_toEndOf="@id/decksCard"
         android:layout_marginBottom="12dp"
