@@ -48,5 +48,19 @@ object AssignmentDateTimeUtils {
     fun formatDueTime(dueAt: LocalDateTime): String {
         return dueAt.format(readableTimeFormatter)
     }
+
+    // The app has no "overdue" state: an assignment is either upcoming or complete.
+    // Complete = explicitly marked done (completedAt set) OR its due date has passed.
+    // A dateless assignment can never auto-complete (returns false) — but a due date
+    // is required on creation, so in practice every assignment is datable.
+    fun isComplete(
+        completedAt: String?,
+        dueDate: String?,
+        now: LocalDateTime = LocalDateTime.now()
+    ): Boolean {
+        if (completedAt != null) return true
+        val due = parseDueDate(dueDate) ?: return false
+        return due.isBefore(now)
+    }
 }
 

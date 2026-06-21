@@ -31,8 +31,11 @@ class SampleContentSeeder(private val db: StudyMateDatabase) {
                     // Due 1 hour out (ISO_LOCAL_DATE_TIME — the first format
                     // AssignmentDateTimeUtils.parseDueDate accepts). Deliberately short so the
                     // demo assignment can never trigger reminders (T-7d/T-1d/day-of all fall in
-                    // the past) alongside the user's real study notifications, and so it drops
-                    // out of the review surfaces shortly after the guided first review.
+                    // the past) alongside the user's real study notifications. Finishing
+                    // onboarding marks it complete (OnboardingViewModel.completeSampleAssignment),
+                    // so the +1h is now just a safety net: if the process is killed mid-onboarding
+                    // it still auto-completes once the hour passes (a past-due assignment counts
+                    // as done — there is no "overdue" state).
                     dueDate = LocalDateTime.now().plusHours(1).toString(),
                     icon = ASSIGNMENT_ICON,
                     completedAt = null

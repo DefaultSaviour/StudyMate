@@ -12,6 +12,7 @@ import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.repositories.CardRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.notifications.ReviewReminderScheduler
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.SpacedRepetition
 import java.time.LocalDate
@@ -60,6 +61,11 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
     private val queue = ArrayDeque<FlashCard>()
     private var doneCount = 0   // distinct cards finished (graded Correct) in the current deck
 
+    // True when the current deck's assignment is finished (marked done or past-due).
+    // Reviewing such a deck is read-only practice — grading never re-schedules (SM-2)
+    // or logs a review, so a finished deck can't pull its cards back into rotation.
+    private var currentDeckCompleted = false
+
     // Multi-deck chaining (from the dashboard "Review due decks" button): walk each
     // queued deck's due cards, then immediately move on to the next. chainTotal carries
     // the count completed in decks already finished this session.
@@ -98,6 +104,11 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
     private fun startQueue(dueOnly: Boolean) {
         _state.postValue(State.Loading)
         viewModelScope.launch(Dispatchers.IO) {
+            // Is this deck's assignment finished? If so, grading won't reschedule/log.
+            val assignment = db.deckDao().getDeck(deckId)?.let { db.assignmentDao().getById(it.assignmentId) }
+            currentDeckCompleted = assignment != null &&
+                AssignmentDateTimeUtils.isComplete(assignment.completedAt, assignment.dueDate)
+
             val cards = if (dueOnly) cardRepo.getDueCardsForDeck(deckId) else cardRepo.getCards(deckId)
             queue.clear()
             queue.addAll(cards)
@@ -115,9 +126,13 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
     fun grade(grade: Grade) {
         val current = (_state.value as? State.Reviewing)?.card ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            // Again and Wrong are both a lapse for the SM-2 schedule; Correct advances it.
-            val quality = if (grade == Grade.CORRECT) SpacedRepetition.GOOD else SpacedRepetition.AGAIN
-            cardRepo.reviewCard(current, quality)
+            // Finished decks are read-only practice: don't touch the SM-2 schedule or
+            // log the review. Active decks grade normally (Again/Wrong = lapse, Correct
+            // = advance).
+            if (!currentDeckCompleted) {
+                val quality = if (grade == Grade.CORRECT) SpacedRepetition.GOOD else SpacedRepetition.AGAIN
+                cardRepo.reviewCard(current, quality)
+            }
 
             if (queue.isNotEmpty()) queue.removeFirst()
             when (grade) {

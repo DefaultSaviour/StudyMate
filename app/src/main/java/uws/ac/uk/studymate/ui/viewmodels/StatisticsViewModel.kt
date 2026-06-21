@@ -80,11 +80,8 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
             // An assignment counts as complete if it was marked done OR its due
             // date has passed (a passed deadline is treated as done, not overdue).
             fun dueOf(a: Assignment) = AssignmentDateTimeUtils.parseDueDate(a.dueDate)
-            fun isComplete(a: Assignment): Boolean {
-                if (a.completedAt != null) return true
-                val due = dueOf(a) ?: return false
-                return due.isBefore(now)
-            }
+            fun isComplete(a: Assignment) =
+                AssignmentDateTimeUtils.isComplete(a.completedAt, a.dueDate, now)
 
             val completedList = assignments.filter { isComplete(it) }
             val pendingList = assignments.filter { !isComplete(it) }
