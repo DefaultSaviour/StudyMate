@@ -23,7 +23,10 @@ Coded by Jamie Coleman
 object BackupSerializer {
 
     const val FORMAT = "studymate-backup"
-    const val VERSION = 2
+    // v3 (0.9J) adds a checklist (`tasks`) under each assignment. v2 backups still
+    // import (their assignments simply have no tasks).
+    const val VERSION = 3
+    private const val MIN_SUPPORTED_VERSION = 2
 
     // ── Plain DTOs mirroring the nested backup format ──
     data class BackupData(val assignments: List<AssignmentNode>)
@@ -34,7 +37,14 @@ object BackupSerializer {
         val dueDate: String?,
         val icon: String,
         val completedAt: String?,
-        val decks: List<DeckNode>
+        val decks: List<DeckNode>,
+        val tasks: List<TaskNode> = emptyList()
+    )
+
+    data class TaskNode(
+        val text: String,
+        val isDone: Boolean,
+        val position: Int
     )
 
     data class DeckNode(
@@ -92,6 +102,16 @@ object BackupSerializer {
             }
             ao.put("decks", decks)
 
+            val tasks = JSONArray()
+            for (t in a.tasks) {
+                val to = JSONObject()
+                to.put("text", t.text)
+                to.put("isDone", t.isDone)
+                to.put("position", t.position)
+                tasks.put(to)
+            }
+            ao.put("tasks", tasks)
+
             assignments.put(ao)
         }
         root.put("assignments", assignments)
@@ -116,9 +136,10 @@ object BackupSerializer {
         if (version > VERSION) {
             throw InvalidBackupException("This backup was made by a newer version of StudyMate.")
         }
-        if (version < VERSION) {
+        if (version < MIN_SUPPORTED_VERSION) {
             // v1 nested subjects above assignments and had no due date on the top
-            // level — there is no clean mapping into the new flat model.
+            // level — there is no clean mapping into the new flat model. v2 and v3
+            // both import (v2 just has no checklist tasks).
             throw InvalidBackupException("This backup was made by an older, incompatible version of StudyMate.")
         }
         if (!root.has("assignments")) {
@@ -138,7 +159,8 @@ object BackupSerializer {
                     dueDate = ao.optStringOrNull("dueDate"),
                     icon = ao.optString("icon", "assignment").ifBlank { "assignment" },
                     completedAt = ao.optStringOrNull("completedAt"),
-                    decks = parseDecks(ao.optJSONArray("decks"))
+                    decks = parseDecks(ao.optJSONArray("decks")),
+                    tasks = parseTasks(ao.optJSONArray("tasks"))
                 )
             )
         }
@@ -175,6 +197,24 @@ object BackupSerializer {
                     repetitions = co.optInt("repetitions", 0),
                     dueAt = co.optStringOrNull("dueAt"),
                     lastReviewedAt = co.optStringOrNull("lastReviewedAt")
+                )
+            )
+        }
+        return out
+    }
+
+    private fun parseTasks(arr: JSONArray?): List<TaskNode> {
+        if (arr == null) return emptyList()
+        val out = ArrayList<TaskNode>(arr.length())
+        for (i in 0 until arr.length()) {
+            val to = arr.getJSONObject(i)
+            val text = to.optString("text").trim()
+            if (text.isEmpty()) continue   // skip blank items rather than fail the import
+            out.add(
+                TaskNode(
+                    text = text,
+                    isDone = to.optBoolean("isDone", false),
+                    position = to.optInt("position", i)
                 )
             )
         }

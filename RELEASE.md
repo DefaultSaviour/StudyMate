@@ -74,7 +74,34 @@ and paste that URL into the Play Console listing. A privacy policy URL is requir
 - **Target audience:** not directed at children under 13.
 - **Store listing assets:** app icon (done), feature graphic, phone screenshots.
 
-## 6. Pre-upload checklist
+## 6. Closed testing (required before production)
+
+Personal/individual developer accounts created after **13 Nov 2023** can't publish
+to production until they've run a **closed test** that meets Google's bar:
+
+- **≥ 20 testers** opted in to a **closed** testing track (internal testing does
+  **not** count toward this).
+- Kept **continuously for ≥ 14 days** — the count must stay at/above 20 for the
+  whole window, so recruit a buffer (~25) since testers drift.
+- After the window, apply for **production access**; Google then reviews the account.
+- **Org accounts are exempt** (different identity verification, needs a D-U-N-S
+  number) — for a solo project the personal-account + closed-test path is simplest.
+
+**Recruiting 20 testers without a personal network:** use **tester-exchange
+communities** — other indie devs who join your closed test in return for you joining
+theirs. Free, and they're real people on real devices (which is the whole point):
+
+- Reddit: r/AndroidAppTesting, r/alphaandbetausers, r/TestMyApp
+- Discord: "Android closed testing" / "20 testers" exchange servers
+- Google Groups dedicated to the 20-tester / 14-day requirement
+
+**Do NOT** buy testers from "guaranteed approval" services or spin up your own
+accounts — those are manufactured installs (clustered device fingerprints, idle
+accounts, VPNs) that Google's anti-abuse systems flag, and getting flagged can
+terminate the $25 account *and* the app, with no refund. No third party can
+actually guarantee production approval; that's Google's call.
+
+## 7. Pre-upload checklist
 
 - [ ] `keystore.properties` present; `bundleRelease` produces a signed `.aab`
 - [ ] `versionCode` / `versionName` bumped in [`app/build.gradle.kts`](app/build.gradle.kts) for each upload

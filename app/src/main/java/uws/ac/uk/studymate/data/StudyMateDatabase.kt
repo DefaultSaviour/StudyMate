@@ -22,10 +22,12 @@ Coded by Jamie Coleman
         Assignment::class,
         FlashcardDeck::class,
         FlashCard::class,
-        ReviewLog::class
+        ReviewLog::class,
+        AssignmentTask::class,
+        FocusSession::class
     ],
     exportSchema = false,
-    version = 11
+    version = 12
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -37,6 +39,8 @@ abstract class StudyMateDatabase : RoomDatabase() {
     abstract fun deckDao(): FlashcardDeckDao
     abstract fun cardDao(): FlashCardDao
     abstract fun reviewLogDao(): ReviewLogDao
+    abstract fun assignmentTaskDao(): AssignmentTaskDao
+    abstract fun focusSessionDao(): FocusSessionDao
 
     companion object {
         // Move the notification choice onto the user row and keep the other settings in User_Settings.
@@ -199,7 +203,50 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+        // Checklists + focus logging (0.9J). Purely additive — two new tables,
+        // existing rows untouched:
+        //   - Assignment_Tasks: per-assignment checklist items.
+        //   - Focus_Sessions: logged focus-timer blocks (focused seconds), for the
+        //     "Focused today / this week" statistics.
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `Assignment_Tasks` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL,
+                        `assignment_id` INTEGER NOT NULL,
+                        `text` TEXT NOT NULL,
+                        `is_done` INTEGER NOT NULL DEFAULT 0,
+                        `position` INTEGER NOT NULL DEFAULT 0,
+                        `created_at` TEXT,
+                        FOREIGN KEY(`user_id`) REFERENCES `User`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`assignment_id`) REFERENCES `Assignments`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Assignment_Tasks_user_id` ON `Assignment_Tasks` (`user_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Assignment_Tasks_assignment_id` ON `Assignment_Tasks` (`assignment_id`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `Focus_Sessions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL,
+                        `assignment_id` INTEGER,
+                        `focused_seconds` INTEGER NOT NULL,
+                        `ended_at` TEXT NOT NULL,
+                        FOREIGN KEY(`user_id`) REFERENCES `User`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`assignment_id`) REFERENCES `Assignments`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Focus_Sessions_user_id` ON `Focus_Sessions` (`user_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Focus_Sessions_assignment_id` ON `Focus_Sessions` (`assignment_id`)")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile

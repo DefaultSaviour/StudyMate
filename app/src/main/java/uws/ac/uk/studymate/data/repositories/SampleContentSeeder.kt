@@ -3,6 +3,7 @@ package uws.ac.uk.studymate.data.repositories
 import androidx.room.withTransaction
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
+import uws.ac.uk.studymate.data.entities.AssignmentTask
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import java.time.LocalDateTime
@@ -57,6 +58,21 @@ class SampleContentSeeder(private val db: StudyMateDatabase) {
                     )
                 )
             }
+
+            // A short checklist (0.9J) so the assignment-checklist + focus-timer
+            // feature is demoed on day one. Deletable like everything else.
+            val now = LocalDateTime.now().toString()
+            SAMPLE_TASKS.forEachIndexed { index, text ->
+                db.assignmentTaskDao().insert(
+                    AssignmentTask(
+                        userId = userId,
+                        assignmentId = assignmentId,
+                        text = text,
+                        position = index,
+                        createdAt = now
+                    )
+                )
+            }
         }
     }
 
@@ -85,6 +101,14 @@ class SampleContentSeeder(private val db: StudyMateDatabase) {
                 "Yes — per-assignment reminders and a daily 'cards due' nudge, all on-device. Turn them on in Settings.",
             "Done with this demo deck?" to
                 "Delete it any time from the Flashcards screen, then start building your own. Good luck!"
+        )
+
+        // A short demo checklist (0.9J): tap an assignment to open it, or pick the
+        // assignment in the focus timer to tick these off while you study.
+        val SAMPLE_TASKS: List<String> = listOf(
+            "Open this assignment to see its checklist",
+            "Pick this assignment in the focus timer",
+            "Tick an item off while you study"
         )
     }
 }

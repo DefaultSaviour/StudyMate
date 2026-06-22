@@ -67,30 +67,52 @@
                 android:paddingTop="20dp"
                 android:paddingBottom="16dp">
 
-                <TextView
-                    android:id="@+id/focusTitle"
-                    android:layout_width="wrap_content"
+                <!-- Assignment selector (0.9J): tap to study a specific assignment.
+                     Optional — left as "Choose an assignment" the timer works as before.
+                     (The old title/subtitle were dropped here to minimise scrolling.) -->
+                <LinearLayout
+                    android:id="@+id/assignmentSelector"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/focus_timer_title"
-                    android:textColor="@color/surface"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:shadowColor="#99000000"
-                    android:shadowRadius="6" />
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_focus_field"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
-                <TextView
-                    android:id="@+id/focusSubtitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:background="@drawable/bg_text_pill_subtle"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="5dp"
-                    android:paddingBottom="5dp"
-                    android:text="@string/focus_timer_subtitle"
-                    android:textColor="@color/gold_light"
-                    android:textSize="13sp" />
+                    <ImageView
+                        android:id="@+id/assignmentSelectorIcon"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:importantForAccessibility="no"
+                        android:scaleType="fitCenter"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/assignmentSelectorText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/focus_choose_assignment"
+                        android:textColor="@color/surface"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"
+                        android:text="▾"
+                        android:textColor="@color/gold_light"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
 
                 <!-- Phase + round, centred above the countdown -->
                 <TextView
@@ -317,6 +339,82 @@
                         app:strokeColor="@color/gold_light"
                         app:strokeWidth="1.5dp"
                         app:cornerRadius="12dp" />
+
+                </LinearLayout>
+
+                <!-- Checklist (0.9J): the selected assignment's tasks, ticked off live.
+                     Sits below the controls (per design) and is hidden until an
+                     assignment is chosen, so the timer stays uncluttered. -->
+                <LinearLayout
+                    android:id="@+id/focusChecklistBlock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/focusChecklistLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:accessibilityHeading="true"
+                            android:letterSpacing="0.15"
+                            android:text="@string/focus_checklist_label"
+                            android:textColor="@color/gold_light"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/focusChecklistCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 of 0"
+                            android:textColor="#B2FAF8F5"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/focusChecklistAddBtn"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="@dimen/min_touch_target"
+                            android:layout_height="@dimen/min_touch_target"
+                            android:layout_marginStart="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            app:icon="@drawable/ic_add"
+                            app:iconTint="@color/gold"
+                            app:iconSize="22dp"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            android:backgroundTint="#00000000"
+                            app:rippleColor="#33D4BC7E"
+                            android:contentDescription="@string/cd_add_task" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/focusChecklistEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
+                        android:text="@string/focus_checklist_empty"
+                        android:textColor="#B2FAF8F5"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/focusChecklistRecycler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never" />
 
                 </LinearLayout>
 

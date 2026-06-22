@@ -9,6 +9,7 @@ import uws.ac.uk.studymate.util.BackupSerializer.AssignmentNode
 import uws.ac.uk.studymate.util.BackupSerializer.BackupData
 import uws.ac.uk.studymate.util.BackupSerializer.CardNode
 import uws.ac.uk.studymate.util.BackupSerializer.DeckNode
+import uws.ac.uk.studymate.util.BackupSerializer.TaskNode
 
 /*//////////////////////
 Coded by Jamie Coleman
@@ -34,6 +35,10 @@ class BackupSerializerTest {
                             CardNode("Mitochondria?", "Powerhouse", 2.6, 6, 2, "2026-07-10", "2026-06-17T08:00:00Z")
                         )
                     )
+                ),
+                tasks = listOf(
+                    TaskNode("Read chapter 4", isDone = true, position = 0),
+                    TaskNode("Practice problems", isDone = false, position = 1)
                 )
             ),
             AssignmentNode(
@@ -78,6 +83,39 @@ class BackupSerializerTest {
         assertEquals("science", parsed.assignments[0].icon)
         assertEquals("2026-06-10T12:00:00Z", parsed.assignments[1].completedAt)
         assertNull(parsed.assignments[1].color)
+    }
+
+    @Test
+    fun roundTrip_preservesChecklistTasks() {
+        val parsed = BackupSerializer.fromJson(
+            BackupSerializer.toJson(sample(), "2026-06-17T12:00:00Z")
+        )
+        val tasks = parsed.assignments[0].tasks
+        assertEquals(2, tasks.size)
+        assertEquals("Read chapter 4", tasks[0].text)
+        assertTrue(tasks[0].isDone)
+        assertEquals(1, tasks[1].position)
+        // An assignment with no tasks round-trips as an empty list, not null.
+        assertTrue(parsed.assignments[1].tasks.isEmpty())
+    }
+
+    @Test
+    fun fromJson_acceptsV2BackupWithNoTasks() {
+        // A v2 backup (pre-checklist) must still import — its assignments just have
+        // no tasks.
+        val json = """
+            {
+              "format": "studymate-backup",
+              "version": 2,
+              "assignments": [
+                { "title": "Math", "dueDate": "2026-07-01T09:00",
+                  "decks": [ { "name": "Algebra", "cards": [ { "front": "2+2", "back": "4" } ] } ] }
+              ]
+            }
+        """.trimIndent()
+        val parsed = BackupSerializer.fromJson(json)
+        assertEquals("Math", parsed.assignments.single().title)
+        assertTrue(parsed.assignments.single().tasks.isEmpty())
     }
 
     @Test
