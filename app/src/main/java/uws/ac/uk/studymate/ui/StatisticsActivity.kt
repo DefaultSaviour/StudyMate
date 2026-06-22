@@ -20,6 +20,7 @@ import com.google.android.material.card.MaterialCardView
 import uws.ac.uk.studymate.R
 import uws.ac.uk.studymate.ui.viewmodels.StatsSummary
 import uws.ac.uk.studymate.ui.viewmodels.StatisticsViewModel
+import uws.ac.uk.studymate.util.DurationFormat
 
 // Read-only dashboard of the user's study progress (flashcard reviews, streak,
 // assignment completion). Rows are built programmatically from StatsSummary so
@@ -30,6 +31,7 @@ class StatisticsActivity : AppCompatActivity() {
 
     private lateinit var flashcardStatsContainer: LinearLayout
     private lateinit var assignmentStatsContainer: LinearLayout
+    private lateinit var focusStatsContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +40,7 @@ class StatisticsActivity : AppCompatActivity() {
 
         flashcardStatsContainer = findViewById(R.id.flashcardStatsContainer)
         assignmentStatsContainer = findViewById(R.id.assignmentStatsContainer)
+        focusStatsContainer = findViewById(R.id.focusStatsContainer)
 
         val card = findViewById<MaterialCardView>(R.id.statsCard)
         val scrollView = findViewById<View>(R.id.statsScrollView)
@@ -80,6 +83,10 @@ class StatisticsActivity : AppCompatActivity() {
         addStatRow(assignmentStatsContainer, "Completed this week", s.assignmentsCompletedThisWeek.toString())
         addStatRow(assignmentStatsContainer, "Still to do", s.assignmentsPending.toString())
         addStatRow(assignmentStatsContainer, "Due this week", s.assignmentsDueThisWeek.toString())
+
+        focusStatsContainer.removeAllViews()
+        addStatRow(focusStatsContainer, "Focused today", DurationFormat.hoursMinutes(s.focusedTodayMinutes))
+        addStatRow(focusStatsContainer, "Focused this week", DurationFormat.hoursMinutes(s.focusedThisWeekMinutes))
     }
 
     private fun addStatRow(container: LinearLayout, label: String, value: String) {

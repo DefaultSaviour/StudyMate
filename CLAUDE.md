@@ -101,8 +101,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 
 ## Database Conventions
 
-- Database version is **11**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
-- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only), `10→11` (**merge Subject into Assignment** — **DESTRUCTIVE for the study tree**: drops `Subjects` + `Subject_Progress`, rebuilds `Assignments` with its own `color` and no `subject_id`, rebuilds `Flashcard_Decks` keyed by `assignment_id`; clears `Flash_Cards`/`Review_Logs`. `User`/settings/stats are kept. No row-by-row mapping was sensible — a subject had no due date, and decks could belong to a subject spanning several assignments — so the tree is wiped and rebuilt, agreed with the user pre-1.0).
+- Database version is **12**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
+- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only), `10→11` (**merge Subject into Assignment** — **DESTRUCTIVE for the study tree**: drops `Subjects` + `Subject_Progress`, rebuilds `Assignments` with its own `color` and no `subject_id`, rebuilds `Flashcard_Decks` keyed by `assignment_id`; clears `Flash_Cards`/`Review_Logs`. `User`/settings/stats are kept. No row-by-row mapping was sensible — a subject had no due date, and decks could belong to a subject spanning several assignments — so the tree is wiped and rebuilt, agreed with the user pre-1.0), `11→12` (**checklists + focus logging**, 0.9J — purely additive: creates `Assignment_Tasks` (per-assignment checklist items) and `Focus_Sessions` (logged focus-timer blocks); existing rows untouched).
 - The `User` table's user-facing identifier is **`name`** (unique). `email` is now an internal placeholder, not user-visible. `auth_mode` is `password` or `biometric_only`.
 - Foreign keys use `CASCADE` delete — deleting a `User` removes all their assignments, decks, cards, etc.; deleting an `Assignment` removes its decks (and their cards).
 - DAOs use `LOWER()` for case-insensitive lookups.
@@ -166,16 +166,19 @@ backend, no network** — the app writes a file and reads one back; the OS handl
 where it lives. Surfaced in **Settings → DATA** ("Export my data" / "Import data").
 
 - **Format (`util/BackupSerializer.kt`):** a **flat nested** tree —
-  `assignments[] → { color, dueDate, icon, completedAt, decks[] → cards[] }` —
+  `assignments[] → { color, dueDate, icon, completedAt, decks[] → cards[], tasks[] }` —
   carrying **no database ids** (PKs are `autoGenerate` and device-local, so
   meaningless elsewhere). Relationships are implicit in the nesting. Root has
-  `format:"studymate-backup"`, `version` (current **2**), `exportedAt`. Card
-  scheduling state (ease/interval/reps/dueAt/lastReviewedAt) and assignment
-  `completedAt`/`color` **are** kept (this is the user's own data for migration).
-  `fromJson` rejects wrong format / newer version / **older incompatible version**
-  (v1 had nested subjects above assignments — no clean map into the flat model, so
-  v1 import was deliberately dropped) / malformed JSON with `InvalidBackupException`;
-  tolerates missing optional fields and skips nameless assignments / empty cards.
+  `format:"studymate-backup"`, `version` (current **3** — 0.9J added per-assignment
+  `tasks[]`; **v2 still imports** with no tasks, `MIN_SUPPORTED_VERSION = 2`),
+  `exportedAt`. Card scheduling state (ease/interval/reps/dueAt/lastReviewedAt),
+  assignment `completedAt`/`color`, and checklist `tasks` (text/isDone/position) **are**
+  kept (the user's own data for migration). `fromJson` rejects wrong format / newer
+  version / **older incompatible version** (v1 had nested subjects above assignments —
+  no clean map into the flat model, so v1 import was deliberately dropped) / malformed
+  JSON with `InvalidBackupException`; tolerates missing optional fields and skips
+  nameless assignments / empty cards / blank tasks. (`Focus_Sessions` are derived
+  history and are **not** backed up, like `Review_Logs`.)
   Pure Kotlin over `org.json` (built into Android — **no new runtime dependency**);
   unit-tested in `BackupSerializerTest`.
   > `org.json` is a *stub* on the JVM test classpath, so `testImplementation("org.json:json:…")`
@@ -288,12 +291,61 @@ dependency** (WorkManager + coroutines already present); one new normal permissi
   fallback** (timing is best-effort; Doze can defer it). While the screen is alive the
   in-screen vibration is the primary cue. Independent of the study-reminder
   `pushNotificationsEnabled` toggle (user-initiated), but still gated by OS
-  `POST_NOTIFICATIONS`. Tapping the notification reopens `FocusTimerActivity` (needs no
-  session/DB).
+  `POST_NOTIFICATIONS`. Tapping the notification reopens `FocusTimerActivity`. **As of
+  0.9J the timer reads the DB** (active assignments + the selected one's checklist) when
+  an assignment is chosen — but with none selected it still needs no session/DB and
+  behaves exactly as in 0.9G.
 - **Deferred:** a precise always-running **foreground-service** timer (a user-timer FGS
   on API 34+ has no natural `foregroundServiceType` — `specialUse` draws Play scrutiny,
-  not worth it for v1); a long break after N rounds; linking a session to a deck/
-  assignment; logging focus minutes into Statistics.
+  not worth it for v1); a long break after N rounds. (Linking a session to an assignment
+  and logging focus minutes into Statistics **shipped in 0.9J** — see below.)
+
+## Assignment checklists + focus fusion (0.9J)
+
+Turns three island features into one loop: an assignment gains a **checklist**, the
+**focus timer** can target an assignment and tick that checklist off live, and the
+focused time is **logged per assignment** and shown in **Statistics**. One new concept
+(a checklist) doing double duty, plus a lightweight study-time log. **DB v12, additive**
+(two new tables); no new dependency, no new permission.
+
+- **Data (`Assignment_Tasks`, `Focus_Sessions`).** `AssignmentTask` (id, userId,
+  assignmentId, text, isDone, position, createdAt; FK CASCADE on user + assignment) is
+  the shared checklist row, written by both screens so they always agree. `FocusSession`
+  (id, userId, assignmentId **nullable** SET_NULL, focusedSeconds, endedAt) is a logged
+  focus block — **derived history like `Review_Logs`, so excluded from backups**. DAOs:
+  `AssignmentTaskDao` (getForAssignment ordered by position, setDone, maxPosition,
+  count/countDone, `progressForUser` for the list hint) and `FocusSessionDao`
+  (`sumFocusedSecondsSince`). Repos `AssignmentTaskRepo` / `FocusSessionRepo`.
+- **Checklist management — Assignments screen.** Tapping an assignment **row body**
+  (previously inert; the pencil/bin/done still do their own thing) opens a new
+  `checklistPanel` via the existing panel-swap (`Panel.CHECKLIST`). The tight add/edit
+  progressive-glow form is **untouched**. Rows are `item_task.xml` (mini-glass: checkbox
+  + text + bin) driven by `TaskListAdapter`; add via an inline field; counts shown as
+  "N of M done". The Assignments list row appends a subtle "✓ done/total" hint **only
+  when the assignment has tasks** (`AssignmentTaskDao.progressForUser`). Returning from
+  the checklist reloads the list so the hint refreshes.
+- **Focus fusion — `FocusTimerActivity` / `FocusTimerViewModel`.** A gold-outlined
+  **assignment selector** (themed `MaterialAlertDialogBuilder` list of *active*
+  assignments, `isComplete` excluded, plus a "None" option) sits above the config boxes;
+  picking one reveals a **checklist block** (reuses `TaskListAdapter`, no delete) whose
+  ticks write the shared table. The selection persists in the `focus_timer` prefs
+  (`selected_assignment`), surviving rotation/leave-return. **With no assignment selected
+  the selector reads "Choose an assignment", the checklist block is GONE, and the screen
+  is exactly the 0.9G timer** — opt-in, zero added clutter.
+- **Study-minutes logging.** `FocusTimerViewModel` accumulates focused seconds during
+  **FOCUS phases only** (per whole-second tick) and flushes a `Focus_Sessions` row at
+  each focus boundary, on **End round** (focus skip), and on **End** (`reset`) — partial
+  focus counts; breaks never do. A cold-start (process killed) loses the in-progress
+  phase's seconds, consistent with the timer's "comes back paused, never catches up".
+- **Statistics.** A new **FOCUS** section (`StatisticsActivity`) shows "Focused today"
+  and "Focused this week" from `sumFocusedSecondsSince` (start-of-today / 7 days ago),
+  formatted by `util/DurationFormat.hoursMinutes` (pure, unit-tested — "1h 30m").
+- **Backup v3.** `BackupSerializer` is now **version 3**: each assignment carries a
+  `tasks[]` (text/isDone/position). **v2 backups still import** (no tasks);
+  `MIN_SUPPORTED_VERSION = 2`. `BackupRepo` exports/imports tasks alongside decks/cards
+  (always-create, FKs re-stamped). Focus sessions are **not** backed up.
+- **Onboarding demo.** `SampleContentSeeder` seeds a 3-item checklist on "Getting
+  Started" so the feature is visible day one.
 
 ## First-run onboarding (0.9E)
 
@@ -854,6 +906,11 @@ one API level). Known gaps to close before widening the audience:
   heading semantics for TalkBack; the accessibility lint checks are at zero. See
   "Accessibility (0.9H)" in the design system. Deferred: full localisation / RTL, a
   high-contrast theme.
+- **Assignment checklists + focus fusion — shipped in 0.9J.** Assignments gain a
+  checklist (row-tap panel); the focus timer can target an assignment and tick its
+  checklist off live; focused minutes are logged per assignment and shown in a new
+  Statistics FOCUS section. DB v12 (additive), backup v3. See "Assignment checklists +
+  focus fusion (0.9J)".
 - **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
 - **Flashcard import — CSV/TSV shipped in 0.9F** (per-deck "Import cards from CSV";
   Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). CSV *export* /

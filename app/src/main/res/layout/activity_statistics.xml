@@ -127,6 +127,23 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
 
+                <TextView
+                    android:id="@+id/focusLabel"
+                    android:accessibilityHeading="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="FOCUS"
+                    android:textColor="@color/gold_light"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.15" />
+
+                <LinearLayout
+                    android:id="@+id/focusStatsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="16dp" />

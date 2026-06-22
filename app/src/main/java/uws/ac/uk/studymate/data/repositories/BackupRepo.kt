@@ -3,12 +3,14 @@ package uws.ac.uk.studymate.data.repositories
 import androidx.room.withTransaction
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
+import uws.ac.uk.studymate.data.entities.AssignmentTask
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.entities.FlashcardDeck
 import uws.ac.uk.studymate.util.BackupSerializer.AssignmentNode
 import uws.ac.uk.studymate.util.BackupSerializer.BackupData
 import uws.ac.uk.studymate.util.BackupSerializer.CardNode
 import uws.ac.uk.studymate.util.BackupSerializer.DeckNode
+import uws.ac.uk.studymate.util.BackupSerializer.TaskNode
 
 /*//////////////////////
 Coded by Jamie Coleman
@@ -45,13 +47,17 @@ class BackupRepo(private val db: StudyMateDatabase) {
                 }
                 DeckNode(name = deck.name, cards = cards)
             }
+            val tasks = db.assignmentTaskDao().getForAssignment(assignment.id).map { t ->
+                TaskNode(text = t.text, isDone = t.isDone, position = t.position)
+            }
             AssignmentNode(
                 title = assignment.title,
                 color = assignment.color,
                 dueDate = assignment.dueDate,
                 icon = assignment.icon,
                 completedAt = assignment.completedAt,
-                decks = decks
+                decks = decks,
+                tasks = tasks
             )
         }
         return BackupData(assignments)
@@ -108,6 +114,20 @@ class BackupRepo(private val db: StudyMateDatabase) {
                         )
                         newCards++
                     }
+                }
+
+                // Restore the checklist items under the resolved assignment. Always
+                // created (additive, like decks/cards — no dedupe), FKs re-stamped.
+                for (t: TaskNode in a.tasks) {
+                    db.assignmentTaskDao().insert(
+                        AssignmentTask(
+                            userId = userId,
+                            assignmentId = assignmentId,
+                            text = t.text,
+                            isDone = t.isDone,
+                            position = t.position
+                        )
+                    )
                 }
             }
         }

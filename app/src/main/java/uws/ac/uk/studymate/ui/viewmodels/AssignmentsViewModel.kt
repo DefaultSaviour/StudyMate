@@ -9,7 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.Assignment
+import uws.ac.uk.studymate.data.entities.AssignmentTask
 import uws.ac.uk.studymate.data.repositories.AssignmentRepo
+import uws.ac.uk.studymate.data.repositories.AssignmentTaskRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
@@ -35,7 +37,15 @@ data class AssignmentsItem(
     val dueAt: LocalDateTime,
     val colorHex: String?,
     val iconKey: String,
-    val isCompleted: Boolean
+    val isCompleted: Boolean,
+    val taskDone: Int = 0,    // Checklist progress (0.9J): items ticked …
+    val taskTotal: Int = 0    // … out of total. 0/0 = no checklist on this assignment.
+)
+
+// The checklist panel's state for one assignment (0.9J).
+data class ChecklistState(
+    val assignment: Assignment,
+    val tasks: List<AssignmentTask>
 )
 
 data class AssignmentsSummary(
@@ -49,10 +59,14 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
     private val db = StudyMateDatabase.getInstance(application)
     private val userRepo = UserRepo(db)
     private val assignmentRepo = AssignmentRepo(db)
+    private val taskRepo = AssignmentTaskRepo(db)
     private val sessionResolver = SessionUserResolver(application, userRepo)
 
     private val _assignmentsSummary = MutableLiveData<AssignmentsSummary>()
     val assignmentsSummary: LiveData<AssignmentsSummary> = _assignmentsSummary
+
+    private val _checklist = MutableLiveData<ChecklistState>()
+    val checklist: LiveData<ChecklistState> = _checklist
 
     private val _sessionExpired = MutableLiveData<Boolean>()
     val sessionExpired: LiveData<Boolean> = _sessionExpired
@@ -69,9 +83,11 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
             }
 
             val assignments = db.assignmentDao().getAssignments(session.userId)
+            val progress = db.assignmentTaskDao().progressForUser(session.userId)
+                .associateBy { it.assignmentId }
             val summary = AssignmentsSummary(
                 titleText = "Assignments",
-                items = buildAssignmentItems(assignments),
+                items = buildAssignmentItems(assignments, progress),
                 colorChoices = buildColorChoices()
             )
             _assignmentsSummary.postValue(summary)
@@ -209,11 +225,76 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    private fun buildAssignmentItems(assignments: List<Assignment>): List<AssignmentsItem> {
+    // ─────────────────── Checklist (0.9J) ───────────────────
+
+    // Load one assignment's checklist for the checklist panel.
+    fun loadChecklist(assignmentId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            val assignment = db.assignmentDao().getById(assignmentId) ?: return@launch
+            _checklist.postValue(ChecklistState(assignment, taskRepo.getForAssignment(assignmentId)))
+        }
+    }
+
+    // Append a new checklist item (sanitised; blank ignored), then reload the panel.
+    fun addTask(assignmentId: Int, rawText: String) {
+        val text = TextSanitizer.singleLine(rawText)
+        if (text.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            taskRepo.add(session.userId, assignmentId, text, Instant.now().toString())
+            _checklist.postValue(
+                ChecklistState(
+                    db.assignmentDao().getById(assignmentId) ?: return@launch,
+                    taskRepo.getForAssignment(assignmentId)
+                )
+            )
+        }
+    }
+
+    // Tick / untick an item, then reload the panel.
+    fun toggleTask(task: AssignmentTask) {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepo.setDone(task.id, !task.isDone)
+            _checklist.postValue(
+                ChecklistState(
+                    db.assignmentDao().getById(task.assignmentId) ?: return@launch,
+                    taskRepo.getForAssignment(task.assignmentId)
+                )
+            )
+        }
+    }
+
+    // Delete an item, then reload the panel.
+    fun deleteTask(task: AssignmentTask) {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepo.delete(task)
+            _checklist.postValue(
+                ChecklistState(
+                    db.assignmentDao().getById(task.assignmentId) ?: return@launch,
+                    taskRepo.getForAssignment(task.assignmentId)
+                )
+            )
+        }
+    }
+
+    private fun buildAssignmentItems(
+        assignments: List<Assignment>,
+        progress: Map<Int, uws.ac.uk.studymate.data.dao.TaskProgress>
+    ): List<AssignmentsItem> {
         val now = LocalDateTime.now()
         return assignments
             .mapNotNull { assignment ->
                 val dueAt = AssignmentDateTimeUtils.parseDueDate(assignment.dueDate) ?: return@mapNotNull null
+                val taskProgress = progress[assignment.id]
 
                 // No "overdue": a past-due assignment is shown as completed, not hidden,
                 // so the user can still see and delete it.
@@ -224,7 +305,9 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                     iconKey = assignment.icon,
                     isCompleted = AssignmentDateTimeUtils.isComplete(
                         assignment.completedAt, assignment.dueDate, now
-                    )
+                    ),
+                    taskDone = taskProgress?.done ?: 0,
+                    taskTotal = taskProgress?.total ?: 0
                 )
             }
             .sortedWith(

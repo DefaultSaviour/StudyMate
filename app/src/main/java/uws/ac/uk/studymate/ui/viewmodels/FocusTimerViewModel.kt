@@ -6,15 +6,26 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uws.ac.uk.studymate.R
+import uws.ac.uk.studymate.data.StudyMateDatabase
+import uws.ac.uk.studymate.data.entities.Assignment
+import uws.ac.uk.studymate.data.entities.AssignmentTask
+import uws.ac.uk.studymate.data.repositories.AssignmentTaskRepo
+import uws.ac.uk.studymate.data.repositories.FocusSessionRepo
+import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.notifications.FocusTimerScheduler
+import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.FocusTimerEngine
 import uws.ac.uk.studymate.util.FocusTimerEngine.Config
 import uws.ac.uk.studymate.util.FocusTimerEngine.Phase
 import uws.ac.uk.studymate.util.FocusTimerEngine.TimerState
+import uws.ac.uk.studymate.util.SessionUserResolver
+import uws.ac.uk.studymate.util.TextSanitizer
+import java.time.Instant
 import kotlin.math.ceil
 
 /*//////////////////////
@@ -33,8 +44,26 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
 
     private val prefs = application.getSharedPreferences(PREFS, Application.MODE_PRIVATE)
 
+    // Study context (0.9J): the optional assignment being studied + its checklist.
+    // The timer works fully without this — selecting an assignment is opt-in.
+    private val db = StudyMateDatabase.getInstance(application)
+    private val userRepo = UserRepo(db)
+    private val taskRepo = AssignmentTaskRepo(db)
+    private val focusRepo = FocusSessionRepo(db)
+    private val sessionResolver = SessionUserResolver(application, userRepo)
+
     private val _state = MutableLiveData<TimerState>()
     val state: LiveData<TimerState> = _state
+
+    // Active assignments to choose from, the current selection, and its checklist.
+    private val _assignments = MutableLiveData<List<Assignment>>()
+    val assignments: LiveData<List<Assignment>> = _assignments
+
+    private val _selectedAssignment = MutableLiveData<Assignment?>()
+    val selectedAssignment: LiveData<Assignment?> = _selectedAssignment
+
+    private val _tasks = MutableLiveData<List<AssignmentTask>>()
+    val tasks: LiveData<List<AssignmentTask>> = _tasks
 
     private val _config = MutableLiveData<Config>()
     val config: LiveData<Config> = _config
@@ -52,6 +81,10 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
     // death and drives restore.
     private var phaseEndElapsed: Long = 0L
     private var tickJob: Job? = null
+
+    // Focused seconds accrued in the current FOCUS phase (0.9J) — flushed to a
+    // Focus_Sessions row at each focus boundary / End, then reset. Breaks don't count.
+    private var focusedAccumSeconds = 0
 
     init {
         _config.value = cfg
@@ -77,6 +110,8 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun reset() {
+        // "End": log whatever focus time was accrued so far before clearing.
+        if (current.phase == Phase.FOCUS) flushFocusedSeconds()
         stopTicking()
         FocusTimerScheduler.cancel(getApplication())
         current = FocusTimerEngine.initial(cfg)
@@ -86,6 +121,8 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
 
     // Jump straight to the next phase (counts the current one as finished).
     fun skipPhase() {
+        // Skipping a focus phase logs the focus time accrued so far (not the skipped rest).
+        if (current.phase == Phase.FOCUS) flushFocusedSeconds()
         val wasRunning = current.running
         val next = FocusTimerEngine.advance(current.copy(remainingSeconds = 0), cfg)
         stopTicking()
@@ -121,6 +158,95 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
         _phaseEvent.value = null
     }
 
+    // ── Study context (0.9J) ──
+
+    // Load the active (not finished/past-due) assignments to choose from, restore the
+    // last selection from prefs, and load its checklist. Called from the Activity.
+    fun loadStudyContext() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: run {
+                _assignments.postValue(emptyList())
+                _selectedAssignment.postValue(null)
+                _tasks.postValue(emptyList())
+                return@launch
+            }
+            val active = db.assignmentDao().getAssignments(session.userId)
+                .filter { !AssignmentDateTimeUtils.isComplete(it.completedAt, it.dueDate) }
+                .sortedBy { it.title.lowercase() }
+            _assignments.postValue(active)
+
+            // Restore the remembered selection, but only if it's still an active one.
+            val savedId = prefs.getInt(KEY_SELECTED_ASSIGNMENT, -1).takeIf { it >= 0 }
+            val selected = active.firstOrNull { it.id == savedId }
+            if (selected == null && savedId != null) {
+                prefs.edit().remove(KEY_SELECTED_ASSIGNMENT).apply()
+            }
+            _selectedAssignment.postValue(selected)
+            _tasks.postValue(selected?.let { taskRepo.getForAssignment(it.id) } ?: emptyList())
+        }
+    }
+
+    // Pick an assignment to study (or null to clear). Persists so it survives leave/return.
+    fun selectAssignment(assignmentId: Int?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (assignmentId == null) {
+                prefs.edit().remove(KEY_SELECTED_ASSIGNMENT).apply()
+                _selectedAssignment.postValue(null)
+                _tasks.postValue(emptyList())
+                return@launch
+            }
+            prefs.edit().putInt(KEY_SELECTED_ASSIGNMENT, assignmentId).apply()
+            val assignment = db.assignmentDao().getById(assignmentId)
+            _selectedAssignment.postValue(assignment)
+            _tasks.postValue(assignment?.let { taskRepo.getForAssignment(it.id) } ?: emptyList())
+        }
+    }
+
+    // Tick / untick a checklist item from the focus screen (writes the shared table),
+    // then reload the checklist.
+    fun toggleFocusTask(task: AssignmentTask) {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepo.setDone(task.id, !task.isDone)
+            _tasks.postValue(taskRepo.getForAssignment(task.assignmentId))
+        }
+    }
+
+    // Delete a checklist item from the focus screen, then reload the checklist.
+    fun deleteFocusTask(task: AssignmentTask) {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepo.delete(task)
+            _tasks.postValue(taskRepo.getForAssignment(task.assignmentId))
+        }
+    }
+
+    // Add a checklist item to the currently selected assignment from the focus
+    // screen (so the user can jot down a step mid-session). No-op if nothing's
+    // selected or the text is blank.
+    fun addTaskToSelected(rawText: String) {
+        val text = TextSanitizer.singleLine(rawText)
+        if (text.isEmpty()) return
+        val assignmentId = prefs.getInt(KEY_SELECTED_ASSIGNMENT, -1).takeIf { it >= 0 } ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: return@launch
+            taskRepo.add(session.userId, assignmentId, text, Instant.now().toString())
+            _tasks.postValue(taskRepo.getForAssignment(assignmentId))
+        }
+    }
+
+    // Log the accrued focus time as a Focus_Sessions row (against the selected
+    // assignment, if any) and reset the accumulator. No-op for a zero block.
+    private fun flushFocusedSeconds() {
+        val seconds = focusedAccumSeconds
+        focusedAccumSeconds = 0
+        if (seconds <= 0) return
+        val assignmentId = prefs.getInt(KEY_SELECTED_ASSIGNMENT, -1).takeIf { it >= 0 }
+        val endedAt = Instant.now().toString()
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser() ?: return@launch
+            focusRepo.log(session.userId, assignmentId, seconds, endedAt)
+        }
+    }
+
     // ── Internals ──
 
     private fun beginRunning(remainingSeconds: Int) {
@@ -142,6 +268,10 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
                     onPhaseEnded()
                     if (current.phase == Phase.DONE) break
                 } else if (remaining != current.remainingSeconds) {
+                    // Count the elapsed whole second(s) toward focus time (FOCUS only).
+                    if (current.phase == Phase.FOCUS) {
+                        focusedAccumSeconds += (current.remainingSeconds - remaining).coerceAtLeast(0)
+                    }
                     // Persist on every whole-second change so a sudden close/kill
                     // leaves the latest remaining behind — the timer "stops" there.
                     current = current.copy(remainingSeconds = remaining, running = true)
@@ -159,6 +289,11 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun onPhaseEnded() {
+        // A FOCUS phase just completed naturally — count its final second(s) and log it.
+        if (current.phase == Phase.FOCUS) {
+            focusedAccumSeconds += current.remainingSeconds.coerceAtLeast(0)
+            flushFocusedSeconds()
+        }
         val next = FocusTimerEngine.advance(current, cfg)
         current = next
         _phaseEvent.postValue(next.phase)
@@ -269,5 +404,6 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
         private const val KEY_ROUND = "round"
         private const val KEY_REMAINING = "remaining"
         private const val KEY_RUNNING = "running"
+        private const val KEY_SELECTED_ASSIGNMENT = "selected_assignment"
     }
 }

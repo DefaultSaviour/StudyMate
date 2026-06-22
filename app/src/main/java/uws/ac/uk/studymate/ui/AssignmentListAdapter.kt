@@ -18,7 +18,8 @@ class AssignmentListAdapter(
     private var items: List<AssignmentsItem>,
     private val onEdit: (AssignmentsItem) -> Unit,
     private val onDelete: (AssignmentsItem) -> Unit,
-    private val onToggleDone: (AssignmentsItem) -> Unit
+    private val onToggleDone: (AssignmentsItem) -> Unit,
+    private val onOpenChecklist: (AssignmentsItem) -> Unit
 ) : RecyclerView.Adapter<AssignmentListAdapter.Row>() {
 
     class Row(view: View) : RecyclerView.ViewHolder(view) {
@@ -45,7 +46,15 @@ class AssignmentListAdapter(
     override fun onBindViewHolder(holder: Row, position: Int) {
         val item = items[position]
         holder.title.text = item.assignment.title
-        holder.due.text = "Due: ${AssignmentDateTimeUtils.formatDueDate(item.dueAt)}"
+
+        // Due text, with a subtle "✓ done/total" checklist hint appended only when
+        // the assignment actually has checklist items (keeps clutter-free rows clean).
+        val dueText = "Due: ${AssignmentDateTimeUtils.formatDueDate(item.dueAt)}"
+        holder.due.text = if (item.taskTotal > 0) {
+            "$dueText  ·  ✓ ${item.taskDone}/${item.taskTotal}"
+        } else {
+            dueText
+        }
 
         // Just the icon in the assignment's colour — no badge background or outline.
         // It's decorative for TalkBack (the title carries the meaning).
@@ -76,6 +85,10 @@ class AssignmentListAdapter(
         holder.doneBtn.setOnClickListener { onToggleDone(item) }
         holder.editBtn.setOnClickListener { onEdit(item) }
         holder.deleteBtn.setOnClickListener { onDelete(item) }
+
+        // Tapping the row body (not the action buttons) opens the assignment's checklist.
+        holder.itemView.setOnClickListener { onOpenChecklist(item) }
+        holder.itemView.contentDescription = ctx.getString(R.string.cd_open_checklist, title)
     }
 
     override fun getItemCount(): Int = items.size

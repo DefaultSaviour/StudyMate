@@ -233,6 +233,53 @@ class StudyMateDatabaseMigrationTest {
         context.getDatabasePath(dbName).delete()
     }
 
+    // 11 -> 12 adds the Assignment_Tasks and Focus_Sessions tables (0.9J).
+    // Purely additive — existing tables are untouched.
+    @Test
+    fun migration11To12_addsTaskAndFocusSessionTables() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbName = "migration-test-${System.currentTimeMillis()}.db"
+
+        val helper = createHelper(dbName)
+        helper.writableDatabase.use { db ->
+            createVersion11Schema(db)
+            applyMigrations(db, from = 11, to = 12)
+
+            // Assignment_Tasks.
+            val taskColumns = readColumnNames(db, "Assignment_Tasks")
+            assertEquals(
+                listOf("id", "user_id", "assignment_id", "text", "is_done", "position", "created_at"),
+                taskColumns
+            )
+            val taskIndices = readIndexNames(db, "Assignment_Tasks")
+            assertTrue(taskIndices.contains("index_Assignment_Tasks_user_id"))
+            assertTrue(taskIndices.contains("index_Assignment_Tasks_assignment_id"))
+
+            // Focus_Sessions.
+            val focusColumns = readColumnNames(db, "Focus_Sessions")
+            assertEquals(
+                listOf("id", "user_id", "assignment_id", "focused_seconds", "ended_at"),
+                focusColumns
+            )
+            assertTrue(readIndexNames(db, "Focus_Sessions").contains("index_Focus_Sessions_user_id"))
+
+            // is_done defaults to 0 for inserts that omit it.
+            db.execSQL(
+                """
+                INSERT INTO `Assignment_Tasks` (`user_id`, `assignment_id`, `text`)
+                VALUES (1, 1, 'Read chapter 4')
+                """.trimIndent()
+            )
+            db.query("SELECT is_done, position FROM `Assignment_Tasks` LIMIT 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(0, cursor.getInt(0))
+                assertEquals(0, cursor.getInt(1))
+            }
+        }
+
+        context.getDatabasePath(dbName).delete()
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     // Apply each migration in the production MIGRATIONS array, in order, from
@@ -480,6 +527,42 @@ class StudyMateDatabaseMigrationTest {
                 `card_id` INTEGER,
                 `reviewed_at` TEXT NOT NULL,
                 `grade` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+
+    // Minimal v11 schema (the merged flat model): User + Assignments are enough for
+    // the additive 11->12 migration, which only CREATEs two new tables.
+    private fun createVersion11Schema(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS `Assignments`")
+        db.execSQL("DROP TABLE IF EXISTS `User`")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `User` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL,
+                `email` TEXT NOT NULL,
+                `password_hash` TEXT NOT NULL,
+                `password_salt` TEXT NOT NULL,
+                `push_notifications_enabled` INTEGER,
+                `created_at` TEXT,
+                `auth_mode` TEXT NOT NULL DEFAULT 'password',
+                `auto_login_enabled` INTEGER NOT NULL DEFAULT 1
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `Assignments` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `user_id` INTEGER NOT NULL,
+                `title` TEXT NOT NULL,
+                `color` TEXT,
+                `due_date` TEXT,
+                `icon` TEXT NOT NULL DEFAULT 'assignment',
+                `completed_at` TEXT
             )
             """.trimIndent()
         )

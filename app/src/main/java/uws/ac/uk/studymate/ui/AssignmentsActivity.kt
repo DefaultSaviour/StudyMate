@@ -53,6 +53,18 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var addPanel: View
     private lateinit var editPanel: View
     private lateinit var iconPanel: LinearLayout
+    private lateinit var checklistPanel: LinearLayout
+
+    private lateinit var checklistIcon: ImageView
+    private lateinit var checklistTitle: TextView
+    private lateinit var checklistSubText: TextView
+    private lateinit var checklistEmptyText: TextView
+    private lateinit var checklistRecycler: RecyclerView
+    private lateinit var checklistAddInput: TextInputEditText
+    private lateinit var checklistAddBtn: MaterialButton
+    private lateinit var checklistBackBtn: MaterialButton
+    private lateinit var taskAdapter: TaskListAdapter
+    private var checklistAssignmentId: Int? = null
 
     private lateinit var recycler: RecyclerView
     private lateinit var emptyText: TextView
@@ -110,7 +122,7 @@ class AssignmentsActivity : AppCompatActivity() {
     private var editDueDate: LocalDateTime? = null
     private var editIconKey: String? = null
 
-    private enum class Panel { LIST, ADD, EDIT, ICON, DATE, TIME }
+    private enum class Panel { LIST, ADD, EDIT, ICON, DATE, TIME, CHECKLIST }
     private var currentPanel: Panel = Panel.LIST
     // The panel we came from when we entered a sub-picker — back returns there.
     private var iconPickerOrigin: Panel = Panel.ADD
@@ -123,6 +135,7 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var iconElems: List<Pair<View, Float>>
     private lateinit var dateElems: List<Pair<View, Float>>
     private lateinit var timeElems: List<Pair<View, Float>>
+    private lateinit var checklistElems: List<Pair<View, Float>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,6 +176,7 @@ class AssignmentsActivity : AppCompatActivity() {
                 updateEditIconEnabled()
             }
         }
+        vm.checklist.observe(this) { state -> renderChecklist(state) }
         vm.sessionExpired.observe(this) { expired -> if (expired) openLogin() }
         vm.message.observe(this) { msg ->
             if (msg.isNullOrBlank()) return@observe
@@ -186,6 +200,16 @@ class AssignmentsActivity : AppCompatActivity() {
         addPanel = findViewById(R.id.addPanel)
         editPanel = findViewById(R.id.editPanel)
         iconPanel = findViewById(R.id.iconPanel)
+        checklistPanel = findViewById(R.id.checklistPanel)
+
+        checklistIcon = findViewById(R.id.checklistIcon)
+        checklistTitle = findViewById(R.id.checklistTitle)
+        checklistSubText = findViewById(R.id.checklistSubText)
+        checklistEmptyText = findViewById(R.id.checklistEmptyText)
+        checklistRecycler = findViewById(R.id.checklistRecycler)
+        checklistAddInput = findViewById(R.id.checklistAddInput)
+        checklistAddBtn = findViewById(R.id.checklistAddBtn)
+        checklistBackBtn = findViewById(R.id.checklistBackBtn)
 
         recycler = findViewById(R.id.assignmentsRecycler)
         emptyText = findViewById(R.id.emptyStateText)
@@ -279,6 +303,13 @@ class AssignmentsActivity : AppCompatActivity() {
             timeConfirmBtn                        to  1f,
             timeBackBtn                           to -1f
         )
+        checklistElems = listOf(
+            findViewById<View>(R.id.checklistHeaderRow) to -1f,
+            checklistSubText                            to  1f,
+            checklistRecycler                           to -1f,
+            checklistAddBtn                             to  1f,
+            checklistBackBtn                            to -1f
+        )
     }
 
     private fun setupRecycler() {
@@ -286,10 +317,20 @@ class AssignmentsActivity : AppCompatActivity() {
             items = emptyList(),
             onEdit = { openEditFor(it) },
             onDelete = { confirmDelete(it) },
-            onToggleDone = { confirmToggleDone(it) }
+            onToggleDone = { confirmToggleDone(it) },
+            onOpenChecklist = { openChecklistFor(it) }
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
+
+        taskAdapter = TaskListAdapter(
+            items = emptyList(),
+            onToggle = { vm.toggleTask(it) },
+            onDelete = { confirmDeleteTask(it) },
+            onClick = { showTaskText(it) }
+        )
+        checklistRecycler.layoutManager = LinearLayoutManager(this)
+        checklistRecycler.adapter = taskAdapter
     }
 
     private fun setupClicks() {
@@ -369,6 +410,23 @@ class AssignmentsActivity : AppCompatActivity() {
         // all the required fields are filled in.
         addTitleInput.addTextChangedListener(simpleWatcher { updateAddProgress() })
         editTitleInput.addTextChangedListener(simpleWatcher { updateEditIconEnabled() })
+
+        // Checklist panel.
+        checklistBackBtn.setOnClickListener { swapToPanel(Panel.LIST) }
+        checklistAddBtn.setOnClickListener { addCurrentTask() }
+        checklistAddInput.setOnEditorActionListener { _, _, _ ->
+            addCurrentTask()
+            true
+        }
+    }
+
+    private fun addCurrentTask() {
+        val id = checklistAssignmentId ?: return
+        val text = checklistAddInput.text?.toString().orEmpty()
+        if (text.isBlank()) return
+        vm.addTask(id, text)
+        checklistAddInput.setText("")
+        uws.ac.uk.studymate.util.Keyboard.hide(this)
     }
 
     private fun setupBackHandler() {
@@ -376,7 +434,7 @@ class AssignmentsActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 when (currentPanel) {
                     Panel.LIST -> openHome()
-                    Panel.ADD, Panel.EDIT -> swapToPanel(Panel.LIST)
+                    Panel.ADD, Panel.EDIT, Panel.CHECKLIST -> swapToPanel(Panel.LIST)
                     Panel.ICON -> swapToPanel(iconPickerOrigin)
                     Panel.DATE -> swapToPanel(duePickerOrigin)
                     Panel.TIME -> swapToPanel(Panel.DATE)
@@ -406,6 +464,10 @@ class AssignmentsActivity : AppCompatActivity() {
             timePanel.setPadding(
                 timePanel.paddingLeft, timePanel.paddingTop,
                 timePanel.paddingRight, navBar + base
+            )
+            checklistPanel.setPadding(
+                checklistPanel.paddingLeft, checklistPanel.paddingTop,
+                checklistPanel.paddingRight, navBar + base
             )
             insets
         }
@@ -674,6 +736,53 @@ class AssignmentsActivity : AppCompatActivity() {
         swapToPanel(Panel.EDIT)
     }
 
+    // ─────────────────── Checklist ───────────────────
+
+    private fun openChecklistFor(item: AssignmentsItem) {
+        checklistAssignmentId = item.assignment.id
+        checklistAddInput.setText("")
+        // Tint the header icon in the assignment's colour, matching the list row.
+        checklistIcon.setImageResource(AssignmentIcons.drawableForKey(item.iconKey))
+        checklistIcon.setColorFilter(ColorUtils.parseOrDefault(item.colorHex))
+        checklistTitle.text = item.assignment.title
+        // Show last-known counts immediately; the observer refreshes once loaded.
+        checklistSubText.text = "${item.taskDone} of ${item.taskTotal} done"
+        taskAdapter.submit(emptyList())
+        checklistEmptyText.visibility = View.GONE
+        vm.loadChecklist(item.assignment.id)
+        swapToPanel(Panel.CHECKLIST)
+    }
+
+    private fun renderChecklist(state: uws.ac.uk.studymate.ui.viewmodels.ChecklistState) {
+        // Ignore a stale emission for an assignment we're no longer viewing.
+        if (state.assignment.id != checklistAssignmentId) return
+        checklistTitle.text = state.assignment.title
+        val done = state.tasks.count { it.isDone }
+        checklistSubText.text = "$done of ${state.tasks.size} done"
+        taskAdapter.submit(state.tasks)
+        // Recycler stays in the (weighted) layout in both states; only the empty
+        // placeholder toggles, so the add field + Back never jump position.
+        checklistEmptyText.visibility = if (state.tasks.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    // Show one checklist item's full text (rows are truncated to two lines).
+    private fun showTaskText(task: uws.ac.uk.studymate.data.entities.AssignmentTask) {
+        MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
+            .setTitle(if (task.isDone) "Checklist item (done)" else "Checklist item")
+            .setMessage(task.text)
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
+    private fun confirmDeleteTask(task: uws.ac.uk.studymate.data.entities.AssignmentTask) {
+        MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
+            .setTitle("Delete checklist item")
+            .setMessage("Delete \"${task.text}\"?")
+            .setPositiveButton("Delete") { _, _ -> vm.deleteTask(task) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun confirmDelete(item: AssignmentsItem) {
         MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
             .setTitle("Delete assignment")
@@ -731,6 +840,9 @@ class AssignmentsActivity : AppCompatActivity() {
 
         // Leaving a panel (often a text-entry one) — make sure the keyboard goes too.
         uws.ac.uk.studymate.util.Keyboard.hide(this)
+
+        // Returning from the checklist: refresh the list so its "done/total" hint updates.
+        if (currentPanel == Panel.CHECKLIST && target == Panel.LIST) vm.loadAssignments()
 
         val outgoingPanel = panelView(currentPanel)
         val incomingPanel = panelView(target)
@@ -797,6 +909,7 @@ class AssignmentsActivity : AppCompatActivity() {
         Panel.ICON -> iconPanel
         Panel.DATE -> datePanel
         Panel.TIME -> timePanel
+        Panel.CHECKLIST -> checklistPanel
     }
 
     private fun panelElems(p: Panel): List<Pair<View, Float>> = when (p) {
@@ -806,6 +919,7 @@ class AssignmentsActivity : AppCompatActivity() {
         Panel.ICON -> iconElems
         Panel.DATE -> dateElems
         Panel.TIME -> timeElems
+        Panel.CHECKLIST -> checklistElems
     }
 
     // ─────────────────── Entrance + orbs ───────────────────

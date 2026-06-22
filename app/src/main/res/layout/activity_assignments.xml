@@ -747,6 +747,154 @@
 
             </LinearLayout>
 
+            <!-- ───────────── CHECKLIST PANEL ───────────── -->
+            <LinearLayout
+                android:id="@+id/checklistPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="20dp"
+                android:visibility="invisible">
+
+                <LinearLayout
+                    android:id="@+id/checklistHeaderRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/checklistIcon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:scaleType="fitCenter" />
+
+                    <TextView
+                        android:id="@+id/checklistTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:accessibilityHeading="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Checklist"
+                        android:textColor="@color/surface"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/checklistSubText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_text_pill_subtle"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="5dp"
+                    android:paddingBottom="5dp"
+                    android:text="0 of 0 done"
+                    android:textColor="@color/gold_light"
+                    android:textSize="13sp" />
+
+                <!-- Weighted region reserves the list space in BOTH states, so the
+                     add field + Back stay pinned at the bottom whether empty or not. -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_weight="1">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/checklistRecycler"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:scrollbars="vertical" />
+
+                    <TextView
+                        android:id="@+id/checklistEmptyText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="No items yet — add the steps for this assignment below."
+                        android:textColor="#B2FAF8F5"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/checklistAddLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Add a checklist item…"
+                        app:boxBackgroundColor="#40000000"
+                        app:boxStrokeColor="@color/box_stroke_gold"
+                        app:hintTextColor="@color/gold_light"
+                        android:textColorHint="#D4BC7E">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/checklistAddInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text|textCapSentences"
+                            android:maxLines="1"
+                            android:maxLength="120"
+                            android:imeOptions="actionDone"
+                            android:textColor="@color/surface" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/checklistAddBtn"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="@dimen/min_touch_target"
+                        android:layout_height="@dimen/min_touch_target"
+                        android:layout_marginStart="6dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        app:icon="@drawable/ic_add"
+                        app:iconTint="@color/gold"
+                        app:iconSize="24dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        android:backgroundTint="#00000000"
+                        app:rippleColor="#33D4BC7E"
+                        android:contentDescription="@string/cd_add_task" />
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/checklistBackBtn"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="10dp"
+                    android:text="Back"
+                    android:textColor="@color/gold_light"
+                    app:strokeColor="@color/gold_light"
+                    app:strokeWidth="1.5dp" />
+
+            </LinearLayout>
+
         </FrameLayout>
 
     </com.google.android.material.card.MaterialCardView>

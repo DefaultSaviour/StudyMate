@@ -33,7 +33,9 @@ data class StatsSummary(
     val assignmentsCompleted: Int,
     val assignmentsCompletedThisWeek: Int,
     val assignmentsPending: Int,
-    val assignmentsDueThisWeek: Int
+    val assignmentsDueThisWeek: Int,
+    val focusedTodayMinutes: Int,    // Focus-timer minutes (0.9J) …
+    val focusedThisWeekMinutes: Int  // … today and over the last 7 days.
 )
 
 class StatisticsViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,6 +71,12 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
             val reviewedToday = db.reviewLogDao().countReviewsSince(userId, startOfTodayIso)
             val reviewedThisWeek = db.reviewLogDao().countReviewsSince(userId, weekAgoIso)
             val streak = computeStreak(db.reviewLogDao().getReviewTimestamps(userId), zone, today)
+
+            // ── Focus time (0.9J) ──
+            val focusedTodayMinutes =
+                db.focusSessionDao().sumFocusedSecondsSince(userId, startOfTodayIso) / 60
+            val focusedThisWeekMinutes =
+                db.focusSessionDao().sumFocusedSecondsSince(userId, weekAgoIso) / 60
 
             // ── Assignments ──
             val assignments = db.assignmentDao().getAssignments(userId)
@@ -110,7 +118,9 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
                     assignmentsCompleted = completedList.size,
                     assignmentsCompletedThisWeek = completedThisWeek,
                     assignmentsPending = pendingList.size,
-                    assignmentsDueThisWeek = dueThisWeek
+                    assignmentsDueThisWeek = dueThisWeek,
+                    focusedTodayMinutes = focusedTodayMinutes,
+                    focusedThisWeekMinutes = focusedThisWeekMinutes
                 )
             )
             _sessionExpired.postValue(false)
