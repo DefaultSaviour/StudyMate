@@ -4,6 +4,7 @@ import android.animation.ObjectAnimator
 import android.graphics.Rect
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
@@ -41,6 +42,13 @@ object OrbField {
 
     private val ICONS = AssignmentIcons.options.map { it.drawableResId }
 
+    /**
+     * Master switch (perf A/B). When false, [scatter] is a no-op and NO orbs are
+     * created or animated — use this to confirm whether the ambient orbs are what
+     * janks screen-open on a budget GPU. Set back to true to restore them.
+     */
+    private const val ENABLED = true
+
     /** Max orbs across the whole frame — keeps it calm on a wide tablet. */
     private const val BUDGET = 16
 
@@ -57,10 +65,13 @@ object OrbField {
      * are views the orbs must not overlap (typically the single top-right button).
      */
     fun scatter(card: View, avoid: List<View> = emptyList()) {
+        if (!ENABLED) return
         card.doOnLayout { v ->
             // Defer out of the layout pass — adding views inside doOnLayout calls
             // requestLayout() mid-layout, which Android drops, leaving the orbs
-            // unmeasured and corrupting the constraint solve. post() runs after.
+            // unmeasured and corrupting the constraint solve. post() runs right after,
+            // so the orbs fade in WITH the entrance (no extra delay — the old ~550ms
+            // defer was only to dodge the oversized-image decode, which is now fixed).
             v.post {
                 val root = v.parent as? ConstraintLayout ?: return@post
                 place(root, v, avoid)
@@ -220,16 +231,38 @@ object OrbField {
         root.addView(orb, lp)
 
         val amp = (8..18).random() * density
+
+        // Entrance (1.1): orbs are constraint-anchored SIBLINGS of the card, so a card
+        // slide wouldn't carry them — they used to appear abruptly ("pop"). A quick
+        // alpha-only fade (started right after layout in scatter()'s post{}) brings them
+        // in WITH the window, finishing ~260ms in so they land as it settles. Alpha-only
+        // (no translate / per-orb layer) keeps it cheap. Hand off to the ambient float
+        // after; the small per-orb start jitter stops them fading in lockstep.
+        val restAlpha = orb.alpha
+        orb.alpha = 0f
+        orb.animate()
+            .alpha(restAlpha)
+            .setDuration(260)
+            .setStartDelay((0..120).random().toLong())
+            .setInterpolator(DecelerateInterpolator(1.4f))
+            .withEndAction { startFloat(orb, amp) }
+            .start()
+    }
+
+    /** The ambient, never-ending up/down drift, started after the entrance fade. */
+    private fun startFloat(orb: View, amp: Float) {
         orb.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         ObjectAnimator.ofFloat(orb, View.TRANSLATION_Y, 0f, -amp).apply {
             duration = (3900..9000).random().toLong()
+            // Desync via a random START DELAY + the duration variance above, NOT via
+            // currentPlayTime — jumping the play position would snap the orb to a
+            // mid-drift offset the instant the float starts (a visible "pop" right after
+            // the fade-in). Starting from translationY=0 (its rest spot) is seamless.
+            startDelay = (0..2200).random().toLong()
             repeatMode = ObjectAnimator.REVERSE
             repeatCount = ObjectAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
             start()
-            // Jump each orb to a random point in its cycle so they don't all swell in
-            // unison (the "in sync" look) — instant phase desync.
-            currentPlayTime = (0 until duration).random()
         }
     }
 }
