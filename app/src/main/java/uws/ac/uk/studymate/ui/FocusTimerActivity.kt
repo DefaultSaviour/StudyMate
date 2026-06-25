@@ -90,15 +90,8 @@ class FocusTimerActivity : AppCompatActivity() {
             listOf(findViewById(R.id.backBtn))
         )
 
-        // Entrance: card slides up.
-        val d = resources.displayMetrics.density
-        card.translationY = 200f * d
-        card.alpha = 0f
-        card.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        card.animate().translationY(0f).alpha(1f).setDuration(540)
-            .setInterpolator(DecelerateInterpolator(1.5f)).setStartDelay(60)
-            .withEndAction { card.setLayerType(View.LAYER_TYPE_NONE, null) }
-            .start()
+        // Entrance: card slides up (shared util/Entrance, pop-free). 1.1
+        uws.ac.uk.studymate.util.Entrance.play(card)
 
         vm.config.observe(this) { cfg ->
             lastConfig = cfg

@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.doOnPreDraw
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
@@ -692,12 +693,17 @@ class LoginActivity : AppCompatActivity() {
         appNameText.animate().alpha(1f).setDuration(550).setStartDelay(80).setInterpolator(brandEase).start()
         appTagline.animate().alpha(1f).setDuration(550).setStartDelay(160).setInterpolator(brandEase).start()
 
-        loginCard.animate()
-            .translationY(0f)
-            .setDuration(700)
-            .setStartDelay(60)
-            .setInterpolator(PathInterpolator(0f, 0f, 0.2f, 1f))
-            .start()
+        // Defer the card slide to doOnPreDraw so it runs from the settled layout and
+        // can't end-jump ("pop"). Login keeps its own 280dp offset / 700ms curve and its
+        // branding fades + static XML orbs — only the slide start is deferred. 1.1
+        loginCard.doOnPreDraw {
+            loginCard.animate()
+                .translationY(0f)
+                .setDuration(700)
+                .setStartDelay(60)
+                .setInterpolator(PathInterpolator(0f, 0f, 0.2f, 1f))
+                .start()
+        }
     }
 
     private fun floatOrb(view: View, amplitude: Float, duration: Long, delay: Long) {

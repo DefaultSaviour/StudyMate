@@ -91,14 +91,7 @@ class ReviewDeckActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.wrongBtn).setOnClickListener { grade(ReviewDeckViewModel.Grade.WRONG) }
         findViewById<MaterialButton>(R.id.correctBtn).setOnClickListener { grade(ReviewDeckViewModel.Grade.CORRECT) }
 
-        val d = resources.displayMetrics.density
-        card.translationY = 200f * d
-        card.alpha = 0f
-        card.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        card.animate().translationY(0f).alpha(1f).setDuration(540)
-            .setInterpolator(DecelerateInterpolator(1.5f)).setStartDelay(60)
-            .withEndAction { card.setLayerType(View.LAYER_TYPE_NONE, null) }
-            .start()
+        uws.ac.uk.studymate.util.Entrance.play(card)
 
         vm = ViewModelProvider(this)[ReviewDeckViewModel::class.java]
         vm.state.observe(this) { render(it) }

@@ -195,45 +195,20 @@ class HomeActivity : AppCompatActivity() {
             listOf(findViewById(R.id.userSettingsBtn))
         )
 
-        // Entrance animation: card slides up, then content staggers in.
-        val density = resources.displayMetrics.density
-        val homeCard = findViewById<MaterialCardView>(R.id.homeCard)
-        val nextDueContainer = findViewById<View>(R.id.nextDueContainer)
-        val navDivider = findViewById<View>(R.id.navDivider)
-        val navSectionLabel = findViewById<View>(R.id.navSectionLabel)
-
-        homeCard.translationY = 200f * density
-        homeCard.alpha = 0f
-        homeCard.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-
+        // Entrance animation: card slides up then content staggers in. Centralised in
+        // util/Entrance, which starts the slide only AFTER layout is settled
+        // (doOnPreDraw) so the card never "pops" 20-40px to its final spot mid-slide. (1.1)
         val reviewDueContainer = findViewById<View>(R.id.reviewDueContainer)
-        val staggerViews = listOf(
-            nextDueContainer, navDivider, navSectionLabel,
-            assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn, focusTimerBtn, reviewDueContainer
+        uws.ac.uk.studymate.util.Entrance.play(
+            card = findViewById(R.id.homeCard),
+            stagger = listOf(
+                findViewById(R.id.nextDueContainer),
+                findViewById(R.id.navDivider),
+                findViewById(R.id.navSectionLabel),
+                assignmentsBtn, flashcardsBtn, calendarBtn, statisticsBtn, focusTimerBtn,
+                reviewDueContainer
+            )
         )
-        staggerViews.forEach { v ->
-            v.alpha = 0f
-            v.translationY = 28f * density
-        }
-
-        homeCard.animate()
-            .translationY(0f)
-            .alpha(1f)
-            .setDuration(540)
-            .setInterpolator(DecelerateInterpolator(1.5f))
-            .setStartDelay(60)
-            .withEndAction { homeCard.setLayerType(View.LAYER_TYPE_NONE, null) }
-            .start()
-
-        staggerViews.forEachIndexed { i, v ->
-            v.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(420)
-                .setInterpolator(DecelerateInterpolator(1.3f))
-                .setStartDelay(260 + i * 65L)
-                .start()
-        }
     }
 
     override fun onResume() {

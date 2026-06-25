@@ -118,19 +118,9 @@ class OnboardingActivity : AppCompatActivity() {
         // Ambient orbs in the wood band above the card.
         OrbField.scatter(card, emptyList())
 
-        // Entrance: card slides up and fades in (matches the other screens).
-        val density = resources.displayMetrics.density
-        card.translationY = 200f * density
-        card.alpha = 0f
-        card.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        card.animate()
-            .translationY(0f)
-            .alpha(1f)
-            .setDuration(540)
-            .setInterpolator(DecelerateInterpolator(1.5f))
-            .setStartDelay(60)
-            .withEndAction { card.setLayerType(View.LAYER_TYPE_NONE, null) }
-            .start()
+        // Entrance: card slides up (shared util/Entrance — deferred to doOnPreDraw so it
+        // never pops; slide-only, no alpha). 1.1
+        uws.ac.uk.studymate.util.Entrance.play(card)
     }
 
     // Animate from the current page to [target], sliding both in the swipe direction.
