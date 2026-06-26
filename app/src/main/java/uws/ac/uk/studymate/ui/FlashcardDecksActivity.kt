@@ -213,7 +213,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { finish() }
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         createDeckBtn.setOnClickListener { openAddPanel() }
         addCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
         editCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }

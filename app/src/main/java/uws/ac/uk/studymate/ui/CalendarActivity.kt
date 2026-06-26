@@ -90,7 +90,7 @@ class CalendarActivity : AppCompatActivity() {
             dayBackBtn  to  1f
         )
 
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         findViewById<MaterialButton>(R.id.previousMonthBtn).setOnClickListener {
             currentMonth = currentMonth.minusMonths(1)
             renderMonth()
