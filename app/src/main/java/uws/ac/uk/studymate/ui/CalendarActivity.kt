@@ -306,9 +306,10 @@ class CalendarActivity : AppCompatActivity() {
         val dateLabel = date.format(DateTimeFormatter.ofPattern("d MMMM"))
         val spokenDate = if (isToday) getString(R.string.cd_today_prefix, dateLabel) else dateLabel
         container.contentDescription = if (hasEntries) {
-            resources.getQuantityString(R.plurals.cd_day_assignments, entries.size, spokenDate, entries.size)
+            val countStr = entries.size.toString()
+            "Date $spokenDate, $countStr events"
         } else {
-            getString(R.string.cd_day_no_assignments, spokenDate)
+            "Date $spokenDate, no events"
         }
 
         container.addView(column)
@@ -322,9 +323,18 @@ class CalendarActivity : AppCompatActivity() {
     private fun openDayDetail(date: LocalDate, entries: List<CalendarEvent>) {
         selectedDate = date
         dayTitle.text = date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
+        
+        val suffix = if (date == LocalDate.now()) " today" else ""
         daySubText.text = when (entries.size) {
-            1 -> "1 due today"
-            else -> "${entries.size} due today"
+            0 -> "No events$suffix"
+            1 -> {
+                when (entries.first().type) {
+                    EventType.ASSIGNMENT -> "1 assignment due$suffix"
+                    EventType.DECK_REVIEW -> "1 deck review$suffix"
+                    EventType.CUSTOM -> "1 event$suffix"
+                }
+            }
+            else -> "${entries.size} events$suffix"
         }
         renderDayList(entries)
         swapToPanel(Panel.DAY)
@@ -333,6 +343,46 @@ class CalendarActivity : AppCompatActivity() {
     private fun renderDayList(entries: List<CalendarEvent>) {
         dayList.removeAllViews()
         val density = resources.displayMetrics.density
+
+        if (entries.isEmpty()) {
+            val emptyView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).apply { topMargin = (30 * density).toInt() }
+                
+                addView(TextView(this@CalendarActivity).apply {
+                    text = "No events scheduled."
+                    textSize = 16f
+                    setTextColor(Color.parseColor("#B2FAF8F5"))
+                    gravity = Gravity.CENTER
+                })
+                
+                val btn = com.google.android.material.button.MaterialButton(
+                    this@CalendarActivity, 
+                    null, 
+                    com.google.android.material.R.attr.materialButtonOutlinedStyle
+                ).apply {
+                    text = "Add custom event"
+                    setTextColor(Color.parseColor("#C4A24A"))
+                    setStrokeColorResource(R.color.gold_light)
+                    strokeWidth = (1.5f * density).toInt()
+                    setIconResource(R.drawable.ic_add)
+                    iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                    setOnClickListener { showEventTitleDialog(selectedDate) }
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = (20 * density).toInt() }
+                }
+                addView(btn)
+            }
+            dayList.addView(emptyView)
+            return
+        }
+
         val sorted = entries // already sorted by VM
         // Max 9 rows so nothing scrolls; if more, last shows "+N more".
         val maxRows = 9
