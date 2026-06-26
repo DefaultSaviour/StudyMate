@@ -7,3 +7,8 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 # UI Failure Protocol
 - If a UI fix attempt fails and the user points out that it is still broken after I thought I fixed it, I MUST run a UI test myself to verify the issue after my next fix attempt.
 - Alternatively, I should explicitly ask the user if they want me to run a UI test after the second fix attempt.
+
+# Project Documentation and Context
+- This repository contains a highly detailed documentation file at `CLAUDE.md`. 
+- **CRITICAL**: Before making architectural changes, adding new features, or modifying database schemas, you MUST read `CLAUDE.md` to understand the project's existing conventions, MVVM structure, and database history.
+- Do not guess the architecture or authentication flows; they are extensively documented there.
