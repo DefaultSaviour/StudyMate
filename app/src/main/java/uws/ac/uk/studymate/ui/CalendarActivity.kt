@@ -24,7 +24,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import uws.ac.uk.studymate.R
-import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
+import uws.ac.uk.studymate.ui.viewmodels.CalendarEvent
+import uws.ac.uk.studymate.ui.viewmodels.EventType
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
@@ -49,7 +50,8 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var dayBackBtn: MaterialButton
 
     private var currentMonth: YearMonth = YearMonth.now()
-    private var entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>> = emptyMap()
+    private var entriesByDate: Map<LocalDate, List<CalendarEvent>> = emptyMap()
+    private var selectedDate: LocalDate = LocalDate.now()
 
     private enum class Panel { MONTH, DAY }
     private var currentPanel = Panel.MONTH
@@ -88,7 +90,7 @@ class CalendarActivity : AppCompatActivity() {
             dayBackBtn  to  1f
         )
 
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         findViewById<MaterialButton>(R.id.previousMonthBtn).setOnClickListener {
             currentMonth = currentMonth.minusMonths(1)
             renderMonth()
@@ -204,7 +206,7 @@ class CalendarActivity : AppCompatActivity() {
     private fun createDayCell(
         date: LocalDate,
         today: LocalDate,
-        entries: List<CalendarAssignmentEntry>
+        entries: List<CalendarEvent>
     ): View {
         val density = resources.displayMetrics.density
         val hasEntries = entries.isNotEmpty()
@@ -220,10 +222,10 @@ class CalendarActivity : AppCompatActivity() {
                 background = androidx.core.content.ContextCompat.getDrawable(
                     this@CalendarActivity, R.drawable.bg_day_cell_active
                 )
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { openDayDetail(date, entries) }
             }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { openDayDetail(date, entries) }
             if (isPast) alpha = 0.5f
         }
 
@@ -273,16 +275,20 @@ class CalendarActivity : AppCompatActivity() {
                 ).apply { topMargin = (3 * density).toInt() }
             }
             entries.take(3).forEach { entry ->
+                val isDash = entry.type == EventType.DECK_REVIEW
+                val width = if (isDash) 10 else 6
+                val height = if (isDash) 3 else 6
                 val dot = View(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        (6 * density).toInt(), (6 * density).toInt()
+                        (width * density).toInt(), (height * density).toInt()
                     ).apply {
                         marginStart = (2 * density).toInt()
                         marginEnd = (2 * density).toInt()
                     }
                     background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
+                        shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
                         setColor(parseColor(entry.colorHex))
+                        if (isDash) cornerRadius = 1.5f * density
                     }
                 }
                 dotsRow.addView(dot)
@@ -297,9 +303,10 @@ class CalendarActivity : AppCompatActivity() {
         val dateLabel = date.format(DateTimeFormatter.ofPattern("d MMMM"))
         val spokenDate = if (isToday) getString(R.string.cd_today_prefix, dateLabel) else dateLabel
         container.contentDescription = if (hasEntries) {
-            resources.getQuantityString(R.plurals.cd_day_assignments, entries.size, spokenDate, entries.size)
+            val countStr = entries.size.toString()
+            "Date $spokenDate, $countStr events"
         } else {
-            getString(R.string.cd_day_no_assignments, spokenDate)
+            "Date $spokenDate, no events"
         }
 
         container.addView(column)
@@ -310,24 +317,78 @@ class CalendarActivity : AppCompatActivity() {
 
     // ───────── Day detail ─────────
 
-    private fun openDayDetail(date: LocalDate, entries: List<CalendarAssignmentEntry>) {
+    private fun openDayDetail(date: LocalDate, entries: List<CalendarEvent>) {
+        selectedDate = date
         dayTitle.text = date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
+        
+        val suffix = if (date == LocalDate.now()) " today" else ""
         daySubText.text = when (entries.size) {
-            1 -> "1 due today"
-            else -> "${entries.size} due today"
+            0 -> "No events$suffix"
+            1 -> {
+                when (entries.first().type) {
+                    EventType.ASSIGNMENT -> "1 assignment due$suffix"
+                    EventType.DECK_REVIEW -> "1 deck review$suffix"
+                    EventType.CUSTOM -> "1 event$suffix"
+                }
+            }
+            else -> "${entries.size} events$suffix"
         }
-        renderDayList(entries)
+        val isPast = date.isBefore(LocalDate.now())
+
+        renderDayList(entries, isPast)
         swapToPanel(Panel.DAY)
     }
 
-    private fun renderDayList(entries: List<CalendarAssignmentEntry>) {
+    private fun renderDayList(entries: List<CalendarEvent>, isPast: Boolean) {
         dayList.removeAllViews()
         val density = resources.displayMetrics.density
-        val sorted = entries.sortedBy { it.dueAt }
+
+        if (entries.isEmpty()) {
+            val emptyView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).apply { topMargin = (30 * density).toInt() }
+                
+                addView(TextView(this@CalendarActivity).apply {
+                    text = "No events scheduled."
+                    textSize = 16f
+                    setTextColor(Color.parseColor("#B2FAF8F5"))
+                    gravity = Gravity.CENTER
+                })
+                
+                if (!isPast) {
+                    val btn = com.google.android.material.button.MaterialButton(
+                        this@CalendarActivity, 
+                        null, 
+                        com.google.android.material.R.attr.materialButtonOutlinedStyle
+                    ).apply {
+                        text = "Add custom event"
+                        setTextColor(Color.parseColor("#C4A24A"))
+                        setStrokeColorResource(R.color.gold_light)
+                        strokeWidth = (1.5f * density).toInt()
+                        setIconResource(R.drawable.ic_add)
+                        iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                        setOnClickListener { showEventTitleDialog(selectedDate) }
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = (20 * density).toInt() }
+                    }
+                    addView(btn)
+                }
+            }
+            dayList.addView(emptyView)
+            return
+        }
+
+        val sorted = entries // already sorted by VM
         // Max 9 rows so nothing scrolls; if more, last shows "+N more".
         val maxRows = 9
         val visible = if (sorted.size > maxRows) sorted.take(maxRows - 1) else sorted
-        visible.forEach { entry -> dayList.addView(buildAssignmentRow(entry, density)) }
+        visible.forEach { entry -> dayList.addView(buildEventRow(entry, density)) }
         if (sorted.size > maxRows) {
             dayList.addView(
                 TextView(this).apply {
@@ -342,9 +403,34 @@ class CalendarActivity : AppCompatActivity() {
                 }
             )
         }
+
+        if (!isPast) {
+            val btn = com.google.android.material.button.MaterialButton(
+                this@CalendarActivity, 
+                null, 
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                text = "Add more events"
+                setTextColor(Color.parseColor("#C4A24A"))
+                setStrokeColorResource(R.color.gold_light)
+                strokeWidth = (1.5f * density).toInt()
+                setIconResource(R.drawable.ic_add)
+                iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                setOnClickListener { showEventTitleDialog(selectedDate) }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = (20 * density).toInt()
+                    bottomMargin = (20 * density).toInt()
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            }
+            dayList.addView(btn)
+        }
     }
 
-    private fun buildAssignmentRow(entry: CalendarAssignmentEntry, density: Float): View {
+    private fun buildEventRow(entry: CalendarEvent, density: Float): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -358,9 +444,17 @@ class CalendarActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = (6 * density).toInt() }
             // Tapping the assignment opens its flashcard decks.
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { openDecksFor(entry) }
+            if (entry.type == EventType.ASSIGNMENT) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { openDecksFor(entry) }
+            } else if (entry.type == EventType.DECK_REVIEW) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { openReviewFor(entry) }
+            } else {
+                isClickable = false
+            }
         }
 
         val color = parseColor(entry.colorHex)
@@ -387,14 +481,14 @@ class CalendarActivity : AppCompatActivity() {
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
             ).apply { marginStart = (10 * density).toInt() }
             addView(TextView(this@CalendarActivity).apply {
-                text = entry.assignmentTitle
+                text = entry.title
                 textSize = 14f
                 setTextColor(Color.parseColor("#FAF8F5"))
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })
             addView(TextView(this@CalendarActivity).apply {
-                text = AssignmentDateTimeUtils.formatDueTime(entry.dueAt)
+                text = entry.timeText ?: "All day"
                 textSize = 11f
                 setTextColor(Color.parseColor("#B2FAF8F5"))
                 maxLines = 1
@@ -407,8 +501,8 @@ class CalendarActivity : AppCompatActivity() {
         text.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         row.contentDescription = getString(
             R.string.cd_calendar_assignment_row,
-            entry.assignmentTitle,
-            AssignmentDateTimeUtils.formatDueTime(entry.dueAt)
+            entry.title,
+            entry.timeText ?: "All day"
         )
 
         row.addView(badge)
@@ -471,12 +565,46 @@ class CalendarActivity : AppCompatActivity() {
 
 
     // Open the Flashcards decks screen scoped to the tapped assignment.
-    private fun openDecksFor(entry: CalendarAssignmentEntry) {
+    private fun openDecksFor(entry: CalendarEvent) {
         startActivity(
             Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity")
-                .putExtra("scoped_assignment_id", entry.assignmentId)
-                .putExtra("scoped_assignment_name", entry.assignmentTitle)
+                .putExtra("scoped_assignment_id", entry.id)
+                .putExtra("scoped_assignment_name", entry.title)
         )
+    }
+
+    private fun openReviewFor(entry: CalendarEvent) {
+        startActivity(
+            Intent().setClassName(packageName, "$packageName.ui.ReviewDeckActivity")
+                .putExtra("deck_id", entry.id)
+                .putExtra("deck_name", entry.title.removePrefix("Review: "))
+        )
+    }
+
+    // (removed unused showAddEventDialog since we use showEventTitleDialog directly)
+
+    private fun showEventTitleDialog(date: LocalDate) {
+        val input = android.widget.EditText(this).apply {
+            hint = "Event title"
+            setTextColor(Color.parseColor("#FAF8F5"))
+            setHintTextColor(Color.parseColor("#B2FAF8F5"))
+        }
+        val layout = LinearLayout(this).apply {
+            val pad = (20 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
+            .setTitle("New event for ${date.format(DateTimeFormatter.ofPattern("d MMM"))}")
+            .setView(layout)
+            .setPositiveButton("Save") { _, _ ->
+                val title = input.text.toString().trim()
+                if (title.isNotEmpty()) {
+                    vm.addCustomEvent(title, date, "#C4A24A", "event")
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun openLogin() {

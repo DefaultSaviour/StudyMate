@@ -213,7 +213,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         createDeckBtn.setOnClickListener { openAddPanel() }
         addCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
         editCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
@@ -244,7 +244,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when (currentPanel) {
-                    Panel.LIST -> openHome()
+                    Panel.LIST -> finish()
                     Panel.ADD, Panel.EDIT -> swapToPanel(Panel.LIST)
                 }
             }
@@ -553,6 +553,10 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // ─────────────────── Helpers ───────────────────
 
     private fun parseSubjectColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
+
+    private fun handleOnBackPressed() {
+        finish()
+    }
 
     private fun openLogin() {
         val i = Intent(this, LoginActivity::class.java).apply {
