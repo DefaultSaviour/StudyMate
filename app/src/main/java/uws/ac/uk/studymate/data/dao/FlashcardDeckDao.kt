@@ -38,14 +38,15 @@ interface FlashcardDeckDao {
     // This gives us one review event per deck per day that it has cards due.
     @Query(
         """
-        SELECT d.id AS deckId, d.name AS deckName, a.id AS assignmentId, a.color AS assignmentColor, a.icon AS assignmentIcon, c.due_at AS dueAt
+        SELECT d.id AS deckId, d.name AS deckName, a.id AS assignmentId, a.color AS assignmentColor, a.icon AS assignmentIcon, 
+               CASE WHEN c.due_at IS NULL OR c.due_at < :today THEN :today ELSE c.due_at END AS dueAt
         FROM Flashcard_Decks d
         JOIN Flash_Cards c ON d.id = c.deck_id
         JOIN Assignments a ON d.assignment_id = a.id
         WHERE d.user_id = :userId 
-          AND c.due_at IS NOT NULL 
-          AND c.due_at >= :today
-        GROUP BY d.id, c.due_at
+          AND a.completed_at IS NULL
+          AND (a.due_date IS NULL OR a.due_date >= :today)
+        GROUP BY d.id, CASE WHEN c.due_at IS NULL OR c.due_at < :today THEN :today ELSE c.due_at END
         """
     )
     suspend fun getDeckReviewDates(userId: Int, today: String): List<DeckReviewDate>

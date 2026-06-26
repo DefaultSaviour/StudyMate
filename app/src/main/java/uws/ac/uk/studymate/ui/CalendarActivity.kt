@@ -51,6 +51,7 @@ class CalendarActivity : AppCompatActivity() {
 
     private var currentMonth: YearMonth = YearMonth.now()
     private var entriesByDate: Map<LocalDate, List<CalendarEvent>> = emptyMap()
+    private var selectedDate: LocalDate = LocalDate.now()
 
     private enum class Panel { MONTH, DAY }
     private var currentPanel = Panel.MONTH
@@ -98,8 +99,8 @@ class CalendarActivity : AppCompatActivity() {
             currentMonth = currentMonth.plusMonths(1)
             renderMonth()
         }
-        findViewById<MaterialButton>(R.id.addEventBtn).setOnClickListener {
-            showAddEventDialog()
+        findViewById<MaterialButton>(R.id.dayAddEventBtn).setOnClickListener {
+            showEventTitleDialog(selectedDate)
         }
         dayBackBtn.setOnClickListener { swapToPanel(Panel.MONTH) }
 
@@ -224,10 +225,10 @@ class CalendarActivity : AppCompatActivity() {
                 background = androidx.core.content.ContextCompat.getDrawable(
                     this@CalendarActivity, R.drawable.bg_day_cell_active
                 )
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { openDayDetail(date, entries) }
             }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { openDayDetail(date, entries) }
             if (isPast) alpha = 0.5f
         }
 
@@ -277,16 +278,20 @@ class CalendarActivity : AppCompatActivity() {
                 ).apply { topMargin = (3 * density).toInt() }
             }
             entries.take(3).forEach { entry ->
+                val isDash = entry.type == EventType.DECK_REVIEW
+                val width = if (isDash) 10 else 6
+                val height = if (isDash) 3 else 6
                 val dot = View(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        (6 * density).toInt(), (6 * density).toInt()
+                        (width * density).toInt(), (height * density).toInt()
                     ).apply {
                         marginStart = (2 * density).toInt()
                         marginEnd = (2 * density).toInt()
                     }
                     background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
+                        shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
                         setColor(parseColor(entry.colorHex))
+                        if (isDash) cornerRadius = 1.5f * density
                     }
                 }
                 dotsRow.addView(dot)
@@ -315,6 +320,7 @@ class CalendarActivity : AppCompatActivity() {
     // ───────── Day detail ─────────
 
     private fun openDayDetail(date: LocalDate, entries: List<CalendarEvent>) {
+        selectedDate = date
         dayTitle.text = date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
         daySubText.text = when (entries.size) {
             1 -> "1 due today"
@@ -499,14 +505,7 @@ class CalendarActivity : AppCompatActivity() {
         )
     }
 
-    private fun showAddEventDialog() {
-        val today = LocalDate.now()
-        val dpd = android.app.DatePickerDialog(this, { _, y, m, d ->
-            val date = LocalDate.of(y, m + 1, d)
-            showEventTitleDialog(date)
-        }, currentMonth.year, currentMonth.monthValue - 1, today.dayOfMonth)
-        dpd.show()
-    }
+    // (removed unused showAddEventDialog since we use showEventTitleDialog directly)
 
     private fun showEventTitleDialog(date: LocalDate) {
         val input = android.widget.EditText(this).apply {
