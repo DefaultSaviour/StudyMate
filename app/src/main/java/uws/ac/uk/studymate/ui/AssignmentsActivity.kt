@@ -158,7 +158,6 @@ class AssignmentsActivity : AppCompatActivity() {
             adapter.submit(summary.items)
             val isEmpty = summary.items.isEmpty()
 
-            emptyText.text = "No assignments yet — tap Create assignment to add one."
             emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
             recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
             // Refresh swatches in case the colour list ever changes.
