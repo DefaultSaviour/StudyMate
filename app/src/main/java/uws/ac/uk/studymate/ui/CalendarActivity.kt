@@ -99,9 +99,6 @@ class CalendarActivity : AppCompatActivity() {
             currentMonth = currentMonth.plusMonths(1)
             renderMonth()
         }
-        findViewById<MaterialButton>(R.id.dayAddEventBtn).setOnClickListener {
-            showEventTitleDialog(selectedDate)
-        }
         dayBackBtn.setOnClickListener { swapToPanel(Panel.MONTH) }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -281,44 +278,20 @@ class CalendarActivity : AppCompatActivity() {
                 val isDash = entry.type == EventType.DECK_REVIEW
                 val width = if (isDash) 10 else 6
                 val height = if (isDash) 3 else 6
-                val isAssignment = entry.type == EventType.ASSIGNMENT
-
-                val dotWrap = FrameLayout(this).apply {
+                val dot = View(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
+                        (width * density).toInt(), (height * density).toInt()
                     ).apply {
                         marginStart = (2 * density).toInt()
                         marginEnd = (2 * density).toInt()
                     }
-
-                    if (isAssignment) {
-                        addView(View(this@CalendarActivity).apply {
-                            layoutParams = FrameLayout.LayoutParams(
-                                ((width + 8) * density).toInt(),
-                                ((height + 8) * density).toInt()
-                            ).apply { gravity = Gravity.CENTER }
-                            background = GradientDrawable().apply {
-                                shape = GradientDrawable.OVAL
-                                gradientType = GradientDrawable.RADIAL_GRADIENT
-                                gradientRadius = ((width + 8) * density) / 2f
-                                colors = intArrayOf(Color.parseColor("#99FFFF00"), Color.TRANSPARENT)
-                            }
-                        })
+                    background = GradientDrawable().apply {
+                        shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
+                        setColor(parseColor(entry.colorHex))
+                        if (isDash) cornerRadius = 1.5f * density
                     }
-
-                    addView(View(this@CalendarActivity).apply {
-                        layoutParams = FrameLayout.LayoutParams(
-                            (width * density).toInt(), (height * density).toInt()
-                        ).apply { gravity = Gravity.CENTER }
-                        background = GradientDrawable().apply {
-                            shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
-                            setColor(parseColor(entry.colorHex))
-                            if (isDash) cornerRadius = 1.5f * density
-                        }
-                    })
                 }
-                dotsRow.addView(dotWrap)
+                dotsRow.addView(dot)
             }
             column.addView(dotsRow)
         }
@@ -361,7 +334,6 @@ class CalendarActivity : AppCompatActivity() {
             else -> "${entries.size} events$suffix"
         }
         val isPast = date.isBefore(LocalDate.now())
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.dayAddEventBtn).visibility = if (isPast) View.GONE else View.VISIBLE
 
         renderDayList(entries, isPast)
         swapToPanel(Panel.DAY)
