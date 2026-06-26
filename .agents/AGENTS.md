@@ -12,3 +12,6 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - This repository contains a highly detailed documentation file at `CLAUDE.md`. 
 - **CRITICAL**: Before making architectural changes, adding new features, or modifying database schemas, you MUST read `CLAUDE.md` to understand the project's existing conventions, MVVM structure, and database history.
 - Do not guess the architecture or authentication flows; they are extensively documented there.
+
+# Design & UX Patterns
+- **Screen Transitions:** The app uses a bespoke 350ms crossfade (`screen_fade_in` / `screen_fade_out` via `windowAnimationStyle` in `themes.xml`) instead of standard Android horizontal slides. This isolates the vertical glass-card slide (`Entrance.play()`) as the primary motion on screen over the wood backgrounds. Note this exact implementation to easily port it to the sister app when ready.
