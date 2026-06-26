@@ -281,25 +281,44 @@ class CalendarActivity : AppCompatActivity() {
                 val isDash = entry.type == EventType.DECK_REVIEW
                 val width = if (isDash) 10 else 6
                 val height = if (isDash) 3 else 6
-                val dot = View(this).apply {
+                val isAssignment = entry.type == EventType.ASSIGNMENT
+
+                val dotWrap = FrameLayout(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        (width * density).toInt(), (height * density).toInt()
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
                     ).apply {
                         marginStart = (2 * density).toInt()
                         marginEnd = (2 * density).toInt()
                     }
-                    background = GradientDrawable().apply {
-                        shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
-                        setColor(parseColor(entry.colorHex))
-                        if (isDash) cornerRadius = 1.5f * density
+
+                    if (isAssignment) {
+                        addView(View(this@CalendarActivity).apply {
+                            layoutParams = FrameLayout.LayoutParams(
+                                ((width + 8) * density).toInt(),
+                                ((height + 8) * density).toInt()
+                            ).apply { gravity = Gravity.CENTER }
+                            background = GradientDrawable().apply {
+                                shape = GradientDrawable.OVAL
+                                gradientType = GradientDrawable.RADIAL_GRADIENT
+                                gradientRadius = ((width + 8) * density) / 2f
+                                colors = intArrayOf(Color.parseColor("#99FFFF00"), Color.TRANSPARENT)
+                            }
+                        })
                     }
-                    if (entry.type == EventType.ASSIGNMENT) {
-                        elevation = 6f * density
-                        outlineSpotShadowColor = Color.parseColor("#FFFF00")
-                        outlineAmbientShadowColor = Color.parseColor("#FFFF00")
-                    }
+
+                    addView(View(this@CalendarActivity).apply {
+                        layoutParams = FrameLayout.LayoutParams(
+                            (width * density).toInt(), (height * density).toInt()
+                        ).apply { gravity = Gravity.CENTER }
+                        background = GradientDrawable().apply {
+                            shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
+                            setColor(parseColor(entry.colorHex))
+                            if (isDash) cornerRadius = 1.5f * density
+                        }
+                    })
                 }
-                dotsRow.addView(dot)
+                dotsRow.addView(dotWrap)
             }
             column.addView(dotsRow)
         }
