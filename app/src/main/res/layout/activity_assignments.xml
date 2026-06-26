@@ -131,8 +131,11 @@
                     android:layout_marginTop="40dp"
                     android:gravity="center"
                     android:text="No assignments yet — tap Create assignment to add one."
-                    android:textColor="#B2FAF8F5"
+                    android:textColor="@color/gold_light"
                     android:textSize="14sp"
+                    app:drawableTopCompat="@drawable/ic_empty_state_logo"
+                    android:drawablePadding="16dp"
+                    app:drawableTint="#808B6B1A"
                     android:visibility="gone" />
 
                 <androidx.recyclerview.widget.RecyclerView
