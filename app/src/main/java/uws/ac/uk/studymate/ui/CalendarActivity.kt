@@ -293,6 +293,11 @@ class CalendarActivity : AppCompatActivity() {
                         setColor(parseColor(entry.colorHex))
                         if (isDash) cornerRadius = 1.5f * density
                     }
+                    if (entry.type == EventType.ASSIGNMENT) {
+                        elevation = 6f * density
+                        outlineSpotShadowColor = Color.parseColor("#FFFF00")
+                        outlineAmbientShadowColor = Color.parseColor("#FFFF00")
+                    }
                 }
                 dotsRow.addView(dot)
             }
@@ -336,11 +341,14 @@ class CalendarActivity : AppCompatActivity() {
             }
             else -> "${entries.size} events$suffix"
         }
-        renderDayList(entries)
+        val isPast = date.isBefore(LocalDate.now())
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.dayAddEventBtn).visibility = if (isPast) View.GONE else View.VISIBLE
+
+        renderDayList(entries, isPast)
         swapToPanel(Panel.DAY)
     }
 
-    private fun renderDayList(entries: List<CalendarEvent>) {
+    private fun renderDayList(entries: List<CalendarEvent>, isPast: Boolean) {
         dayList.removeAllViews()
         val density = resources.displayMetrics.density
 
@@ -360,24 +368,26 @@ class CalendarActivity : AppCompatActivity() {
                     gravity = Gravity.CENTER
                 })
                 
-                val btn = com.google.android.material.button.MaterialButton(
-                    this@CalendarActivity, 
-                    null, 
-                    com.google.android.material.R.attr.materialButtonOutlinedStyle
-                ).apply {
-                    text = "Add custom event"
-                    setTextColor(Color.parseColor("#C4A24A"))
-                    setStrokeColorResource(R.color.gold_light)
-                    strokeWidth = (1.5f * density).toInt()
-                    setIconResource(R.drawable.ic_add)
-                    iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
-                    setOnClickListener { showEventTitleDialog(selectedDate) }
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = (20 * density).toInt() }
+                if (!isPast) {
+                    val btn = com.google.android.material.button.MaterialButton(
+                        this@CalendarActivity, 
+                        null, 
+                        com.google.android.material.R.attr.materialButtonOutlinedStyle
+                    ).apply {
+                        text = "Add custom event"
+                        setTextColor(Color.parseColor("#C4A24A"))
+                        setStrokeColorResource(R.color.gold_light)
+                        strokeWidth = (1.5f * density).toInt()
+                        setIconResource(R.drawable.ic_add)
+                        iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                        setOnClickListener { showEventTitleDialog(selectedDate) }
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = (20 * density).toInt() }
+                    }
+                    addView(btn)
                 }
-                addView(btn)
             }
             dayList.addView(emptyView)
             return
@@ -401,6 +411,31 @@ class CalendarActivity : AppCompatActivity() {
                     ).apply { topMargin = (10 * density).toInt() }
                 }
             )
+        }
+
+        if (!isPast) {
+            val btn = com.google.android.material.button.MaterialButton(
+                this@CalendarActivity, 
+                null, 
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                text = "Add more events"
+                setTextColor(Color.parseColor("#C4A24A"))
+                setStrokeColorResource(R.color.gold_light)
+                strokeWidth = (1.5f * density).toInt()
+                setIconResource(R.drawable.ic_add)
+                iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                setOnClickListener { showEventTitleDialog(selectedDate) }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = (20 * density).toInt()
+                    bottomMargin = (20 * density).toInt()
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            }
+            dayList.addView(btn)
         }
     }
 
