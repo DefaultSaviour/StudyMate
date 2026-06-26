@@ -116,6 +116,22 @@
                         android:backgroundTint="#00000000"
                         app:rippleColor="#33D4BC7E" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/addEventBtn"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="@dimen/min_touch_target"
+                        android:layout_height="@dimen/min_touch_target"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:contentDescription="Add custom event"
+                        app:icon="@drawable/ic_add"
+                        app:iconTint="@color/gold_light"
+                        app:iconSize="22dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        android:backgroundTint="#00000000"
+                        app:rippleColor="#33D4BC7E" />
+
                 </LinearLayout>
 
                 <LinearLayout
