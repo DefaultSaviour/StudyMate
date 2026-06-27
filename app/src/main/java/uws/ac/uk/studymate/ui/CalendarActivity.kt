@@ -658,6 +658,7 @@ class CalendarActivity : AppCompatActivity() {
             setOnClickListener {
                 val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
                     .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_24H)
+                    .setInputMode(com.google.android.material.timepicker.MaterialTimePicker.INPUT_MODE_CLOCK)
                     .setTitleText("Select Event Time")
                     .apply {
                         if (selectedTime != null) {
