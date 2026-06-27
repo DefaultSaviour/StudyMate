@@ -317,7 +317,8 @@ class AssignmentsActivity : AppCompatActivity() {
             onEdit = { openEditFor(it) },
             onDelete = { confirmDelete(it) },
             onToggleDone = { confirmToggleDone(it) },
-            onOpenChecklist = { openChecklistFor(it) }
+            onOpenChecklist = { openChecklistFor(it) },
+            onOpenDecks = { openDecksFor(it) }
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
@@ -789,6 +790,14 @@ class AssignmentsActivity : AppCompatActivity() {
             .setPositiveButton("Delete") { _, _ -> vm.deleteAssignment(item.assignment) }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun openDecksFor(item: AssignmentsItem) {
+        startActivity(
+            Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity")
+                .putExtra("scoped_assignment_id", item.assignment.id)
+                .putExtra("scoped_assignment_name", item.assignment.title)
+        )
     }
 
     // Tapping the done circle. If it's already done, just un-mark it. If not,
