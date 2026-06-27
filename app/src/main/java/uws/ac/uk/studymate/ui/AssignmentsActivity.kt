@@ -857,6 +857,12 @@ class AssignmentsActivity : AppCompatActivity() {
                 (currentPanel == Panel.DATE && target == Panel.TIME)
         val sign = if (goingForward) 1f else -1f
 
+        if (target == Panel.TIME || target == Panel.DATE) {
+            uws.ac.uk.studymate.util.OrbField.pause()
+        } else {
+            uws.ac.uk.studymate.util.OrbField.resume()
+        }
+
         val w = outgoingPanel.width.toFloat()
         val stagger = 72L
         val exitDur = 420L

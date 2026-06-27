@@ -712,6 +712,12 @@ class CalendarActivity : AppCompatActivity() {
                           (target == Panel.DAY && currentPanel == Panel.MONTH)
         val sign = if (goingDeeper) 1f else -1f
 
+        if (target == Panel.TIME) {
+            uws.ac.uk.studymate.util.OrbField.pause()
+        } else {
+            uws.ac.uk.studymate.util.OrbField.resume()
+        }
+
         val w = outgoingPanel.width.toFloat().takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.toFloat()
         val stagger = 72L
         val exitDur = 420L
