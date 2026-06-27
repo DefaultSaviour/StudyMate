@@ -293,8 +293,8 @@ class CalendarActivity : AppCompatActivity() {
 
             entries.take(3).forEach { entry ->
                 val isDash = entry.type == EventType.DECK_REVIEW
-                val width = if (isDash) 16 else 10
-                val height = if (isDash) 4 else 10
+                val width = if (isDash) 12 else 8
+                val height = if (isDash) 4 else 8
                 val dot = View(this).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         (width * density).toInt(), (height * density).toInt(),
@@ -309,7 +309,7 @@ class CalendarActivity : AppCompatActivity() {
                 val dotContainer = FrameLayout(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.WRAP_CONTENT,
-                        (14 * density).toInt()
+                        (12 * density).toInt()
                     )
                     addView(dot)
                 }
@@ -322,13 +322,15 @@ class CalendarActivity : AppCompatActivity() {
                     TextView(this@CalendarActivity).apply {
                         val remaining = entries.size - 3
                         text = if (remaining > 9) "+9" else "+$remaining"
-                        textSize = 12f
+                        textSize = 10f
+                        maxLines = 1
+                        setSingleLine(true)
                         setTextColor(Color.parseColor("#FAF8F5"))
                         gravity = Gravity.CENTER_VERTICAL
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.MATCH_PARENT
-                        ).apply { marginStart = (4 * density).toInt() }
+                        ).apply { marginStart = (2 * density).toInt() }
                     }
                 )
             }
