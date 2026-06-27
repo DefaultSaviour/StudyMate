@@ -58,7 +58,7 @@ object AssignmentDateTimeUtils {
         dueDate: String?,
         now: LocalDateTime = LocalDateTime.now()
     ): Boolean {
-        if (completedAt != null) return true
+        if (!completedAt.isNullOrBlank()) return true
         val due = parseDueDate(dueDate) ?: return false
         return due.isBefore(now)
     }
