@@ -139,6 +139,10 @@ class CalendarActivity : AppCompatActivity() {
     private fun applySummary(summary: CalendarSummary) {
         entriesByDate = summary.entriesByDate
         renderMonth()
+        
+        if (currentPanel == Panel.DAY) {
+            openDayDetail(selectedDate, entriesByDate[selectedDate].orEmpty())
+        }
     }
 
     // ───────── Month grid ─────────
