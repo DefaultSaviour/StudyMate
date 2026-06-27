@@ -702,9 +702,6 @@ class CalendarActivity : AppCompatActivity() {
 
         uws.ac.uk.studymate.util.Keyboard.hide(this)
 
-        if (target == Panel.DAY) openDayDetail(selectedDate, entriesByDate[selectedDate].orEmpty())
-        if (target == Panel.MONTH) renderMonth()
-
         val outgoingPanel = panelView(currentPanel)
         val incomingPanel = panelView(target)
         val outgoingElems = panelElems(currentPanel)
