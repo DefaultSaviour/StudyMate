@@ -9,7 +9,7 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - Alternatively, I should explicitly ask the user if they want me to run a UI test after the second fix attempt.
 
 # Project Documentation and Context
-- This repository contains a highly detailed documentation file at `CLAUDE.md`. 
+- This repository contains a highly detailed documentation file at `CLAUDE.md`.
 - **CRITICAL**: Before making architectural changes, adding new features, or modifying database schemas, you MUST read `CLAUDE.md` to understand the project's existing conventions, MVVM structure, and database history.
 - Do not guess the architecture or authentication flows; they are extensively documented there.
 
@@ -18,3 +18,18 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 
 # UI Performance Rules
 - **RecyclerView Optimization:** Never use nested `ConstraintLayout`s inside `RecyclerView` item definitions (e.g. `item_assignment.xml`). Nested `ConstraintLayout`s cause multiple layout passes, which will severely lag simultaneous transition animations like `Entrance.play()`. Always use flat `LinearLayout`s or a single flat `ConstraintLayout` for list items.
+
+# Feature Tracking Rules
+- **CRITICAL**: Before suggesting features or bug fixes to the user, ALWAYS verify the current code to confirm the issue actually still exists. Do NOT suggest things based on memory or session summaries alone — the code is the source of truth.
+- Maintain the completed features list below. When a feature or bug fix is shipped (committed/pushed), add it here immediately. When suggesting "next steps", cross-reference this list first and never re-suggest completed items.
+
+## Completed Features & Fixes
+- [x] Notification reliability: AlarmManager.setExactAndAllowWhileIdle used across all schedulers (AssignmentReminderScheduler, CustomEventScheduler, FocusTimerScheduler, ReviewReminderScheduler)
+- [x] Boot receiver: BootReceiver.kt reschedules all alarms after device reboot
+- [x] Assignment row redesign: rows 15% larger, 4-button 2x2 grid (done, checklist, edit, delete), thin divider lines, title repositioned
+- [x] Tapping assignment row (not buttons) navigates to deck overview for that assignment
+- [x] Checklist screen: slide-in animation, empty state with icon + text, working "+" button
+- [x] Empty state animations: icon and text slide in on checklist screen
+- [x] RecyclerView performance: item_assignment.xml buttonGrid converted from nested ConstraintLayout to flat LinearLayouts, fixing entrance animation lag
+- [x] AssignmentsActivity performance: color/assignment swatches only rebuilt when data changes (not on every panel swap)
+- [x] FlashcardDecksActivity performance: same swatch caching optimization applied
