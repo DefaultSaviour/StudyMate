@@ -268,6 +268,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // ─────────────────── Data ───────────────────
 
     private fun applySummary(summary: FlashcardDecksSummary) {
+        val assignmentsChanged = assignments != summary.assignments
         assignments = summary.assignments
 
         // Active decks first; completed-assignment decks go under their own header
@@ -287,17 +288,19 @@ class FlashcardDecksActivity : AppCompatActivity() {
         emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
         recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
 
-        buildAssignmentSwatches(addSubjectRow) { tapped ->
-            if (!assignmentStepUnlocked) return@buildAssignmentSwatches
-            uws.ac.uk.studymate.util.Keyboard.hide(this)
-            addAssignment = tapped
-            highlightSelectedAssignment(addSubjectRow, tapped)
-            updateAddProgress()
-        }
-        buildAssignmentSwatches(editSubjectRow) { tapped ->
-            uws.ac.uk.studymate.util.Keyboard.hide(this)
-            editAssignment = tapped
-            highlightSelectedAssignment(editSubjectRow, tapped)
+        if (addSubjectRow.childCount == 0 || assignmentsChanged) {
+            buildAssignmentSwatches(addSubjectRow) { tapped ->
+                if (!assignmentStepUnlocked) return@buildAssignmentSwatches
+                uws.ac.uk.studymate.util.Keyboard.hide(this)
+                addAssignment = tapped
+                highlightSelectedAssignment(addSubjectRow, tapped)
+                updateAddProgress()
+            }
+            buildAssignmentSwatches(editSubjectRow) { tapped ->
+                uws.ac.uk.studymate.util.Keyboard.hide(this)
+                editAssignment = tapped
+                highlightSelectedAssignment(editSubjectRow, tapped)
+            }
         }
     }
 

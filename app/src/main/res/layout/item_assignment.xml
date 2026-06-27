@@ -59,110 +59,104 @@
         app:layout_constraintTop_toTopOf="@+id/iconBadge" />
 
     <!-- 2x2 Button Grid on the right -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:id="@+id/buttonGrid"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/doneBtn"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="@dimen/min_touch_target"
-            android:layout_height="@dimen/min_touch_target"
-            android:backgroundTint="#00000000"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            app:icon="@drawable/ic_circle_outline"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            app:iconSize="22dp"
-            app:iconTint="@color/gold_light"
-            app:layout_constraintBottom_toTopOf="@+id/hDivider"
-            app:layout_constraintEnd_toStartOf="@+id/vDivider"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:rippleColor="#33D4BC7E" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/checklistBtn"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="@dimen/min_touch_target"
-            android:layout_height="@dimen/min_touch_target"
-            android:backgroundTint="#00000000"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            app:icon="@drawable/ic_checklist"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            app:iconSize="22dp"
-            app:iconTint="@color/gold_light"
-            app:layout_constraintBottom_toTopOf="@+id/hDivider"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/vDivider"
-            app:layout_constraintTop_toTopOf="parent"
-            app:rippleColor="#33D4BC7E" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/doneBtn"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="@dimen/min_touch_target"
+                android:layout_height="@dimen/min_touch_target"
+                android:backgroundTint="#00000000"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_circle_outline"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="22dp"
+                app:iconTint="@color/gold_light"
+                app:rippleColor="#33D4BC7E" />
 
-        <View
-            android:id="@+id/vDivider"
-            android:layout_width="2dp"
-            android:layout_height="0dp"
-            android:background="@color/gold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/checklistBtn"
-            app:layout_constraintStart_toEndOf="@+id/doneBtn"
-            app:layout_constraintTop_toTopOf="parent" />
+            <View
+                android:id="@+id/vDividerTop"
+                android:layout_width="2dp"
+                android:layout_height="match_parent"
+                android:background="@color/gold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/checklistBtn"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="@dimen/min_touch_target"
+                android:layout_height="@dimen/min_touch_target"
+                android:backgroundTint="#00000000"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_checklist"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="22dp"
+                app:iconTint="@color/gold_light"
+                app:rippleColor="#33D4BC7E" />
+        </LinearLayout>
 
         <View
             android:id="@+id/hDivider"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="2dp"
-            android:background="@color/gold"
-            app:layout_constraintBottom_toTopOf="@+id/editBtn"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/doneBtn" />
+            android:background="@color/gold" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/editBtn"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="@dimen/min_touch_target"
-            android:layout_height="@dimen/min_touch_target"
-            android:backgroundTint="#00000000"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            app:icon="@drawable/ic_edit"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            app:iconSize="18dp"
-            app:iconTint="@color/gold_light"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/vDivider"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/hDivider"
-            app:rippleColor="#33D4BC7E" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/deleteBtn"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="@dimen/min_touch_target"
-            android:layout_height="@dimen/min_touch_target"
-            android:backgroundTint="#00000000"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            app:icon="@drawable/ic_delete"
-            app:iconGravity="textStart"
-            app:iconPadding="0dp"
-            app:iconSize="18dp"
-            app:iconTint="#E8A48A"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/vDivider"
-            app:layout_constraintTop_toBottomOf="@+id/hDivider"
-            app:rippleColor="#44E8A48A" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/editBtn"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="@dimen/min_touch_target"
+                android:layout_height="@dimen/min_touch_target"
+                android:backgroundTint="#00000000"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_edit"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="18dp"
+                app:iconTint="@color/gold_light"
+                app:rippleColor="#33D4BC7E" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <View
+                android:id="@+id/vDividerBottom"
+                android:layout_width="2dp"
+                android:layout_height="match_parent"
+                android:background="@color/gold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/deleteBtn"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="@dimen/min_touch_target"
+                android:layout_height="@dimen/min_touch_target"
+                android:backgroundTint="#00000000"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_delete"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="18dp"
+                app:iconTint="#E8A48A"
+                app:rippleColor="#44E8A48A" />
+        </LinearLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

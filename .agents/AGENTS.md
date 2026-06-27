@@ -15,3 +15,6 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 
 # Design & UX Patterns
 - **Screen Transitions:** The app uses a bespoke 350ms crossfade (`screen_fade_in` / `screen_fade_out` via `windowAnimationStyle` in `themes.xml`) instead of standard Android horizontal slides. This isolates the vertical glass-card slide (`Entrance.play()`) as the primary motion on screen over the wood backgrounds. Note this exact implementation to easily port it to the sister app when ready.
+
+# UI Performance Rules
+- **RecyclerView Optimization:** Never use nested `ConstraintLayout`s inside `RecyclerView` item definitions (e.g. `item_assignment.xml`). Nested `ConstraintLayout`s cause multiple layout passes, which will severely lag simultaneous transition animations like `Entrance.play()`. Always use flat `LinearLayout`s or a single flat `ConstraintLayout` for list items.
