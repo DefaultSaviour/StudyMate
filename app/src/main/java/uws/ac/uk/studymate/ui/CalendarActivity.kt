@@ -266,14 +266,24 @@ class CalendarActivity : AppCompatActivity() {
         column.addView(numberContainer)
 
         if (hasEntries) {
-            val dotsRow = LinearLayout(this).apply {
+            val markersAndTextRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = (3 * density).toInt() }
+                ).apply { topMargin = (2 * density).toInt() }
             }
+
+            val markersCol = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
             entries.take(3).forEach { entry ->
                 val isDash = entry.type == EventType.DECK_REVIEW
                 val width = if (isDash) 10 else 6
@@ -282,8 +292,8 @@ class CalendarActivity : AppCompatActivity() {
                     layoutParams = LinearLayout.LayoutParams(
                         (width * density).toInt(), (height * density).toInt()
                     ).apply {
-                        marginStart = (2 * density).toInt()
-                        marginEnd = (2 * density).toInt()
+                        topMargin = (1 * density).toInt()
+                        bottomMargin = (1 * density).toInt()
                     }
                     background = GradientDrawable().apply {
                         shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
@@ -291,9 +301,25 @@ class CalendarActivity : AppCompatActivity() {
                         if (isDash) cornerRadius = 1.5f * density
                     }
                 }
-                dotsRow.addView(dot)
+                markersCol.addView(dot)
             }
-            column.addView(dotsRow)
+            markersAndTextRow.addView(markersCol)
+            
+            if (entries.size > 3) {
+                markersAndTextRow.addView(
+                    TextView(this@CalendarActivity).apply {
+                        text = "+${entries.size - 3}"
+                        textSize = 9f
+                        setTextColor(Color.parseColor("#FAF8F5"))
+                        gravity = Gravity.CENTER_VERTICAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.MATCH_PARENT
+                        ).apply { marginStart = (2 * density).toInt() }
+                    }
+                )
+            }
+            column.addView(markersAndTextRow)
         }
 
         // Accessibility: let the whole cell read as one node ("Today, 15 June, 2
