@@ -144,9 +144,21 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                 val assignments = db.assignmentDao().getAssignments(session.userId)
                 uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
                     .rescheduleAllForUser(app, refreshed, assignments)
+                uws.ac.uk.studymate.notifications.ReviewReminderScheduler
+                    .scheduleForUser(app, session.userId)
+                val customEvents = db.customEventDao().getEventsForUser(session.userId)
+                customEvents.forEach { event ->
+                    uws.ac.uk.studymate.notifications.CustomEventScheduler.scheduleForEvent(app, event, refreshed)
+                }
             } else {
                 uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
                     .cancelAllForUser(app, session.userId)
+                uws.ac.uk.studymate.notifications.ReviewReminderScheduler
+                    .cancelForUser(app, session.userId)
+                val customEvents = db.customEventDao().getEventsForUser(session.userId)
+                customEvents.forEach { event ->
+                    uws.ac.uk.studymate.notifications.CustomEventScheduler.cancelForEvent(app, event.id)
+                }
             }
         }
     }

@@ -21,6 +21,10 @@ class BootReceiver : BroadcastReceiver() {
                             val assignments = db.assignmentDao().getAssignments(user.id)
                             AssignmentReminderScheduler.rescheduleAllForUser(context, user, assignments)
                             ReviewReminderScheduler.scheduleForUser(context, user.id)
+                            val customEvents = db.customEventDao().getEventsForUser(user.id)
+                            customEvents.forEach { event ->
+                                CustomEventScheduler.scheduleForEvent(context, event, user)
+                            }
                         }
                     }
                 } finally {
