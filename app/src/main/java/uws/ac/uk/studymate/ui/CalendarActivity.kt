@@ -286,19 +286,19 @@ class CalendarActivity : AppCompatActivity() {
 
             entries.take(3).forEach { entry ->
                 val isDash = entry.type == EventType.DECK_REVIEW
-                val width = if (isDash) 10 else 6
-                val height = if (isDash) 3 else 6
+                val width = if (isDash) 16 else 10
+                val height = if (isDash) 4 else 10
                 val dot = View(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         (width * density).toInt(), (height * density).toInt()
                     ).apply {
-                        topMargin = (1 * density).toInt()
-                        bottomMargin = (1 * density).toInt()
+                        topMargin = (2 * density).toInt()
+                        bottomMargin = (2 * density).toInt()
                     }
                     background = GradientDrawable().apply {
                         shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
                         setColor(parseColor(entry.colorHex))
-                        if (isDash) cornerRadius = 1.5f * density
+                        if (isDash) cornerRadius = 2f * density
                     }
                 }
                 markersCol.addView(dot)
@@ -309,13 +309,13 @@ class CalendarActivity : AppCompatActivity() {
                 markersAndTextRow.addView(
                     TextView(this@CalendarActivity).apply {
                         text = "+${entries.size - 3}"
-                        textSize = 9f
+                        textSize = 12f
                         setTextColor(Color.parseColor("#FAF8F5"))
                         gravity = Gravity.CENTER_VERTICAL
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.MATCH_PARENT
-                        ).apply { marginStart = (2 * density).toInt() }
+                        ).apply { marginStart = (4 * density).toInt() }
                     }
                 )
             }
