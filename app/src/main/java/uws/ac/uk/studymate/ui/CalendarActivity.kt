@@ -427,7 +427,7 @@ class CalendarActivity : AppCompatActivity() {
                 }
                 val dotContainer = FrameLayout(this).apply {
                     layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        (12 * density).toInt(),
                         (12 * density).toInt()
                     )
                     addView(dot)
