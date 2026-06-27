@@ -33,3 +33,4 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - [x] RecyclerView performance: item_assignment.xml buttonGrid converted from nested ConstraintLayout to flat LinearLayouts, fixing entrance animation lag
 - [x] AssignmentsActivity performance: color/assignment swatches only rebuilt when data changes (not on every panel swap)
 - [x] FlashcardDecksActivity performance: same swatch caching optimization applied
+- [x] Unit Testing Architecture: Configured MockK, kotlinx-coroutines-test, and `MainCoroutineRule.kt`. Fixed flakiness in `HomeViewModel`, `ReviewDeckViewModel`, and `CalendarViewModel` tests by ensuring Room database background operations correctly bypass explicit `Dispatchers.IO` launching. All 68 tests now pass successfully.

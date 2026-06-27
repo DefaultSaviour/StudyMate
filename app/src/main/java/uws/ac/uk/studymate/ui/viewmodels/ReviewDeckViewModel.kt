@@ -103,7 +103,7 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun startQueue(dueOnly: Boolean) {
         _state.postValue(State.Loading)
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             // Is this deck's assignment finished? If so, grading won't reschedule/log.
             val assignment = db.deckDao().getDeck(deckId)?.let { db.assignmentDao().getById(it.assignmentId) }
             currentDeckCompleted = assignment != null &&
@@ -125,7 +125,7 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
 
     fun grade(grade: Grade) {
         val current = (_state.value as? State.Reviewing)?.card ?: return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             // Finished decks are read-only practice: don't touch the SM-2 schedule or
             // log the review. Active decks grade normally (Again/Wrong = lapse, Correct
             // = advance).

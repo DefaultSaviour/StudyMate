@@ -105,6 +105,9 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.arch.core.testing)
     // Android ships a stub org.json that throws on the JVM test classpath; pull in
     // the real implementation so BackupSerializer can be unit-tested. Test-only.
     testImplementation("org.json:json:20240303")
