@@ -34,3 +34,6 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - [x] AssignmentsActivity performance: color/assignment swatches only rebuilt when data changes (not on every panel swap)
 - [x] FlashcardDecksActivity performance: same swatch caching optimization applied
 - [x] Unit Testing Architecture: Configured MockK, kotlinx-coroutines-test, and `MainCoroutineRule.kt`. Fixed flakiness in `HomeViewModel`, `ReviewDeckViewModel`, and `CalendarViewModel` tests by ensuring Room database background operations correctly bypass explicit `Dispatchers.IO` launching. All 68 tests now pass successfully.
+- [x] Calendar UI Enhancements: Inline Editing of Custom Events, Consistent Icon Spacing, and Pull-to-Refresh.
+- [x] Accessibility Improvements: View content-descriptions and 48dp minimum touch targets.
+- [x] Polish "At a Glance" Statistics: Exclude completed items from the active count.
