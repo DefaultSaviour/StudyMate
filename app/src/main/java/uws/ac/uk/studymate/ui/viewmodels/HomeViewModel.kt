@@ -79,7 +79,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadHome() {
         // Run the database work on a background thread.
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
 
             // Stop early when there is no valid logged-in user.
             val session = sessionResolver.requireUser()

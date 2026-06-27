@@ -48,7 +48,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     val sessionExpired: LiveData<Boolean> = _sessionExpired
 
     fun loadCalendar() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val session = sessionResolver.requireUser()
             if (session == null) {
                 _sessionExpired.postValue(true)
@@ -146,7 +146,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun addCustomEvent(title: String, date: LocalDate, time: String?, remindDayBefore: Boolean, colorHex: String?, iconKey: String = "event") {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val session = sessionResolver.requireUser() ?: return@launch
             val newEvent = uws.ac.uk.studymate.data.entities.CustomEvent(
                 userId = session.userId,
@@ -171,14 +171,14 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateCustomEvent(event: uws.ac.uk.studymate.data.entities.CustomEvent) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             db.customEventDao().update(event)
             loadCalendar()
         }
     }
 
     fun deleteCustomEvent(event: uws.ac.uk.studymate.data.entities.CustomEvent) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             db.customEventDao().delete(event)
             loadCalendar()
         }

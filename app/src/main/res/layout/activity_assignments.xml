@@ -829,13 +829,17 @@
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:text="No items yet — add the steps for this assignment below."
-                        android:textColor="#B2FAF8F5"
+                        android:textColor="@color/gold_light"
                         android:textSize="14sp"
+                        app:drawableTopCompat="@drawable/ic_empty_state_logo"
+                        android:drawablePadding="16dp"
+                        app:drawableTint="#808B6B1A"
                         android:visibility="gone" />
 
                 </FrameLayout>
 
                 <LinearLayout
+                    android:id="@+id/checklistAddRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
