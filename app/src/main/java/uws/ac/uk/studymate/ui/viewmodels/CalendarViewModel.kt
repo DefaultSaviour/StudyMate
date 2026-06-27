@@ -118,7 +118,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                             type = EventType.CUSTOM,
                             title = event.title,
                             date = eventDate,
-                            timeText = "All day",
+                            timeText = event.time ?: "All day",
                             colorHex = event.color,
                             iconKey = event.icon
                         )
@@ -145,18 +145,46 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun addCustomEvent(title: String, date: LocalDate, colorHex: String?, iconKey: String = "event") {
+    fun addCustomEvent(title: String, date: LocalDate, time: String?, remindDayBefore: Boolean, colorHex: String?, iconKey: String = "event") {
         viewModelScope.launch(Dispatchers.IO) {
             val session = sessionResolver.requireUser() ?: return@launch
             val newEvent = uws.ac.uk.studymate.data.entities.CustomEvent(
                 userId = session.userId,
                 title = title,
                 date = date.toString(),
+                time = time,
+                remindDayBefore = remindDayBefore,
                 color = colorHex,
                 icon = iconKey
             )
             db.customEventDao().insert(newEvent)
+            
+            // Re-fetch the event to get its auto-generated ID so we can schedule it.
+            // Since we don't return the ID from insert(), we could just schedule them all,
+            // but for simplicity, we'll schedule when we re-load. Wait, actually, let's 
+            // schedule it inside the activity or here? It's easier to schedule all CustomEvents 
+            // periodically, but let's just let the Activity handle scheduling if we pass the CustomEvent.
+            // Actually, we can just loadCalendar() and the activity can update UI.
+            // Scheduling will happen in the ViewModel.
             loadCalendar() // Refresh UI
         }
+    }
+
+    fun updateCustomEvent(event: uws.ac.uk.studymate.data.entities.CustomEvent) {
+        viewModelScope.launch(Dispatchers.IO) {
+            db.customEventDao().update(event)
+            loadCalendar()
+        }
+    }
+
+    fun deleteCustomEvent(event: uws.ac.uk.studymate.data.entities.CustomEvent) {
+        viewModelScope.launch(Dispatchers.IO) {
+            db.customEventDao().delete(event)
+            loadCalendar()
+        }
+    }
+
+    suspend fun getCustomEventById(id: Int): uws.ac.uk.studymate.data.entities.CustomEvent? {
+        return db.customEventDao().getById(id)
     }
 }

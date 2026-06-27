@@ -16,6 +16,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     ACTION_ASSIGNMENT -> AssignmentReminderNotifier.fire(context, intent)
                     ACTION_FOCUS -> FocusTimerNotifier.fire(context, intent)
                     ACTION_REVIEW -> ReviewReminderNotifier.fire(context, intent)
+                    ACTION_CUSTOM_EVENT -> CustomEventNotifier.fire(context, intent)
                 }
             } finally {
                 pendingResult.finish()
@@ -27,5 +28,6 @@ class AlarmReceiver : BroadcastReceiver() {
         const val ACTION_ASSIGNMENT = "uws.ac.uk.studymate.ASSIGNMENT_REMINDER"
         const val ACTION_FOCUS = "uws.ac.uk.studymate.FOCUS_TIMER"
         const val ACTION_REVIEW = "uws.ac.uk.studymate.REVIEW_REMINDER"
+        const val ACTION_CUSTOM_EVENT = "uws.ac.uk.studymate.CUSTOM_EVENT"
     }
 }

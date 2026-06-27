@@ -30,6 +30,12 @@ data class CustomEvent(
     // Stored as ISO string: yyyy-MM-dd
     val date: String,
     
+    // Stored as "HH:mm" in 24-hour format, or null for all-day events
+    val time: String? = null,
+    
+    @ColumnInfo(name = "remind_day_before")
+    val remindDayBefore: Boolean = false,
+    
     val color: String?,
     
     val icon: String = "event"

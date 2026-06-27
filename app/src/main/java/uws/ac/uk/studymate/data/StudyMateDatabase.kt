@@ -28,7 +28,7 @@ Coded by Jamie Coleman
         CustomEvent::class
     ],
     exportSchema = false,
-    version = 13
+    version = 14
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -268,7 +268,15 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+        // Add time and remind_day_before to Custom_Events
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `Custom_Events` ADD COLUMN `time` TEXT")
+                db.execSQL("ALTER TABLE `Custom_Events` ADD COLUMN `remind_day_before` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile
