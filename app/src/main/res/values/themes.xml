@@ -12,16 +12,7 @@
         <item name="android:navigationBarColor">@color/navy</item>
     </style>
 
-    <style name="Theme.StudyMate" parent="Base.Theme.StudyMate">
-        <item name="android:windowAnimationStyle">@style/WindowAnimations.StudyMate</item>
-    </style>
-
-    <style name="WindowAnimations.StudyMate" parent="@android:style/Animation.Activity">
-        <item name="android:activityOpenEnterAnimation">@anim/screen_fade_in</item>
-        <item name="android:activityOpenExitAnimation">@anim/screen_fade_out</item>
-        <item name="android:activityCloseEnterAnimation">@anim/screen_fade_in</item>
-        <item name="android:activityCloseExitAnimation">@anim/screen_fade_out</item>
-    </style>
+    <style name="Theme.StudyMate" parent="Base.Theme.StudyMate" />
 
     <!-- Launch theme: extends the platform splash so the system splash screen
          and our SplashActivity look identical — no flash between them. -->

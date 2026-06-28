@@ -133,7 +133,6 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                 session.value
             )
             _message.postValue("Assignment added")
-            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadAssignments()
         }
     }
@@ -181,7 +180,6 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                 session.value
             )
             _message.postValue("Assignment updated")
-            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadAssignments()
         }
     }
@@ -196,7 +194,6 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
             assignmentRepo.deleteAssignment(assignment)
             AssignmentReminderScheduler.cancelForAssignment(getApplication(), assignment.id)
             _message.postValue("Assignment deleted")
-            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadAssignments()
         }
     }
@@ -224,7 +221,6 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                 )
             }
             _message.postValue(if (markDone) "Marked done" else "Marked not done")
-            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadAssignments()
         }
     }

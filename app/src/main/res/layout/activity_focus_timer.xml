@@ -142,20 +142,14 @@
                     android:textColor="@color/gold_light"
                     android:textSize="14sp" />
 
-                <!-- Big countdown with a circular progress indicator and glow while running -->
+                <!-- Big countdown with a breathing gold glow while running -->
                 <FrameLayout
                     android:id="@+id/countdownContainer"
                     android:layout_width="match_parent"
-                    android:layout_height="280dp"
+                    android:layout_height="140dp"
                     android:layout_marginTop="12dp"
                     android:clipChildren="false"
                     android:clipToPadding="false">
-
-                    <uws.ac.uk.studymate.ui.CircularProgressView
-                        android:id="@+id/countdownProgress"
-                        android:layout_width="260dp"
-                        android:layout_height="260dp"
-                        android:layout_gravity="center" />
 
                     <TextView
                         android:id="@+id/countdownText"
@@ -169,6 +163,12 @@
                         android:textStyle="bold"
                         android:shadowColor="#99000000"
                         android:shadowRadius="8" />
+
+                    <uws.ac.uk.studymate.ui.PulseRingView
+                        android:id="@+id/countdownGlow"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
 
                 </FrameLayout>
 

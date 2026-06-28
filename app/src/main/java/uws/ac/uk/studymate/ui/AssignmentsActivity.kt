@@ -154,29 +154,26 @@ class AssignmentsActivity : AppCompatActivity() {
         runEntranceAnimation()
 
         vm.assignmentsSummary.observe(this) { summary ->
-            val colorsChanged = colorChoices != summary.colorChoices
             colorChoices = summary.colorChoices
             adapter.submit(summary.items)
             val isEmpty = summary.items.isEmpty()
 
+            emptyText.text = "No assignments yet — tap Create assignment to add one."
             emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
             recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
-            
-            // Refresh swatches only if the colour list ever changes or they haven't been built yet.
-            if (addColorRow.childCount == 0 || colorsChanged) {
-                buildColorSwatches(addColorRow) { tappedColor ->
-                    if (!colorStepUnlocked) return@buildColorSwatches
-                    uws.ac.uk.studymate.util.Keyboard.hide(this)
-                    addColor = tappedColor
-                    highlightSelectedColor(addColorRow, tappedColor)
-                    updateAddProgress()
-                }
-                buildColorSwatches(editColorRow) { tappedColor ->
-                    uws.ac.uk.studymate.util.Keyboard.hide(this)
-                    editColor = tappedColor
-                    highlightSelectedColor(editColorRow, tappedColor)
-                    updateEditIconEnabled()
-                }
+            // Refresh swatches in case the colour list ever changes.
+            buildColorSwatches(addColorRow) { tappedColor ->
+                if (!colorStepUnlocked) return@buildColorSwatches
+                uws.ac.uk.studymate.util.Keyboard.hide(this)
+                addColor = tappedColor
+                highlightSelectedColor(addColorRow, tappedColor)
+                updateAddProgress()
+            }
+            buildColorSwatches(editColorRow) { tappedColor ->
+                uws.ac.uk.studymate.util.Keyboard.hide(this)
+                editColor = tappedColor
+                highlightSelectedColor(editColorRow, tappedColor)
+                updateEditIconEnabled()
             }
         }
         vm.checklist.observe(this) { state -> renderChecklist(state) }
@@ -310,8 +307,7 @@ class AssignmentsActivity : AppCompatActivity() {
             findViewById<View>(R.id.checklistHeaderRow) to -1f,
             checklistSubText                            to  1f,
             checklistRecycler                           to -1f,
-            checklistEmptyText                          to  1f,
-            findViewById<View>(R.id.checklistAddRow)    to  1f,
+            checklistAddBtn                             to  1f,
             checklistBackBtn                            to -1f
         )
     }
@@ -322,8 +318,7 @@ class AssignmentsActivity : AppCompatActivity() {
             onEdit = { openEditFor(it) },
             onDelete = { confirmDelete(it) },
             onToggleDone = { confirmToggleDone(it) },
-            onOpenChecklist = { openChecklistFor(it) },
-            onOpenDecks = { openDecksFor(it) }
+            onOpenChecklist = { openChecklistFor(it) }
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
@@ -428,11 +423,7 @@ class AssignmentsActivity : AppCompatActivity() {
     private fun addCurrentTask() {
         val id = checklistAssignmentId ?: return
         val text = checklistAddInput.text?.toString().orEmpty()
-        if (text.isBlank()) {
-            checklistAddInput.requestFocus()
-            uws.ac.uk.studymate.util.Keyboard.show(checklistAddInput)
-            return
-        }
+        if (text.isBlank()) return
         vm.addTask(id, text)
         checklistAddInput.setText("")
         uws.ac.uk.studymate.util.Keyboard.hide(this)
@@ -801,14 +792,6 @@ class AssignmentsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun openDecksFor(item: AssignmentsItem) {
-        startActivity(
-            Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity")
-                .putExtra("scoped_assignment_id", item.assignment.id)
-                .putExtra("scoped_assignment_name", item.assignment.title)
-        )
-    }
-
     // Tapping the done circle. If it's already done, just un-mark it. If not,
     // show a themed pop-up explaining what marking-done does before confirming.
     private fun confirmToggleDone(item: AssignmentsItem) {
@@ -874,12 +857,6 @@ class AssignmentsActivity : AppCompatActivity() {
                 goingDeeperFromForm ||
                 (currentPanel == Panel.DATE && target == Panel.TIME)
         val sign = if (goingForward) 1f else -1f
-
-        if (target == Panel.TIME || target == Panel.DATE) {
-            uws.ac.uk.studymate.util.OrbField.pause()
-        } else {
-            uws.ac.uk.studymate.util.OrbField.resume()
-        }
 
         val w = outgoingPanel.width.toFloat()
         val stagger = 72L
