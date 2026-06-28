@@ -22,6 +22,7 @@ class StudyMateApplication : Application() {
         createAssignmentReminderChannel()
         createReviewReminderChannel()
         createFocusTimerChannel()
+        createCustomEventChannel()
         registerKeyboardDismissOnPause()
     }
 
@@ -76,6 +77,19 @@ class StudyMateApplication : Application() {
         notificationManager().createNotificationChannel(channel)
     }
 
+    private fun createCustomEventChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_CUSTOM_EVENTS,
+            "Custom event reminders",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Reminders for custom calendar events."
+            enableLights(true)
+            enableVibration(true)
+        }
+        notificationManager().createNotificationChannel(channel)
+    }
+
     private fun notificationManager() =
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
@@ -83,5 +97,6 @@ class StudyMateApplication : Application() {
         const val CHANNEL_ASSIGNMENT_REMINDERS = "assignment_reminders"
         const val CHANNEL_REVIEW_REMINDERS = "review_reminders"
         const val CHANNEL_FOCUS_TIMER = "focus_timer"
+        const val CHANNEL_CUSTOM_EVENTS = "custom_events"
     }
 }

@@ -24,10 +24,11 @@ Coded by Jamie Coleman
         FlashCard::class,
         ReviewLog::class,
         AssignmentTask::class,
-        FocusSession::class
+        FocusSession::class,
+        CustomEvent::class
     ],
     exportSchema = false,
-    version = 12
+    version = 14
 )
 abstract class StudyMateDatabase : RoomDatabase() {
 
@@ -41,6 +42,7 @@ abstract class StudyMateDatabase : RoomDatabase() {
     abstract fun reviewLogDao(): ReviewLogDao
     abstract fun assignmentTaskDao(): AssignmentTaskDao
     abstract fun focusSessionDao(): FocusSessionDao
+    abstract fun customEventDao(): CustomEventDao
 
     companion object {
         // Move the notification choice onto the user row and keep the other settings in User_Settings.
@@ -246,7 +248,35 @@ abstract class StudyMateDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+        // Custom Calendar Events: user-created calendar entries (e.g. holidays).
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `Custom_Events` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `user_id` INTEGER NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `color` TEXT,
+                        `icon` TEXT NOT NULL,
+                        FOREIGN KEY(`user_id`) REFERENCES `User`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_Custom_Events_user_id` ON `Custom_Events` (`user_id`)")
+            }
+        }
+
+        // Add time and remind_day_before to Custom_Events
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `Custom_Events` ADD COLUMN `time` TEXT")
+                db.execSQL("ALTER TABLE `Custom_Events` ADD COLUMN `remind_day_before` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATIONS = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
 
         // Keep one shared instance so the database is not opened more than once.
         @Volatile

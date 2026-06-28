@@ -16,15 +16,23 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.TimePicker
+
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.checkbox.MaterialCheckBox
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import uws.ac.uk.studymate.R
-import uws.ac.uk.studymate.ui.viewmodels.CalendarAssignmentEntry
+import uws.ac.uk.studymate.ui.viewmodels.CalendarEvent
+import uws.ac.uk.studymate.ui.viewmodels.EventType
 import uws.ac.uk.studymate.ui.viewmodels.CalendarSummary
 import uws.ac.uk.studymate.ui.viewmodels.CalendarViewModel
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
@@ -49,14 +57,39 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var dayBackBtn: MaterialButton
 
     private var currentMonth: YearMonth = YearMonth.now()
-    private var entriesByDate: Map<LocalDate, List<CalendarAssignmentEntry>> = emptyMap()
+    private var entriesByDate: Map<LocalDate, List<CalendarEvent>> = emptyMap()
+    private var selectedDate: LocalDate = LocalDate.now()
 
-    private enum class Panel { MONTH, DAY }
+    private enum class Panel { MONTH, DAY, EDIT, TIME }
     private var currentPanel = Panel.MONTH
     private var isAnimating = false
 
+    private lateinit var editPanel: View
+    private lateinit var editTitleInput: TextInputEditText
+    private lateinit var editPickTimeBtn: MaterialButton
+    private lateinit var editClearTimeBtn: TextView
+    private lateinit var editRemindCheck: MaterialCheckBox
+    private lateinit var editConfirmBtn: MaterialButton
+    private lateinit var editDeleteBtn: MaterialButton
+    private lateinit var editCancelBtn: MaterialButton
+
+    private lateinit var timePanel: View
+    private lateinit var timePanelTime: TimePicker
+    private lateinit var timeConfirmBtn: MaterialButton
+    private lateinit var timeCancelBtn: MaterialButton
+
+    private var editingCustomEvent: uws.ac.uk.studymate.data.entities.CustomEvent? = null
+    private var editDate: LocalDate? = null
+    private var editTime: String? = null
+
+    private lateinit var editElems: List<Pair<View, Float>>
+    private lateinit var timeElems: List<Pair<View, Float>>
+
+
     private lateinit var monthElems: List<Pair<View, Float>>
     private lateinit var dayElems: List<Pair<View, Float>>
+
+    private lateinit var gestureDetector: android.view.GestureDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,6 +109,39 @@ class CalendarActivity : AppCompatActivity() {
         dayList = findViewById(R.id.dayPanelList)
         dayBackBtn = findViewById(R.id.dayBackBtn)
 
+        editPanel = findViewById(R.id.editPanel)
+        editTitleInput = findViewById(R.id.editTitleInput)
+        editPickTimeBtn = findViewById(R.id.editPickTimeBtn)
+        editClearTimeBtn = findViewById(R.id.editClearTimeBtn)
+        editRemindCheck = findViewById(R.id.editRemindCheck)
+        editConfirmBtn = findViewById(R.id.editConfirmBtn)
+        editDeleteBtn = findViewById(R.id.editDeleteBtn)
+        editCancelBtn = findViewById(R.id.editCancelBtn)
+
+        timePanel = findViewById(R.id.timePanel)
+        timePanelTime = findViewById(R.id.timePanelTimePicker)
+        timePanelTime.setIs24HourView(true)
+        timeConfirmBtn = findViewById(R.id.timeConfirmBtn)
+        timeCancelBtn = findViewById(R.id.timeCancelBtn)
+
+        editElems = listOf(
+            findViewById<View>(R.id.editTitleText) to -1f,
+            findViewById<View>(R.id.editTitleLayout) to -1f,
+            findViewById<View>(R.id.editTimeLabel) to 1f,
+            editPickTimeBtn to -1f,
+            editClearTimeBtn to 1f,
+            editRemindCheck to -1f,
+            editConfirmBtn to 1f,
+            editDeleteBtn to -1f,
+            editCancelBtn to 1f
+        )
+        timeElems = listOf(
+            findViewById<View>(R.id.timeContent) to -1f,
+            timeConfirmBtn to 1f,
+            timeCancelBtn to -1f
+        )
+
+
         monthElems = listOf(
             findViewById<View>(R.id.monthNavRow)        to -1f,
             weekdayHeaderRow                              to  1f,
@@ -88,7 +154,7 @@ class CalendarActivity : AppCompatActivity() {
             dayBackBtn  to  1f
         )
 
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         findViewById<MaterialButton>(R.id.previousMonthBtn).setOnClickListener {
             currentMonth = currentMonth.minusMonths(1)
             renderMonth()
@@ -99,11 +165,101 @@ class CalendarActivity : AppCompatActivity() {
         }
         dayBackBtn.setOnClickListener { swapToPanel(Panel.MONTH) }
 
+        gestureDetector = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: android.view.MotionEvent?,
+                e2: android.view.MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffX > 0) {
+                            currentMonth = currentMonth.minusMonths(1)
+                            renderMonth()
+                            return true
+                        } else {
+                            currentMonth = currentMonth.plusMonths(1)
+                            renderMonth()
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+        })
+
+        editPickTimeBtn.setOnClickListener {
+            timePanelTime.hour = editTime?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 12
+            timePanelTime.minute = editTime?.split(":")?.getOrNull(1)?.toIntOrNull() ?: 0
+            swapToPanel(Panel.TIME)
+        }
+        editClearTimeBtn.setOnClickListener {
+            editTime = null
+            editPickTimeBtn.text = "Set Time (All day)"
+        }
+        editCancelBtn.setOnClickListener { swapToPanel(Panel.DAY) }
+        editDeleteBtn.setOnClickListener {
+            editingCustomEvent?.let {
+                vm.deleteCustomEvent(it)
+                uws.ac.uk.studymate.notifications.CustomEventScheduler.cancelForEvent(this, it.id)
+            }
+            swapToPanel(Panel.DAY)
+        }
+        editConfirmBtn.setOnClickListener {
+            val title = editTitleInput.text.toString().trim()
+            if (title.isNotEmpty() && editDate != null) {
+                if (editingCustomEvent != null) {
+                    val updated = editingCustomEvent!!.copy(
+                        title = title,
+                        time = editTime,
+                        remindDayBefore = editRemindCheck.isChecked
+                    )
+                    vm.updateCustomEvent(updated)
+                    lifecycleScope.launch {
+                        kotlinx.coroutines.delay(200)
+                        val user = uws.ac.uk.studymate.data.StudyMateDatabase.getInstance(this@CalendarActivity).userDao().getById(updated.userId)
+                        if (user != null) {
+                            uws.ac.uk.studymate.notifications.CustomEventScheduler.scheduleForEvent(this@CalendarActivity, updated, user)
+                        }
+                    }
+                } else {
+                    vm.addCustomEvent(title, editDate!!, editTime, editRemindCheck.isChecked, "#C4A24A", "event")
+                    lifecycleScope.launch {
+                        kotlinx.coroutines.delay(500)
+                        val user = uws.ac.uk.studymate.data.StudyMateDatabase.getInstance(this@CalendarActivity).userDao().getAll().firstOrNull()
+                        if (user != null) {
+                            val events = uws.ac.uk.studymate.data.StudyMateDatabase.getInstance(this@CalendarActivity).customEventDao().getEventsForUser(user.id)
+                            events.filter { it.date == editDate!!.toString() }.forEach { e ->
+                                uws.ac.uk.studymate.notifications.CustomEventScheduler.scheduleForEvent(this@CalendarActivity, e, user)
+                            }
+                        }
+                    }
+                }
+                swapToPanel(Panel.DAY)
+            }
+        }
+        timeCancelBtn.setOnClickListener { swapToPanel(Panel.EDIT) }
+        timeConfirmBtn.setOnClickListener {
+            editTime = String.format("%02d:%02d", timePanelTime.hour, timePanelTime.minute)
+            editPickTimeBtn.text = "Time: $editTime"
+            swapToPanel(Panel.EDIT)
+        }
+
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when (currentPanel) {
                     Panel.MONTH -> openHome()
                     Panel.DAY -> swapToPanel(Panel.MONTH)
+                    Panel.EDIT -> swapToPanel(Panel.DAY)
+                    Panel.TIME -> swapToPanel(Panel.EDIT)
                 }
             }
         })
@@ -129,6 +285,13 @@ class CalendarActivity : AppCompatActivity() {
         vm.sessionExpired.observe(this) { if (it) openLogin() }
     }
 
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (currentPanel == Panel.MONTH) {
+            gestureDetector.onTouchEvent(ev)
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
     override fun onResume() {
         super.onResume()
         vm.loadCalendar()
@@ -137,6 +300,10 @@ class CalendarActivity : AppCompatActivity() {
     private fun applySummary(summary: CalendarSummary) {
         entriesByDate = summary.entriesByDate
         renderMonth()
+        
+        if (currentPanel == Panel.DAY) {
+            openDayDetail(selectedDate, entriesByDate[selectedDate].orEmpty())
+        }
     }
 
     // ───────── Month grid ─────────
@@ -204,7 +371,7 @@ class CalendarActivity : AppCompatActivity() {
     private fun createDayCell(
         date: LocalDate,
         today: LocalDate,
-        entries: List<CalendarAssignmentEntry>
+        entries: List<CalendarEvent>
     ): View {
         val density = resources.displayMetrics.density
         val hasEntries = entries.isNotEmpty()
@@ -220,10 +387,10 @@ class CalendarActivity : AppCompatActivity() {
                 background = androidx.core.content.ContextCompat.getDrawable(
                     this@CalendarActivity, R.drawable.bg_day_cell_active
                 )
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { openDayDetail(date, entries) }
             }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { openDayDetail(date, entries) }
             if (isPast) alpha = 0.5f
         }
 
@@ -264,30 +431,65 @@ class CalendarActivity : AppCompatActivity() {
         column.addView(numberContainer)
 
         if (hasEntries) {
-            val dotsRow = LinearLayout(this).apply {
+            val markersAndTextRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = (3 * density).toInt() }
+                ).apply { topMargin = (2 * density).toInt() }
             }
+
+            val markersCol = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
             entries.take(3).forEach { entry ->
-                val dot = View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        (6 * density).toInt(), (6 * density).toInt()
-                    ).apply {
-                        marginStart = (2 * density).toInt()
-                        marginEnd = (2 * density).toInt()
-                    }
-                    background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
-                        setColor(parseColor(entry.colorHex))
-                    }
+                val isDash = entry.type == EventType.DECK_REVIEW
+                val width = if (isDash) 12 else 8
+                val height = if (isDash) 4 else 8
+                val dot = ImageView(this).apply {
+                    layoutParams = FrameLayout.LayoutParams(
+                        (width * density).toInt(), (height * density).toInt(),
+                        Gravity.CENTER
+                    )
+                    setImageResource(if (isDash) R.drawable.shape_indicator_dash else R.drawable.shape_indicator_dot)
+                    setColorFilter(parseColor(entry.colorHex))
                 }
-                dotsRow.addView(dot)
+                val dotContainer = FrameLayout(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        (12 * density).toInt(),
+                        (12 * density).toInt()
+                    )
+                    addView(dot)
+                }
+                markersCol.addView(dotContainer)
             }
-            column.addView(dotsRow)
+            markersAndTextRow.addView(markersCol)
+            
+            if (entries.size > 3) {
+                markersAndTextRow.addView(
+                    TextView(this@CalendarActivity).apply {
+                        val remaining = entries.size - 3
+                        text = if (remaining > 9) "+9" else "+$remaining"
+                        textSize = 10f
+                        maxLines = 1
+                        setSingleLine(true)
+                        setTextColor(Color.parseColor("#FAF8F5"))
+                        gravity = Gravity.CENTER_VERTICAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.MATCH_PARENT
+                        ).apply { marginStart = (2 * density).toInt() }
+                    }
+                )
+            }
+            column.addView(markersAndTextRow)
         }
 
         // Accessibility: let the whole cell read as one node ("Today, 15 June, 2
@@ -297,9 +499,10 @@ class CalendarActivity : AppCompatActivity() {
         val dateLabel = date.format(DateTimeFormatter.ofPattern("d MMMM"))
         val spokenDate = if (isToday) getString(R.string.cd_today_prefix, dateLabel) else dateLabel
         container.contentDescription = if (hasEntries) {
-            resources.getQuantityString(R.plurals.cd_day_assignments, entries.size, spokenDate, entries.size)
+            val countStr = entries.size.toString()
+            "Date $spokenDate, $countStr events"
         } else {
-            getString(R.string.cd_day_no_assignments, spokenDate)
+            "Date $spokenDate, no events"
         }
 
         container.addView(column)
@@ -310,24 +513,78 @@ class CalendarActivity : AppCompatActivity() {
 
     // ───────── Day detail ─────────
 
-    private fun openDayDetail(date: LocalDate, entries: List<CalendarAssignmentEntry>) {
+    private fun openDayDetail(date: LocalDate, entries: List<CalendarEvent>) {
+        selectedDate = date
         dayTitle.text = date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
+        
+        val suffix = if (date == LocalDate.now()) " today" else ""
         daySubText.text = when (entries.size) {
-            1 -> "1 due today"
-            else -> "${entries.size} due today"
+            0 -> "No events$suffix"
+            1 -> {
+                when (entries.first().type) {
+                    EventType.ASSIGNMENT -> "1 assignment due$suffix"
+                    EventType.DECK_REVIEW -> "1 deck review$suffix"
+                    EventType.CUSTOM -> "1 event$suffix"
+                }
+            }
+            else -> "${entries.size} events$suffix"
         }
-        renderDayList(entries)
+        val isPast = date.isBefore(LocalDate.now())
+
+        renderDayList(entries, isPast)
         swapToPanel(Panel.DAY)
     }
 
-    private fun renderDayList(entries: List<CalendarAssignmentEntry>) {
+    private fun renderDayList(entries: List<CalendarEvent>, isPast: Boolean) {
         dayList.removeAllViews()
         val density = resources.displayMetrics.density
-        val sorted = entries.sortedBy { it.dueAt }
+
+        if (entries.isEmpty()) {
+            val emptyView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).apply { topMargin = (30 * density).toInt() }
+                
+                addView(TextView(this@CalendarActivity).apply {
+                    text = "No events scheduled."
+                    textSize = 16f
+                    setTextColor(Color.parseColor("#B2FAF8F5"))
+                    gravity = Gravity.CENTER
+                })
+                
+                if (!isPast) {
+                    val btn = com.google.android.material.button.MaterialButton(
+                        this@CalendarActivity, 
+                        null, 
+                        com.google.android.material.R.attr.materialButtonOutlinedStyle
+                    ).apply {
+                        text = "Add custom event"
+                        setTextColor(Color.parseColor("#C4A24A"))
+                        setStrokeColorResource(R.color.gold_light)
+                        strokeWidth = (1.5f * density).toInt()
+                        setIconResource(R.drawable.ic_add)
+                        iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                        setOnClickListener { openEditPanel(selectedDate, null) }
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = (20 * density).toInt() }
+                    }
+                    addView(btn)
+                }
+            }
+            dayList.addView(emptyView)
+            return
+        }
+
+        val sorted = entries // already sorted by VM
         // Max 9 rows so nothing scrolls; if more, last shows "+N more".
         val maxRows = 9
         val visible = if (sorted.size > maxRows) sorted.take(maxRows - 1) else sorted
-        visible.forEach { entry -> dayList.addView(buildAssignmentRow(entry, density)) }
+        visible.forEach { entry -> dayList.addView(buildEventRow(entry, density)) }
         if (sorted.size > maxRows) {
             dayList.addView(
                 TextView(this).apply {
@@ -342,9 +599,34 @@ class CalendarActivity : AppCompatActivity() {
                 }
             )
         }
+
+        if (!isPast) {
+            val btn = com.google.android.material.button.MaterialButton(
+                this@CalendarActivity, 
+                null, 
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                text = "Add more events"
+                setTextColor(Color.parseColor("#C4A24A"))
+                setStrokeColorResource(R.color.gold_light)
+                strokeWidth = (1.5f * density).toInt()
+                setIconResource(R.drawable.ic_add)
+                iconTint = android.content.res.ColorStateList.valueOf(Color.parseColor("#C4A24A"))
+                setOnClickListener { openEditPanel(selectedDate, null) }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = (20 * density).toInt()
+                    bottomMargin = (20 * density).toInt()
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            }
+            dayList.addView(btn)
+        }
     }
 
-    private fun buildAssignmentRow(entry: CalendarAssignmentEntry, density: Float): View {
+    private fun buildEventRow(entry: CalendarEvent, density: Float): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -358,9 +640,28 @@ class CalendarActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = (6 * density).toInt() }
             // Tapping the assignment opens its flashcard decks.
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { openDecksFor(entry) }
+            if (entry.type == EventType.ASSIGNMENT) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { openDecksFor(entry) }
+            } else if (entry.type == EventType.DECK_REVIEW) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { openReviewFor(entry) }
+            } else if (entry.type == EventType.CUSTOM) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { 
+                    lifecycleScope.launch {
+                        val customEvent = vm.getCustomEventById(entry.id)
+                        if (customEvent != null) {
+                            openEditPanel(entry.date, customEvent)
+                        }
+                    }
+                }
+            } else {
+                isClickable = false
+            }
         }
 
         val color = parseColor(entry.colorHex)
@@ -387,14 +688,14 @@ class CalendarActivity : AppCompatActivity() {
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
             ).apply { marginStart = (10 * density).toInt() }
             addView(TextView(this@CalendarActivity).apply {
-                text = entry.assignmentTitle
+                text = entry.title
                 textSize = 14f
                 setTextColor(Color.parseColor("#FAF8F5"))
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })
             addView(TextView(this@CalendarActivity).apply {
-                text = AssignmentDateTimeUtils.formatDueTime(entry.dueAt)
+                text = entry.timeText ?: "All day"
                 textSize = 11f
                 setTextColor(Color.parseColor("#B2FAF8F5"))
                 maxLines = 1
@@ -407,8 +708,8 @@ class CalendarActivity : AppCompatActivity() {
         text.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         row.contentDescription = getString(
             R.string.cd_calendar_assignment_row,
-            entry.assignmentTitle,
-            AssignmentDateTimeUtils.formatDueTime(entry.dueAt)
+            entry.title,
+            entry.timeText ?: "All day"
         )
 
         row.addView(badge)
@@ -418,17 +719,42 @@ class CalendarActivity : AppCompatActivity() {
 
     // ───────── Panel swap ─────────
 
+    private fun panelView(p: Panel): View = when (p) {
+        Panel.MONTH -> monthPanel
+        Panel.DAY -> dayPanel
+        Panel.EDIT -> editPanel
+        Panel.TIME -> timePanel
+    }
+
+    private fun panelElems(p: Panel): List<Pair<View, Float>> = when (p) {
+        Panel.MONTH -> monthElems
+        Panel.DAY -> dayElems
+        Panel.EDIT -> editElems
+        Panel.TIME -> timeElems
+    }
+
     private fun swapToPanel(target: Panel) {
         if (isAnimating || target == currentPanel) return
-        val outgoingPanel = if (currentPanel == Panel.MONTH) monthPanel else dayPanel
-        val incomingPanel = if (target == Panel.MONTH) monthPanel else dayPanel
-        val outgoingElems = if (currentPanel == Panel.MONTH) monthElems else dayElems
-        val incomingElems = if (target == Panel.MONTH) monthElems else dayElems
 
-        val goingForward = currentPanel == Panel.MONTH && target == Panel.DAY
-        val sign = if (goingForward) 1f else -1f
+        uws.ac.uk.studymate.util.Keyboard.hide(this)
 
-        val w = outgoingPanel.width.toFloat()
+        val outgoingPanel = panelView(currentPanel)
+        val incomingPanel = panelView(target)
+        val outgoingElems = panelElems(currentPanel)
+        val incomingElems = panelElems(target)
+
+        val goingDeeper = (target == Panel.TIME && currentPanel == Panel.EDIT) || 
+                          (target == Panel.EDIT && currentPanel == Panel.DAY) || 
+                          (target == Panel.DAY && currentPanel == Panel.MONTH)
+        val sign = if (goingDeeper) 1f else -1f
+
+        if (target == Panel.TIME) {
+            uws.ac.uk.studymate.util.OrbField.pause()
+        } else {
+            uws.ac.uk.studymate.util.OrbField.resume()
+        }
+
+        val w = outgoingPanel.width.toFloat().takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.toFloat()
         val stagger = 72L
         val exitDur = 420L
         val enterDur = 440L
@@ -469,16 +795,39 @@ class CalendarActivity : AppCompatActivity() {
 
     // ───────── Orbs / helpers ─────────
 
+    private fun openEditPanel(date: LocalDate, event: uws.ac.uk.studymate.data.entities.CustomEvent?) {
+        editDate = date
+        editingCustomEvent = event
+        editTitleInput.setText(event?.title ?: "")
+        editTime = event?.time
+        editPickTimeBtn.text = if (editTime != null) "Time: $editTime" else "Set Time (All day)"
+        editRemindCheck.isChecked = event?.remindDayBefore ?: false
+        editDeleteBtn.visibility = if (event != null) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.editTitleText).text = if (event != null) "Edit Event" else "New event for ${date.format(DateTimeFormatter.ofPattern("d MMM"))}"
+        swapToPanel(Panel.EDIT)
+    }
+
 
     // Open the Flashcards decks screen scoped to the tapped assignment.
-    private fun openDecksFor(entry: CalendarAssignmentEntry) {
+    private fun openDecksFor(entry: CalendarEvent) {
         startActivity(
             Intent().setClassName(packageName, "$packageName.ui.FlashcardDecksActivity")
-                .putExtra("scoped_assignment_id", entry.assignmentId)
-                .putExtra("scoped_assignment_name", entry.assignmentTitle)
+                .putExtra("scoped_assignment_id", entry.id)
+                .putExtra("scoped_assignment_name", entry.title)
         )
     }
 
+    private fun openReviewFor(entry: CalendarEvent) {
+        startActivity(
+            Intent().setClassName(packageName, "$packageName.ui.ReviewDeckActivity")
+                .putExtra("deck_id", entry.id)
+                .putExtra("deck_name", entry.title.removePrefix("Review: "))
+        )
+    }
+
+    // (removed unused showAddEventDialog since we use showEventTitleDialog directly)
+
+    
     private fun openLogin() {
         val i = Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
