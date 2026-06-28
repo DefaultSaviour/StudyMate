@@ -115,6 +115,9 @@ class CalendarViewModelTest {
 
     @Test
     fun `addCustomEvent saves to DB and refreshes calendar`() = runTest {
+        mockkObject(uws.ac.uk.studymate.widget.WidgetUpdater)
+        every { uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(any()) } returns Unit
+
         coEvery { assignmentDao.getAssignments(any<Int>()) } returns emptyList()
         coEvery { deckDao.getDeckReviewDates(any<Int>(), any<String>()) } returns emptyList()
         
