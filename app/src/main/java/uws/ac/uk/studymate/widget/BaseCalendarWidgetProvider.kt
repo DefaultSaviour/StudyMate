@@ -52,10 +52,18 @@ abstract class BaseCalendarWidgetProvider : AppWidgetProvider() {
     ) {
         val views = RemoteViews(context.packageName, layoutId)
         val sessionManager = SessionManager(context)
-        val userId = sessionManager.getLoggedInUserId() ?: sessionManager.getLastUserId()
+        val loggedInUserId = sessionManager.getLoggedInUserId()
+        val userId = loggedInUserId ?: sessionManager.getLastUserId()
 
-        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName) 
-            ?: Intent(context, LoginActivity::class.java)
+        val intent = if (loggedInUserId != null) {
+            Intent(context, uws.ac.uk.studymate.ui.HomeActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+        } else {
+            Intent(context, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        }
         
         val pendingIntent = PendingIntent.getActivity(
             context,
