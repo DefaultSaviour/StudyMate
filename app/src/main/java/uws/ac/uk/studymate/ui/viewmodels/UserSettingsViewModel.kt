@@ -92,22 +92,9 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
 
             val now = LocalDateTime.now()
             val weekFromNow = now.plusDays(7)
-            
-            val activeAssignments = assignments.filter { 
-                !AssignmentDateTimeUtils.isComplete(it.completedAt, it.dueDate, now) 
-            }
-            
-            val dueThisWeek = activeAssignments.count { a ->
+            val dueThisWeek = assignments.count { a ->
                 val due = AssignmentDateTimeUtils.parseDueDate(a.dueDate) ?: return@count false
                 !due.isBefore(now) && due.isBefore(weekFromNow)
-            }
-            
-            // Count decks that are unassigned OR assigned to an active assignment
-            val activeDecks = decksWithCards.filter { d ->
-                if (d.deck.assignmentId == -1) true
-                else assignments.find { it.id == d.deck.assignmentId }?.let {
-                    !AssignmentDateTimeUtils.isComplete(it.completedAt, it.dueDate, now)
-                } ?: true
             }
 
             _settingsSummary.postValue(
@@ -119,9 +106,9 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                     notificationsEnabled = user.pushNotificationsEnabled ?: false,
                     autoLoginEnabled = user.autoLoginEnabled,
                     isPasswordAccount = user.authMode == SessionManager.AUTH_MODE_PASSWORD,
-                    deckCount = activeDecks.size,
-                    flashcardCount = activeDecks.sumOf { it.cards.size },
-                    assignmentCount = activeAssignments.size,
+                    deckCount = decksWithCards.size,
+                    flashcardCount = decksWithCards.sumOf { it.cards.size },
+                    assignmentCount = assignments.size,
                     assignmentsDueThisWeek = dueThisWeek
                 )
             )
@@ -144,21 +131,9 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                 val assignments = db.assignmentDao().getAssignments(session.userId)
                 uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
                     .rescheduleAllForUser(app, refreshed, assignments)
-                uws.ac.uk.studymate.notifications.ReviewReminderScheduler
-                    .scheduleForUser(app, session.userId)
-                val customEvents = db.customEventDao().getEventsForUser(session.userId)
-                customEvents.forEach { event ->
-                    uws.ac.uk.studymate.notifications.CustomEventScheduler.scheduleForEvent(app, event, refreshed)
-                }
             } else {
                 uws.ac.uk.studymate.notifications.AssignmentReminderScheduler
                     .cancelAllForUser(app, session.userId)
-                uws.ac.uk.studymate.notifications.ReviewReminderScheduler
-                    .cancelForUser(app, session.userId)
-                val customEvents = db.customEventDao().getEventsForUser(session.userId)
-                customEvents.forEach { event ->
-                    uws.ac.uk.studymate.notifications.CustomEventScheduler.cancelForEvent(app, event.id)
-                }
             }
         }
     }

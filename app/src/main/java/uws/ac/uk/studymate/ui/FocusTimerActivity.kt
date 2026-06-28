@@ -8,6 +8,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.text.InputType
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -47,7 +48,7 @@ class FocusTimerActivity : AppCompatActivity() {
     private lateinit var phaseLabel: TextView
     private lateinit var roundText: TextView
     private lateinit var countdownText: TextView
-    private lateinit var countdownProgress: CircularProgressView
+    private lateinit var countdownGlow: PulseRingView
     private lateinit var startPauseBtn: MaterialButton
     private lateinit var skipBtn: MaterialButton
     private lateinit var endBtn: MaterialButton
@@ -124,7 +125,7 @@ class FocusTimerActivity : AppCompatActivity() {
         phaseLabel = findViewById(R.id.phaseLabel)
         roundText = findViewById(R.id.roundText)
         countdownText = findViewById(R.id.countdownText)
-        countdownProgress = findViewById(R.id.countdownProgress)
+        countdownGlow = findViewById(R.id.countdownGlow)
         startPauseBtn = findViewById(R.id.startPauseBtn)
         skipBtn = findViewById(R.id.skipBtn)
         endBtn = findViewById(R.id.endBtn)
@@ -224,12 +225,13 @@ class FocusTimerActivity : AppCompatActivity() {
             it.alpha = if (configEnabled) 1f else 0.45f
         }
 
-        // Drive the circular progress ring: full at the start of a phase, empty at the end.
-        val phaseDuration = FocusTimerEngine.phaseDurationSeconds(state.phase, lastConfig)
-        val progressFraction = if (phaseDuration > 0) {
-            (state.remainingSeconds.toFloat() / phaseDuration).coerceIn(0f, 1f)
-        } else 1f
-        countdownProgress.setProgress(progressFraction, animate = state.running)
+        if (state.running) {
+            countdownGlow.visibility = View.VISIBLE
+            countdownGlow.startAnimating()
+        } else {
+            countdownGlow.stopAnimating()
+            countdownGlow.visibility = View.GONE
+        }
     }
 
     // ─────────────────── Study context (0.9J) ───────────────────

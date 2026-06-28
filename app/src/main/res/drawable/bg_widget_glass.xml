@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <!-- 75% opacity of Dark Navy (#0F172A) -->
-    <solid android:color="#BF0F172A" />
-    <!-- 50% opacity of Gold (#C4A24A) for the subtle border -->
-    <stroke android:width="1dp" android:color="#80C4A24A" />
-    <corners android:radius="24dp" />
-</shape>

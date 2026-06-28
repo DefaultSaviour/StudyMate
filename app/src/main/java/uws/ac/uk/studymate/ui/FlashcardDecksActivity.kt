@@ -213,7 +213,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
         createDeckBtn.setOnClickListener { openAddPanel() }
         addCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
         editCancelBtn.setOnClickListener { swapToPanel(Panel.LIST) }
@@ -244,7 +244,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when (currentPanel) {
-                    Panel.LIST -> finish()
+                    Panel.LIST -> openHome()
                     Panel.ADD, Panel.EDIT -> swapToPanel(Panel.LIST)
                 }
             }
@@ -268,7 +268,6 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // ─────────────────── Data ───────────────────
 
     private fun applySummary(summary: FlashcardDecksSummary) {
-        val assignmentsChanged = assignments != summary.assignments
         assignments = summary.assignments
 
         // Active decks first; completed-assignment decks go under their own header
@@ -288,19 +287,17 @@ class FlashcardDecksActivity : AppCompatActivity() {
         emptyText.visibility = if (isEmpty) View.VISIBLE else View.GONE
         recycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
 
-        if (addSubjectRow.childCount == 0 || assignmentsChanged) {
-            buildAssignmentSwatches(addSubjectRow) { tapped ->
-                if (!assignmentStepUnlocked) return@buildAssignmentSwatches
-                uws.ac.uk.studymate.util.Keyboard.hide(this)
-                addAssignment = tapped
-                highlightSelectedAssignment(addSubjectRow, tapped)
-                updateAddProgress()
-            }
-            buildAssignmentSwatches(editSubjectRow) { tapped ->
-                uws.ac.uk.studymate.util.Keyboard.hide(this)
-                editAssignment = tapped
-                highlightSelectedAssignment(editSubjectRow, tapped)
-            }
+        buildAssignmentSwatches(addSubjectRow) { tapped ->
+            if (!assignmentStepUnlocked) return@buildAssignmentSwatches
+            uws.ac.uk.studymate.util.Keyboard.hide(this)
+            addAssignment = tapped
+            highlightSelectedAssignment(addSubjectRow, tapped)
+            updateAddProgress()
+        }
+        buildAssignmentSwatches(editSubjectRow) { tapped ->
+            uws.ac.uk.studymate.util.Keyboard.hide(this)
+            editAssignment = tapped
+            highlightSelectedAssignment(editSubjectRow, tapped)
         }
     }
 
@@ -556,10 +553,6 @@ class FlashcardDecksActivity : AppCompatActivity() {
     // ─────────────────── Helpers ───────────────────
 
     private fun parseSubjectColor(hex: String?): Int = ColorUtils.parseOrDefault(hex)
-
-    private fun handleOnBackPressed() {
-        finish()
-    }
 
     private fun openLogin() {
         val i = Intent(this, LoginActivity::class.java).apply {

@@ -1,19 +1,39 @@
 package uws.ac.uk.studymate.notifications
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.os.Build
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import uws.ac.uk.studymate.data.entities.Assignment
 import uws.ac.uk.studymate.data.entities.User
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
+import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 
+/*//////////////////////
+Schedules / cancels the assignment-reminder WorkManager jobs.
+
+Each assignment gets up to three jobs (week-out, day-out, day-of). Jobs that
+would fire in the past are skipped. All jobs for an assignment share the tag
+"assignment_<id>" so cancelling deletes the whole set. They also carry a
+"user_<id>" tag so the toggle-off flow can wipe everyone for a user at once.
+
+Idempotent: if you schedule again for the same assignment, the previous
+WorkManager records are replaced (ExistingWorkPolicy.REPLACE) so we never
+accumulate stale entries when the user edits a due date.
+ *//////////////////////
 object AssignmentReminderScheduler {
 
+    /**
+     * Schedule (or re-schedule) all relevant reminder jobs for an assignment.
+     * No-op if the user doesn't have push notifications enabled or the due
+     * date can't be parsed.
+     */
     fun scheduleForAssignment(context: Context, assignment: Assignment, user: User) {
+        // Always clear any previous jobs first so stale fires never linger
+        // after a due-date change.
         cancelForAssignment(context, assignment.id)
 
         if (user.pushNotificationsEnabled != true) return
@@ -21,82 +41,59 @@ object AssignmentReminderScheduler {
 
         val now = LocalDateTime.now()
         val reminders = listOf(
-            AssignmentReminderNotifier.REMINDER_WEEK  to dueDate.minusDays(7),
-            AssignmentReminderNotifier.REMINDER_DAY   to dueDate.minusDays(1),
-            AssignmentReminderNotifier.REMINDER_TODAY to dueDate.toLocalDate().atTime(8, 0)
+            AssignmentReminderWorker.REMINDER_WEEK  to dueDate.minusDays(7),
+            AssignmentReminderWorker.REMINDER_DAY   to dueDate.minusDays(1),
+            // Day-of fires at 08:00 local time so it doesn't ping at midnight.
+            AssignmentReminderWorker.REMINDER_TODAY to dueDate.toLocalDate().atTime(8, 0)
         )
 
-        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
+        val wm = WorkManager.getInstance(context)
         reminders.forEach { (type, fireAt) ->
             if (!fireAt.isAfter(now)) return@forEach
+            val delayMs = Duration.between(now, fireAt).toMillis()
 
-            val intent = Intent(context, AlarmReceiver::class.java).apply {
-                action = AlarmReceiver.ACTION_ASSIGNMENT
-                putExtra(AssignmentReminderNotifier.KEY_ASSIGNMENT_ID, assignment.id)
-                putExtra(AssignmentReminderNotifier.KEY_USER_ID, user.id)
-                putExtra(AssignmentReminderNotifier.KEY_REMINDER_TYPE, type)
-            }
+            val data = Data.Builder()
+                .putInt(AssignmentReminderWorker.KEY_ASSIGNMENT_ID, assignment.id)
+                .putInt(AssignmentReminderWorker.KEY_USER_ID, user.id)
+                .putString(AssignmentReminderWorker.KEY_REMINDER_TYPE, type)
+                .build()
 
-            val pi = PendingIntent.getBroadcast(
-                context,
-                requestCodeFor(assignment.id, type),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            val request = OneTimeWorkRequestBuilder<AssignmentReminderWorker>()
+                .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+                .setInputData(data)
+                .addTag(tagForAssignment(assignment.id))
+                .addTag(tagForUser(user.id))
+                .build()
+
+            wm.enqueueUniqueWork(
+                uniqueNameFor(assignment.id, type),
+                ExistingWorkPolicy.REPLACE,
+                request
             )
-
-            val triggerAtMillis = fireAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (am.canScheduleExactAlarms()) {
-                        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
-                    } else {
-                        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
-                    }
-                } else {
-                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
-                }
-            } catch (e: SecurityException) {
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
-            }
         }
     }
 
     fun cancelForAssignment(context: Context, assignmentId: Int) {
-        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val types = listOf(
-            AssignmentReminderNotifier.REMINDER_WEEK,
-            AssignmentReminderNotifier.REMINDER_DAY,
-            AssignmentReminderNotifier.REMINDER_TODAY
-        )
-        types.forEach { type ->
-            val intent = Intent(context, AlarmReceiver::class.java).apply {
-                action = AlarmReceiver.ACTION_ASSIGNMENT
-            }
-            val pi = PendingIntent.getBroadcast(
-                context,
-                requestCodeFor(assignmentId, type),
-                intent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-            )
-            if (pi != null) {
-                am.cancel(pi)
-                pi.cancel()
-            }
-        }
+        WorkManager.getInstance(context).cancelAllWorkByTag(tagForAssignment(assignmentId))
     }
 
+    fun cancelAllForUser(context: Context, userId: Int) {
+        WorkManager.getInstance(context).cancelAllWorkByTag(tagForUser(userId))
+    }
+
+    /**
+     * Re-schedule every reminder for a user. Used when the user just enabled
+     * push notifications — we walk all of their existing assignments and
+     * queue reminders for each that's still in the future.
+     */
     fun rescheduleAllForUser(context: Context, user: User, assignments: List<Assignment>) {
+        cancelAllForUser(context, user.id)
         if (user.pushNotificationsEnabled != true) return
         assignments.forEach { scheduleForAssignment(context, it, user) }
     }
 
-    suspend fun cancelAllForUser(context: Context, userId: Int) {
-        val db = uws.ac.uk.studymate.data.StudyMateDatabase.getInstance(context)
-        val assignments = db.assignmentDao().getAssignments(userId)
-        assignments.forEach { cancelForAssignment(context, it.id) }
-    }
-
-    private fun requestCodeFor(assignmentId: Int, type: String) =
-        assignmentId * 10 + type.hashCode().and(0x3)
+    private fun tagForAssignment(id: Int) = "assignment_$id"
+    private fun tagForUser(id: Int) = "user_$id"
+    private fun uniqueNameFor(assignmentId: Int, type: String) =
+        "assignment_${assignmentId}_$type"
 }

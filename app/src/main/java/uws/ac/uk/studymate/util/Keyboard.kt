@@ -23,10 +23,4 @@ object Keyboard {
         imm.hideSoftInputFromWindow(focus.windowToken, 0)
         activity.currentFocus?.clearFocus()
     }
-
-    fun show(view: android.view.View) {
-        val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            ?: return
-        imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
-    }
 }
