@@ -19,7 +19,8 @@ class AssignmentListAdapter(
     private val onEdit: (AssignmentsItem) -> Unit,
     private val onDelete: (AssignmentsItem) -> Unit,
     private val onToggleDone: (AssignmentsItem) -> Unit,
-    private val onOpenChecklist: (AssignmentsItem) -> Unit
+    private val onOpenChecklist: (AssignmentsItem) -> Unit,
+    private val onOpenDecks: (AssignmentsItem) -> Unit
 ) : RecyclerView.Adapter<AssignmentListAdapter.Row>() {
 
     class Row(view: View) : RecyclerView.ViewHolder(view) {
@@ -28,6 +29,7 @@ class AssignmentListAdapter(
         val title: TextView = view.findViewById(R.id.assignmentTitleText)
         val due: TextView = view.findViewById(R.id.assignmentDueText)
         val doneBtn: MaterialButton = view.findViewById(R.id.doneBtn)
+        val checklistBtn: MaterialButton = view.findViewById(R.id.checklistBtn)
         val editBtn: MaterialButton = view.findViewById(R.id.editBtn)
         val deleteBtn: MaterialButton = view.findViewById(R.id.deleteBtn)
     }
@@ -83,12 +85,13 @@ class AssignmentListAdapter(
         }
 
         holder.doneBtn.setOnClickListener { onToggleDone(item) }
+        holder.checklistBtn.setOnClickListener { onOpenChecklist(item) }
         holder.editBtn.setOnClickListener { onEdit(item) }
         holder.deleteBtn.setOnClickListener { onDelete(item) }
 
-        // Tapping the row body (not the action buttons) opens the assignment's checklist.
-        holder.itemView.setOnClickListener { onOpenChecklist(item) }
-        holder.itemView.contentDescription = ctx.getString(R.string.cd_open_checklist, title)
+        // Tapping the row body opens the flashcard decks screen for this assignment.
+        holder.itemView.setOnClickListener { onOpenDecks(item) }
+        holder.itemView.contentDescription = "Open flashcard decks for $title"
     }
 
     override fun getItemCount(): Int = items.size

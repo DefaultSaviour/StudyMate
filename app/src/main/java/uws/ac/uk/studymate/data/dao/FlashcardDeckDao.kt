@@ -33,4 +33,30 @@ interface FlashcardDeckDao {
     @Transaction
     @Query("SELECT * FROM Flashcard_Decks WHERE user_id = :userId")
     suspend fun getDecksWithCards(userId: Int): List<DeckWithCards>
+
+    // Get the earliest due date for cards in each deck, grouped by deck and day.
+    // This gives us one review event per deck per day that it has cards due.
+    @Query(
+        """
+        SELECT d.id AS deckId, d.name AS deckName, a.id AS assignmentId, a.color AS assignmentColor, a.icon AS assignmentIcon, 
+               CASE WHEN c.due_at IS NULL OR c.due_at < :today THEN :today ELSE c.due_at END AS dueAt
+        FROM Flashcard_Decks d
+        JOIN Flash_Cards c ON d.id = c.deck_id
+        JOIN Assignments a ON d.assignment_id = a.id
+        WHERE d.user_id = :userId 
+          AND a.completed_at IS NULL
+          AND (a.due_date IS NULL OR a.due_date >= :today)
+        GROUP BY d.id, CASE WHEN c.due_at IS NULL OR c.due_at < :today THEN :today ELSE c.due_at END
+        """
+    )
+    suspend fun getDeckReviewDates(userId: Int, today: String): List<DeckReviewDate>
 }
+
+data class DeckReviewDate(
+    val deckId: Int,
+    val deckName: String,
+    val assignmentId: Int,
+    val assignmentColor: String?,
+    val assignmentIcon: String,
+    val dueAt: String
+)

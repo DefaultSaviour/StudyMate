@@ -3,6 +3,7 @@
 
 
     <string name="app_name">StudyMate</string>
+    <string name="widget_desc_2x3">StudyMate (2x3)</string>
     <string name="user_settings_button">User settings</string>
     <string name="welcome_back_placeholder">Welcome back</string>
     <string name="next_due_countdown_label">Next due countdown</string>

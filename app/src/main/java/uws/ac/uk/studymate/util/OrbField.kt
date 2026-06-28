@@ -49,6 +49,16 @@ object OrbField {
      */
     private const val ENABLED = true
 
+    private val activeAnimators = mutableListOf<ObjectAnimator>()
+
+    fun pause() {
+        activeAnimators.forEach { it.pause() }
+    }
+
+    fun resume() {
+        activeAnimators.forEach { it.resume() }
+    }
+
     /** Max orbs across the whole frame — keeps it calm on a wide tablet. */
     private const val BUDGET = 16
 
@@ -66,6 +76,9 @@ object OrbField {
      */
     fun scatter(card: View, avoid: List<View> = emptyList()) {
         if (!ENABLED) return
+        activeAnimators.forEach { it.cancel() }
+        activeAnimators.clear()
+
         card.doOnLayout { v ->
             // Defer out of the layout pass — adding views inside doOnLayout calls
             // requestLayout() mid-layout, which Android drops, leaving the orbs
@@ -252,17 +265,14 @@ object OrbField {
     /** The ambient, never-ending up/down drift, started after the entrance fade. */
     private fun startFloat(orb: View, amp: Float) {
         orb.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        ObjectAnimator.ofFloat(orb, View.TRANSLATION_Y, 0f, -amp).apply {
+        val anim = ObjectAnimator.ofFloat(orb, View.TRANSLATION_Y, 0f, -amp).apply {
             duration = (3900..9000).random().toLong()
-            // Desync via a random START DELAY + the duration variance above, NOT via
-            // currentPlayTime — jumping the play position would snap the orb to a
-            // mid-drift offset the instant the float starts (a visible "pop" right after
-            // the fade-in). Starting from translationY=0 (its rest spot) is seamless.
             startDelay = (0..2200).random().toLong()
             repeatMode = ObjectAnimator.REVERSE
             repeatCount = ObjectAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
             start()
         }
+        activeAnimators.add(anim)
     }
 }
