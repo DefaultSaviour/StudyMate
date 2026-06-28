@@ -89,6 +89,8 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var monthElems: List<Pair<View, Float>>
     private lateinit var dayElems: List<Pair<View, Float>>
 
+    private lateinit var gestureDetector: android.view.GestureDetector
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendar)
@@ -162,6 +164,36 @@ class CalendarActivity : AppCompatActivity() {
             renderMonth()
         }
         dayBackBtn.setOnClickListener { swapToPanel(Panel.MONTH) }
+
+        gestureDetector = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: android.view.MotionEvent?,
+                e2: android.view.MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffX > 0) {
+                            currentMonth = currentMonth.minusMonths(1)
+                            renderMonth()
+                            return true
+                        } else {
+                            currentMonth = currentMonth.plusMonths(1)
+                            renderMonth()
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+        })
 
         editPickTimeBtn.setOnClickListener {
             timePanelTime.hour = editTime?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 12
@@ -251,6 +283,13 @@ class CalendarActivity : AppCompatActivity() {
 
         vm.calendarSummary.observe(this) { summary -> applySummary(summary) }
         vm.sessionExpired.observe(this) { if (it) openLogin() }
+    }
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (currentPanel == Panel.MONTH) {
+            gestureDetector.onTouchEvent(ev)
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onResume() {

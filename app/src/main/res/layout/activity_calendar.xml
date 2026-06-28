@@ -178,13 +178,20 @@
                     android:textColor="@color/gold_light"
                     android:textSize="13sp" />
 
-                <LinearLayout
-                    android:id="@+id/dayPanelList"
+                <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_marginTop="14dp"
                     android:layout_weight="1"
-                    android:orientation="vertical" />
+                    android:fillViewport="true"
+                    android:overScrollMode="never">
+
+                    <LinearLayout
+                        android:id="@+id/dayPanelList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </ScrollView>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/dayBackBtn"

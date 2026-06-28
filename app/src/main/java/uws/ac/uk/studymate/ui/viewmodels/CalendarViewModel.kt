@@ -166,6 +166,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
             // periodically, but let's just let the Activity handle scheduling if we pass the CustomEvent.
             // Actually, we can just loadCalendar() and the activity can update UI.
             // Scheduling will happen in the ViewModel.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadCalendar() // Refresh UI
         }
     }
@@ -173,6 +174,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     fun updateCustomEvent(event: uws.ac.uk.studymate.data.entities.CustomEvent) {
         viewModelScope.launch {
             db.customEventDao().update(event)
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadCalendar()
         }
     }
@@ -180,6 +182,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     fun deleteCustomEvent(event: uws.ac.uk.studymate.data.entities.CustomEvent) {
         viewModelScope.launch {
             db.customEventDao().delete(event)
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadCalendar()
         }
     }
