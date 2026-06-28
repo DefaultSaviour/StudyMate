@@ -75,6 +75,9 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - [x] Polish "At a Glance" Statistics: Exclude completed items from the active count.
 - [x] Home screen Tall Calendar Widget (2x3) with updating logic upon database changes.
 - [x] Calendar Activity swipe gestures to change month.
+- [x] Performance: BaseCalendarWidgetProvider optimized from $O(N \times 7)$ to $O(N)$ with pre-grouped map lookups.
+- [x] Performance: CalendarActivity swipe gesture optimized to use static XML drawables instead of re-allocating GradientDrawables.
+- [x] Bugfix: Widget tap intent made state-aware to safely resume HomeActivity or cold-start LoginActivity, fixing the "blank window" bug.
 
 # Git Branching Rules
 - **CRITICAL**: Treat `AntiGravity` as the root/default branch for all work on this project.
