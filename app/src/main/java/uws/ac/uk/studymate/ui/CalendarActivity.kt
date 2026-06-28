@@ -453,16 +453,13 @@ class CalendarActivity : AppCompatActivity() {
                 val isDash = entry.type == EventType.DECK_REVIEW
                 val width = if (isDash) 12 else 8
                 val height = if (isDash) 4 else 8
-                val dot = View(this).apply {
+                val dot = ImageView(this).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         (width * density).toInt(), (height * density).toInt(),
                         Gravity.CENTER
                     )
-                    background = GradientDrawable().apply {
-                        shape = if (isDash) GradientDrawable.RECTANGLE else GradientDrawable.OVAL
-                        setColor(parseColor(entry.colorHex))
-                        if (isDash) cornerRadius = 2f * density
-                    }
+                    setImageResource(if (isDash) R.drawable.shape_indicator_dash else R.drawable.shape_indicator_dot)
+                    setColorFilter(parseColor(entry.colorHex))
                 }
                 val dotContainer = FrameLayout(this).apply {
                     layoutParams = LinearLayout.LayoutParams(

@@ -101,6 +101,16 @@ abstract class BaseCalendarWidgetProvider : AppWidgetProvider() {
         val startOfWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val dateFormatter = DateTimeFormatter.ofPattern("d")
         
+        val assignmentsByDate = assignments.groupBy { 
+            AssignmentDateTimeUtils.parseDueDate(it.dueDate)?.toLocalDate() 
+        }
+        val eventsByDate = customEvents.groupBy { 
+            try { LocalDate.parse(it.date) } catch(e: Exception) { null } 
+        }
+        val reviewsByDate = deckReviews.groupBy { 
+            try { LocalDate.parse(it.dueAt) } catch(e: Exception) { null } 
+        }
+
         fun bindDay(
             dayOffset: Long,
             labelId: Int,
@@ -125,18 +135,9 @@ abstract class BaseCalendarWidgetProvider : AppWidgetProvider() {
                 views.setInt(dateId, "setBackgroundResource", 0)
             }
 
-            val dayAssignments = assignments.filter { 
-                val dueAt = AssignmentDateTimeUtils.parseDueDate(it.dueDate)
-                dueAt != null && dueAt.toLocalDate() == date
-            }
-            val dayEvents = customEvents.filter {
-                val eventDate = try { LocalDate.parse(it.date) } catch(e: Exception) { null }
-                eventDate == date
-            }
-            val dayReviews = deckReviews.filter {
-                val reviewDate = try { LocalDate.parse(it.dueAt) } catch(e: Exception) { null }
-                reviewDate == date
-            }
+            val dayAssignments = assignmentsByDate[date].orEmpty()
+            val dayEvents = eventsByDate[date].orEmpty()
+            val dayReviews = reviewsByDate[date].orEmpty()
             
             val items = (dayAssignments.map { Triple(0, false, it.color) } + 
                          dayReviews.map { Triple(1, true, it.assignmentColor) } +
