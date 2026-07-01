@@ -270,7 +270,32 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Floating orbs are generated at runtime by OrbField (scaled to the wood
-         band above the card, clear of the settings button). -->
+         band above the card, clear of the settings + trophy buttons). -->
+
+    <!-- ===== TROPHY ROOM ICON — top-left, mirrors the settings icon (1.2) ===== -->
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/trophyRoomBtn"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@drawable/ic_trophy"
+        app:iconTint="@color/surface"
+        app:iconSize="26dp"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        android:backgroundTint="#59000000"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:cornerRadius="26dp"
+        app:rippleColor="#33D4BC7E"
+        android:contentDescription="@string/cd_trophy_room_button"
+        app:layout_constraintBottom_toTopOf="@id/homeCard"
+        app:layout_constraintStart_toStartOf="@id/homeCard"
+        android:layout_marginBottom="12dp"
+        android:layout_marginStart="16dp" />
 
     <!-- ===== SETTINGS ICON — top-right, floats over everything ===== -->
 

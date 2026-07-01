@@ -62,7 +62,6 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var checklistRecycler: RecyclerView
     private lateinit var checklistAddInput: TextInputEditText
     private lateinit var checklistAddBtn: MaterialButton
-    private lateinit var checklistBackBtn: MaterialButton
     private lateinit var taskAdapter: TaskListAdapter
     private var checklistAssignmentId: Int? = null
 
@@ -108,7 +107,6 @@ class AssignmentsActivity : AppCompatActivity() {
     private lateinit var timePanel: LinearLayout
     private lateinit var timePanelTime: TimePicker
     private lateinit var timeConfirmBtn: MaterialButton
-    private lateinit var timeBackBtn: MaterialButton
 
     private var colorChoices: List<ColorChoice> = emptyList()
 
@@ -212,7 +210,6 @@ class AssignmentsActivity : AppCompatActivity() {
         checklistRecycler = findViewById(R.id.checklistRecycler)
         checklistAddInput = findViewById(R.id.checklistAddInput)
         checklistAddBtn = findViewById(R.id.checklistAddBtn)
-        checklistBackBtn = findViewById(R.id.checklistBackBtn)
 
         recycler = findViewById(R.id.assignmentsRecycler)
         emptyText = findViewById(R.id.emptyStateText)
@@ -254,7 +251,6 @@ class AssignmentsActivity : AppCompatActivity() {
         timePanelTime = findViewById(R.id.timePanelTimePicker)
         timePanelTime.setIs24HourView(true)
         timeConfirmBtn = findViewById(R.id.timeConfirmBtn)
-        timeBackBtn = findViewById(R.id.timeBackBtn)
 
         listElems = listOf(
             findViewById<View>(R.id.listTitle)            to -1f,
@@ -303,16 +299,14 @@ class AssignmentsActivity : AppCompatActivity() {
         )
         timeElems = listOf(
             findViewById<View>(R.id.timeContent) to -1f,
-            timeConfirmBtn                        to  1f,
-            timeBackBtn                           to -1f
+            timeConfirmBtn                        to  1f
         )
         checklistElems = listOf(
             findViewById<View>(R.id.checklistHeaderRow) to -1f,
             checklistSubText                            to  1f,
             checklistRecycler                           to -1f,
             checklistEmptyText                          to  1f,
-            findViewById<View>(R.id.checklistAddRow)    to  1f,
-            checklistBackBtn                            to -1f
+            findViewById<View>(R.id.checklistAddRow)    to  1f
         )
     }
 
@@ -339,7 +333,11 @@ class AssignmentsActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { openHome() }
+        // Delegate to the panel-aware back handler (setupBackHandler) instead of
+        // jumping straight to Home — the top icon must always step back exactly one
+        // panel (e.g. TIME -> DATE), same as system back, never skip past unsaved
+        // form state.
+        findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         createAssignmentBtn.setOnClickListener {
             openAddPanel()
@@ -361,7 +359,6 @@ class AssignmentsActivity : AppCompatActivity() {
         dateCancelBtn.setOnClickListener { swapToPanel(duePickerOrigin) }
         dateNextBtn.setOnClickListener { swapToPanel(Panel.TIME) }
 
-        timeBackBtn.setOnClickListener { swapToPanel(Panel.DATE) }
         timeConfirmBtn.setOnClickListener {
             val picked = readDuePanels()
             when (duePickerOrigin) {
@@ -417,7 +414,6 @@ class AssignmentsActivity : AppCompatActivity() {
         editTitleInput.addTextChangedListener(simpleWatcher { updateEditIconEnabled() })
 
         // Checklist panel.
-        checklistBackBtn.setOnClickListener { swapToPanel(Panel.LIST) }
         checklistAddBtn.setOnClickListener { addCurrentTask() }
         checklistAddInput.setOnEditorActionListener { _, _, _ ->
             addCurrentTask()
@@ -596,7 +592,7 @@ class AssignmentsActivity : AppCompatActivity() {
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         cornerRadius = 12f * density
-                        setColor(Color.parseColor("#33000000"))
+                        setColor(Color.parseColor("#59000000"))
                         setStroke((1 * density).toInt(), Color.parseColor("#55C4A24A"))
                     }
                     isClickable = true

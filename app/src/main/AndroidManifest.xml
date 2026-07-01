@@ -73,6 +73,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.ExamActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.TrophyRoomActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.StatisticsActivity"
             android:exported="false" />
 

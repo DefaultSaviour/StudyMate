@@ -112,6 +112,46 @@ Streak: 0 day(s)</string>
     <string name="import_cards_csv_button">Import CSV</string>
     <string name="paste_cards_button">Paste cards</string>
 
+    <!-- Deck management + exam/sharing (1.2) -->
+    <string name="mock_exam_button">Mock Exam</string>
+    <string name="manage_deck_button">Manage deck</string>
+    <string name="export_share_deck_button">Export &amp; share deck</string>
+    <string name="share_deck_chooser_title">Share deck</string>
+    <string name="share_deck_subject">StudyMate deck: %1$s</string>
+    <string name="no_cards_to_share_message">Add some cards before sharing this deck</string>
+
+    <!-- Mock Exam Simulator (1.2) -->
+    <string name="exam_magnify_hint">Long-press an answer to read it full-size</string>
+    <string name="exam_next_button">Next question</string>
+    <string name="exam_not_enough_cards_message">Add a few more cards to this deck (at least %1$d) to unlock Mock Exam.</string>
+    <string name="exam_complete_title">Exam complete</string>
+    <string name="exam_retry_button">Retry</string>
+    <string name="exam_score_message">%1$d / %2$d correct — %3$d%%</string>
+    <string name="exam_progress_format">Question %1$d of %2$d</string>
+    <string name="exam_option_correct_prefix">✓ %1$s</string>
+    <string name="exam_option_wrong_prefix">✗ %1$s</string>
+    <string name="cd_exam_question">Question %1$d of %2$d: %3$s</string>
+    <string name="cd_exam_option">Answer option: %1$s</string>
+
+    <!-- Trophy Room (1.2) -->
+    <string name="trophy_room_title">Trophy Room</string>
+    <string name="trophy_room_subtitle">Milestones from your own study history</string>
+    <string name="cd_trophy_room_button">Trophy Room</string>
+    <string name="trophy_tier_none">Not started</string>
+    <string name="trophy_tier_bronze">Bronze</string>
+    <string name="trophy_tier_silver">Silver</string>
+    <string name="trophy_tier_gold">Gold</string>
+    <string name="trophy_tier_platinum">Platinum</string>
+    <string name="trophy_tier_diamond">Diamond</string>
+    <string name="trophy_progress_format">%1$d of %2$d to %3$s</string>
+    <string name="trophy_maxed_format">%1$d — Diamond, maxed</string>
+    <string name="cd_trophy_tile">%1$s, %2$s tier, %3$s</string>
+    <string name="trophy_about_label">ABOUT</string>
+    <string name="trophy_ranks_label">RANKS</string>
+    <string name="trophy_rank_requirement_format">%1$d needed</string>
+    <string name="trophy_rank_achieved">Achieved</string>
+    <string name="cd_trophy_rank_row">%1$s, %2$s, %3$s</string>
+
     <!-- Focus / Pomodoro timer (0.9G) -->
     <string name="focus_timer_button">Focus timer</string>
     <string name="focus_timer_title">Focus timer</string>

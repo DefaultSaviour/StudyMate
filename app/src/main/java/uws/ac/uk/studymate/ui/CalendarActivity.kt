@@ -54,7 +54,6 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var dayTitle: TextView
     private lateinit var daySubText: TextView
     private lateinit var dayList: LinearLayout
-    private lateinit var dayBackBtn: MaterialButton
 
     private var currentMonth: YearMonth = YearMonth.now()
     private var entriesByDate: Map<LocalDate, List<CalendarEvent>> = emptyMap()
@@ -107,7 +106,6 @@ class CalendarActivity : AppCompatActivity() {
         dayTitle = findViewById(R.id.dayPanelTitle)
         daySubText = findViewById(R.id.dayPanelSubText)
         dayList = findViewById(R.id.dayPanelList)
-        dayBackBtn = findViewById(R.id.dayBackBtn)
 
         editPanel = findViewById(R.id.editPanel)
         editTitleInput = findViewById(R.id.editTitleInput)
@@ -150,8 +148,7 @@ class CalendarActivity : AppCompatActivity() {
         dayElems = listOf(
             dayTitle    to -1f,
             daySubText  to  1f,
-            dayList     to -1f,
-            dayBackBtn  to  1f
+            dayList     to -1f
         )
 
         findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
@@ -163,7 +160,6 @@ class CalendarActivity : AppCompatActivity() {
             currentMonth = currentMonth.plusMonths(1)
             renderMonth()
         }
-        dayBackBtn.setOnClickListener { swapToPanel(Panel.MONTH) }
 
         gestureDetector = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
             private val SWIPE_THRESHOLD = 100

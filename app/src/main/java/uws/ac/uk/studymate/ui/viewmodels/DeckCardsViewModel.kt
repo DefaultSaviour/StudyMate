@@ -13,6 +13,7 @@ import uws.ac.uk.studymate.data.StudyMateDatabase
 import uws.ac.uk.studymate.data.entities.FlashCard
 import uws.ac.uk.studymate.data.repositories.CardRepo
 import uws.ac.uk.studymate.data.repositories.UserRepo
+import uws.ac.uk.studymate.util.CsvCardExporter
 import uws.ac.uk.studymate.util.CsvCardParser
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.TextSanitizer
@@ -41,6 +42,14 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _message = MutableLiveData<String?>()
     val message: LiveData<String?> = _message
+
+    // Fires once per export request: the CSV text to hand to the share sheet, or an
+    // empty string when the deck has no cards. The Activity clears it back to null
+    // via consumeExportedCsv() so a rotation doesn't re-fire the share intent.
+    private val _exportedCsv = MutableLiveData<String?>()
+    val exportedCsv: LiveData<String?> = _exportedCsv
+
+    fun consumeExportedCsv() { _exportedCsv.value = null }
 
     private var deckId: Int = -1
     private var deckName: String = "Deck"
@@ -209,6 +218,23 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
             _message.postValue("Card deleted")
             uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             reload()
+        }
+    }
+
+    // Build this deck's cards into shareable CSV text (1.2 peer deck sharing). Kept
+    // through the ViewModel — like every other DB read here — rather than having the
+    // Activity call CardRepo directly.
+    fun exportDeckCsv() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val session = sessionResolver.requireUser()
+            if (session == null) {
+                _sessionExpired.postValue(true)
+                return@launch
+            }
+            val cards = cardRepo.getCards(deckId)
+            // Empty string is the "nothing to share" sentinel — CsvCardExporter always
+            // emits at least the header row, so an empty deck's CSV is never blank.
+            _exportedCsv.postValue(if (cards.isEmpty()) "" else CsvCardExporter.toCsv(cards))
         }
     }
 

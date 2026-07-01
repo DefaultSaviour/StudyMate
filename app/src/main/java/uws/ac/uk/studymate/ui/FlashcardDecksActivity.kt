@@ -337,7 +337,7 @@ class FlashcardDecksActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(dot, dot)
                 background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(Color.parseColor("#33000000"))
+                    setColor(Color.parseColor("#59000000"))
                     setStroke((2 * density).toInt(), Color.parseColor("#66FAF8F5"))
                 }
                 addView(

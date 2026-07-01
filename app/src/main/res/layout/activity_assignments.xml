@@ -680,19 +680,6 @@
                     android:textColor="@color/navy"
                     android:backgroundTint="@color/gold" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/timeBackBtn"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="12dp"
-                    android:text="Back to date"
-                    android:textColor="@color/gold_light"
-                    android:textSize="15sp"
-                    app:strokeColor="@color/gold_light"
-                    app:strokeWidth="1.5dp" />
-
             </LinearLayout>
 
             <!-- ───────────── ICON PICKER PANEL ───────────── -->
@@ -888,17 +875,6 @@
                         android:contentDescription="@string/cd_add_task" />
 
                 </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/checklistBackBtn"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="10dp"
-                    android:text="Back"
-                    android:textColor="@color/gold_light"
-                    app:strokeColor="@color/gold_light"
-                    app:strokeWidth="1.5dp" />
 
             </LinearLayout>
 

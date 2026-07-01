@@ -22,6 +22,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -46,8 +47,8 @@ class DeckCardsActivity : AppCompatActivity() {
     private lateinit var emptyText: TextView
     private lateinit var addCardBtn: MaterialButton
     private lateinit var reviewBtn: MaterialButton
-    private lateinit var importCsvBtn: MaterialButton
-    private lateinit var pasteCardsBtn: MaterialButton
+    private lateinit var mockExamBtn: MaterialButton
+    private lateinit var manageDeckBtn: MaterialButton
 
     // SAF picker for CSV/TSV import; registered in onCreate.
     private lateinit var csvPickerLauncher: ActivityResultLauncher<Array<String>>
@@ -71,6 +72,12 @@ class DeckCardsActivity : AppCompatActivity() {
     private enum class Panel { LIST, ADD, EDIT }
     private var currentPanel = Panel.LIST
     private var isAnimating = false
+
+    companion object {
+        // Single source of truth for the exam gate — the generator defines the
+        // minimum, this button just mirrors it (keeps the two from drifting).
+        private const val MIN_CARDS_FOR_EXAM = uws.ac.uk.studymate.util.ExamGenerator.MIN_CARDS
+    }
 
     private lateinit var listElems: List<Pair<View, Float>>
     private lateinit var addElems: List<Pair<View, Float>>
@@ -117,6 +124,20 @@ class DeckCardsActivity : AppCompatActivity() {
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
             if (msg == "Card added" || msg == "Card updated") swapToPanel(Panel.LIST)
         }
+        vm.exportedCsv.observe(this) { csv ->
+            if (csv == null) return@observe
+            vm.consumeExportedCsv()
+            if (csv.isBlank()) {
+                Toast.makeText(this, R.string.no_cards_to_share_message, Toast.LENGTH_SHORT).show()
+                return@observe
+            }
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, csv)
+                putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_deck_subject, titleText.text))
+            }
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.share_deck_chooser_title)))
+        }
     }
 
     override fun onResume() {
@@ -136,8 +157,8 @@ class DeckCardsActivity : AppCompatActivity() {
         emptyText = findViewById(R.id.emptyStateText)
         addCardBtn = findViewById(R.id.addCardBtn)
         reviewBtn = findViewById(R.id.reviewBtn)
-        importCsvBtn = findViewById(R.id.importCsvBtn)
-        pasteCardsBtn = findViewById(R.id.pasteCardsBtn)
+        mockExamBtn = findViewById(R.id.mockExamBtn)
+        manageDeckBtn = findViewById(R.id.manageDeckBtn)
 
         addFront = findViewById(R.id.addFrontInput)
         addBack = findViewById(R.id.addBackInput)
@@ -187,23 +208,22 @@ class DeckCardsActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-        findViewById<MaterialButton>(R.id.backBtn).setOnClickListener { finish() }
+        // Delegate to the panel-aware back handler (setupBackHandler) instead of
+        // finishing outright — the top icon must always step back exactly one panel
+        // (ADD/EDIT -> LIST) before leaving the screen, same as system back.
+        findViewById<MaterialButton>(R.id.backBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         addCardBtn.setOnClickListener { openAddPanel() }
-        importCsvBtn.setOnClickListener {
-            csvPickerLauncher.launch(
-                arrayOf(
-                    "text/csv",
-                    "text/comma-separated-values",
-                    "text/tab-separated-values",
-                    "text/plain",
-                    "*/*"
-                )
-            )
-        }
-        pasteCardsBtn.setOnClickListener { importFromClipboard() }
+        manageDeckBtn.setOnClickListener { showManageDeckSheet() }
         reviewBtn.setOnClickListener {
             startActivity(
                 Intent().setClassName(packageName, "$packageName.ui.ReviewDeckActivity")
+                    .putExtra("deck_id", deckId)
+                    .putExtra("deck_name", titleText.text.toString())
+            )
+        }
+        mockExamBtn.setOnClickListener {
+            startActivity(
+                Intent().setClassName(packageName, "$packageName.ui.ExamActivity")
                     .putExtra("deck_id", deckId)
                     .putExtra("deck_name", titleText.text.toString())
             )
@@ -256,6 +276,12 @@ class DeckCardsActivity : AppCompatActivity() {
         // Gate Start review behind having at least one card.
         reviewBtn.isEnabled = !isEmpty
         reviewBtn.alpha = if (isEmpty) 0.45f else 1f
+
+        // Mock Exam needs enough cards to build 3-option multiple-choice questions
+        // (1 correct + 2 distractors from other cards in the deck).
+        val examReady = summary.cards.size >= MIN_CARDS_FOR_EXAM
+        mockExamBtn.isEnabled = examReady
+        mockExamBtn.alpha = if (examReady) 1f else 0.45f
     }
 
     private fun openAddPanel() {
@@ -345,6 +371,40 @@ class DeckCardsActivity : AppCompatActivity() {
         Panel.EDIT -> editElems
     }
 
+
+    // Rare/bulk deck actions live behind one button so the primary row (Start review /
+    // Mock Exam) stays uncluttered (1.2). Dark-themed via Theme_StudyMate_BottomSheet —
+    // same colorSurface*/elevationOverlayEnabled fix as the alert dialogs.
+    private fun showManageDeckSheet() {
+        val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_manage_deck, null)
+        val dialog = BottomSheetDialog(this, R.style.Theme_StudyMate_BottomSheet)
+        dialog.setContentView(sheetView)
+
+        sheetView.findViewById<View>(R.id.sheetImportCsvRow).setOnClickListener {
+            dialog.dismiss()
+            csvPickerLauncher.launch(
+                arrayOf(
+                    "text/csv",
+                    "text/comma-separated-values",
+                    "text/tab-separated-values",
+                    "text/plain",
+                    "*/*"
+                )
+            )
+        }
+        sheetView.findViewById<View>(R.id.sheetPasteCardsRow).setOnClickListener {
+            dialog.dismiss()
+            importFromClipboard()
+        }
+        sheetView.findViewById<View>(R.id.sheetExportShareRow).setOnClickListener {
+            dialog.dismiss()
+            // Builds the deck's CSV; the exportedCsv observer fires the share intent —
+            // plain text the recipient's own "Paste cards" button consumes (1.2).
+            vm.exportDeckCsv()
+        }
+
+        dialog.show()
+    }
 
     // Read the clipboard and import its text as cards (e.g. Quizlet's "Copy text").
     private fun importFromClipboard() {

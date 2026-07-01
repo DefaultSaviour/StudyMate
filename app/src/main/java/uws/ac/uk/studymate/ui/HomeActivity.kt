@@ -73,6 +73,7 @@ class HomeActivity : AppCompatActivity() {
 
         // Get the views used on this screen.
         val userSettingsBtn = findViewById<Button>(R.id.userSettingsBtn)
+        val trophyRoomBtn = findViewById<Button>(R.id.trophyRoomBtn)
         val nextDueCountdownText = findViewById<TextView>(R.id.nextDueCountdownText)
         val nextDueDetailsText = findViewById<TextView>(R.id.nextDueDetailsText)
         val assignmentsBtn = findViewById<Button>(R.id.assignmentsBtn)
@@ -143,6 +144,11 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.UserSettingsActivity"))
         }
 
+        // Open the Trophy Room (1.2) — top-left, mirroring the settings icon.
+        trophyRoomBtn.setOnClickListener {
+            startActivity(Intent().setClassName(packageName, "$packageName.ui.TrophyRoomActivity"))
+        }
+
         // Open the assignments screen because assignment items now live there.
         assignmentsBtn.setOnClickListener {
             startActivity(Intent().setClassName(packageName, "$packageName.ui.AssignmentsActivity"))
@@ -192,7 +198,7 @@ class HomeActivity : AppCompatActivity() {
         // the available space, avoids the settings button, never under the card).
         uws.ac.uk.studymate.util.OrbField.scatter(
             findViewById(R.id.homeCard),
-            listOf(findViewById(R.id.userSettingsBtn))
+            listOf(findViewById(R.id.userSettingsBtn), findViewById(R.id.trophyRoomBtn))
         )
 
         // Entrance animation: card slides up then content staggers in. Centralised in

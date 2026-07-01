@@ -125,6 +125,27 @@
         <item name="android:textStyle">bold</item>
     </style>
 
+    <!-- Manage-deck bottom sheet (1.2), same dark-panel fix as Theme.StudyMate.AlertDialog:
+         BottomSheetDialog also paints from the colorSurfaceContainer* family, not
+         windowBackground, so the same solid navy_mid + elevationOverlayEnabled=false
+         override is required or it regresses into the same light panel that AlertDialog
+         hit before its 0.9D fix. -->
+    <style name="Theme.StudyMate.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="android:colorBackground">@color/navy_mid</item>
+        <item name="colorSurface">@color/navy_mid</item>
+        <item name="colorSurfaceContainer">@color/navy_mid</item>
+        <item name="colorSurfaceContainerLow">@color/navy_mid</item>
+        <item name="colorSurfaceContainerLowest">@color/navy_mid</item>
+        <item name="colorSurfaceContainerHigh">@color/navy_mid</item>
+        <item name="colorSurfaceContainerHighest">@color/navy_mid</item>
+        <item name="elevationOverlayEnabled">false</item>
+        <item name="bottomSheetStyle">@style/StudyMate.BottomSheet.Modal</item>
+    </style>
+
+    <style name="StudyMate.BottomSheet.Modal" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="android:background">@drawable/bg_dialog_dark</item>
+    </style>
+
     <style name="StudyMate.AlertDialog.NegativeButton" parent="Widget.Material3.Button.TextButton.Dialog">
         <item name="android:textColor">@color/gold_light</item>
     </style>

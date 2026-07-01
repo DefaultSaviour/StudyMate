@@ -54,4 +54,29 @@ class FocusSessionDaoTest : RoomDbTestBase() {
         )
         assertEquals(1000, db.focusSessionDao().sumFocusedSecondsSince(userA, "2026-06-01T00:00:00Z"))
     }
+
+    // countAll (1.2) — the lifetime session count that feeds the "Sprinter" trophy.
+    @Test
+    fun countAll_countsEverySessionRegardlessOfDate() = runBlocking {
+        val userId = insertUser()
+        repeat(3) {
+            db.focusSessionDao().insert(
+                FocusSession(userId = userId, assignmentId = null, focusedSeconds = 300, endedAt = "2020-01-0${it + 1}T09:00:00Z")
+            )
+        }
+        assertEquals(3, db.focusSessionDao().countAll(userId))
+    }
+
+    @Test
+    fun countAll_isZeroWhenNoRowsAndScopedPerUser() = runBlocking {
+        val userA = insertUser(name = "A")
+        val userB = insertUser(name = "B")
+        assertEquals(0, db.focusSessionDao().countAll(userA))
+
+        db.focusSessionDao().insert(
+            FocusSession(userId = userB, assignmentId = null, focusedSeconds = 100, endedAt = "2026-06-22T09:00:00Z")
+        )
+        assertEquals(0, db.focusSessionDao().countAll(userA))
+        assertEquals(1, db.focusSessionDao().countAll(userB))
+    }
 }
