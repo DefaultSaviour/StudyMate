@@ -100,11 +100,17 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `ui/FocusTimerActivity.kt` + `ui/viewmodels/FocusTimerViewModel.kt` | Wood-glass focus-timer screen + its VM (timestamp-based countdown, survives rotation / leave-return via SharedPreferences). Reached from the Home "Focus timer" button. See "Focus / Pomodoro timer" |
 | `widget/TallCalendarWidgetProvider.kt` + `widget/BaseCalendarWidgetProvider.kt` | The 2×3 home-screen widget (week grid + next assignment + flashcards due today). `Base…` does the actual `RemoteViews` binding so a future second size/variant can subclass it. See "Home-screen widget" |
 | `widget/WidgetUpdater.kt` | `updateAllWidgets(context)` — the single call every DB-mutating ViewModel makes to refresh the widget. Debounced (400ms) and never throws into the caller (1.1). See "Home-screen widget" |
+| `util/ExamGenerator.kt` | Pure Kotlin question-builder for the Mock Exam Simulator (1.2): turns a deck's cards into 3-option multiple-choice questions (1 correct + 2 distractors from the same deck). Never touches SM-2/`Review_Logs`. Unit-tested. See "Mock Exam Simulator" |
+| `util/CsvCardExporter.kt` | The inverse of `util/CsvCardParser.kt` — serialises a deck's cards back to the same CSV shape the parser reads, for peer deck sharing (1.2). Unit-tested (round-trips through `CsvCardParser`). See "Peer deck sharing" |
+| `util/TrophyProgress.kt` | Pure Kotlin tier math (Bronze..Diamond) for the Trophy Room (1.2) — `ROSTER` holds the 3 shipped trophy definitions and their thresholds; `tierFor`/`progressToNext` are the only logic. Unit-tested. See "Trophy Room" |
+| `util/StreakCalculator.kt` | The study-streak algorithm, extracted from `StatisticsViewModel` in 1.2 so `TrophyRoomViewModel` computes the same number the same way rather than duplicating it. Unit-tested |
+| `ui/ExamActivity.kt` + `ui/viewmodels/ExamViewModel.kt` | Mock Exam screen (1.2) — reached from the Deck screen's "Mock Exam" button (gated on ≥8 cards). See "Mock Exam Simulator" |
+| `ui/TrophyRoomActivity.kt` + `ui/viewmodels/TrophyRoomViewModel.kt` | Trophy Room screen (1.2) — reached from a new top-left Home icon (mirrors the top-right settings icon). See "Trophy Room" |
 
 ## Database Conventions
 
-- Database version is **12**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
-- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only), `10→11` (**merge Subject into Assignment** — **DESTRUCTIVE for the study tree**: drops `Subjects` + `Subject_Progress`, rebuilds `Assignments` with its own `color` and no `subject_id`, rebuilds `Flashcard_Decks` keyed by `assignment_id`; clears `Flash_Cards`/`Review_Logs`. `User`/settings/stats are kept. No row-by-row mapping was sensible — a subject had no due date, and decks could belong to a subject spanning several assignments — so the tree is wiped and rebuilt, agreed with the user pre-1.0), `11→12` (**checklists + focus logging**, 0.9J — purely additive: creates `Assignment_Tasks` (per-assignment checklist items) and `Focus_Sessions` (logged focus-timer blocks); existing rows untouched).
+- Database version is **14**. Any schema change requires a new `Migration` object, adding it to the `MIGRATIONS` array, and a bump to the version constant in `StudyMateDatabase`.
+- Migration history: `4→5`, `5→6` (earlier schema), `6→7` (wipe `User`), `7→8` (multi-user / one-bio model — drops the email unique index, adds the `auth_mode` column defaulting to `password`, adds a unique index on `name`; wipes `User` first to avoid name collisions), `8→9` (spaced repetition — adds SM-2 columns `ease_factor`/`interval_days`/`repetitions`/`due_at`/`last_reviewed_at` to `Flash_Cards`, `completed_at` to `Assignments`, and creates the `Review_Logs` table; additive only, existing rows preserved), `9→10` (auto-login — adds `auto_login_enabled` to `User`, `NOT NULL DEFAULT 1` so existing/new accounts default to on; additive only), `10→11` (**merge Subject into Assignment** — **DESTRUCTIVE for the study tree**: drops `Subjects` + `Subject_Progress`, rebuilds `Assignments` with its own `color` and no `subject_id`, rebuilds `Flashcard_Decks` keyed by `assignment_id`; clears `Flash_Cards`/`Review_Logs`. `User`/settings/stats are kept. No row-by-row mapping was sensible — a subject had no due date, and decks could belong to a subject spanning several assignments — so the tree is wiped and rebuilt, agreed with the user pre-1.0), `11→12` (**checklists + focus logging**, 0.9J — purely additive: creates `Assignment_Tasks` (per-assignment checklist items) and `Focus_Sessions` (logged focus-timer blocks); existing rows untouched), `12→13` (creates the `Custom_Events` table — user-created calendar entries; additive only), `13→14` (adds `time` and `remind_day_before` columns to `Custom_Events`; additive only). **1.2 (Exam Simulator / Trophy Room / peer deck sharing) shipped with no migration at all** — every new value is computed live from tables that already exist (see "Mock Exam Simulator" and "Trophy Room" below).
 - The `User` table's user-facing identifier is **`name`** (unique). `email` is now an internal placeholder, not user-visible. `auth_mode` is `password` or `biometric_only`.
 - Foreign keys use `CASCADE` delete — deleting a `User` removes all their assignments, decks, cards, etc.; deleting an `Assignment` removes its decks (and their cards).
 - DAOs use `LOWER()` for case-insensitive lookups.
@@ -399,6 +405,161 @@ source of truth if it drifts.
   the repo layer — e.g. it's plumbed into the assignment/focus-timer checklist
   mutators but nothing currently *requires* a new mutation to remember it.
 
+## Mock Exam Simulator (1.2)
+
+Flashcards are strictly SM-2 spaced repetition (self-graded). The Exam Simulator adds
+an actively-testable, multiple-choice mode for cramming/assessment — deliberately
+**separate** from spaced repetition, not a replacement for it.
+
+- **Entry point:** a **"Mock Exam"** button on the deck screen (`activity_deck_cards.xml`,
+  `mockExamBtn`), enabled only when the deck has **≥8 cards** (`ExamGenerator.MIN_CARDS`)
+  — a question needs the correct card plus 2 distractors, and 8 gives enough pool depth
+  to avoid always drawing the same distractors. Gated with the same `isEnabled` +
+  `alpha = 0.45f` pattern `reviewBtn` already used for its empty-deck case.
+- **Question generation (`util/ExamGenerator.kt`, pure Kotlin, unit-tested):** the
+  card's `front` is the prompt; the correct answer is its `back`; 2 distractors are
+  other cards' `back` text from the same deck, drawn from a pool filtered to exclude
+  text matching the correct answer (so two options never look "correct") — falling
+  back to any other card if a deck is degenerate enough that filter leaves fewer than
+  2 candidates. All 3 options are shuffled. Sessions cap at **30 questions**
+  (`DEFAULT_MAX_QUESTIONS`), shuffled from the deck when it has more than 30 cards.
+- **No SM-2 interference:** `ExamViewModel` never calls `CardRepo.reviewCard` — an
+  exam can't reschedule a card's due date or write a `Review_Logs` row. It re-checks
+  the ≥8-card minimum itself when the screen loads (the same "worker re-verifies at
+  fire time" defensive habit as `AssignmentReminderWorker`/`ReviewReminderWorker` —
+  the deck could have lost cards between the button being enabled and this screen
+  loading).
+- **`ui/ExamActivity.kt`:** loaded once from `onCreate` (not `onResume`), same
+  reasoning as `ReviewDeckActivity` — an in-progress session must survive a magnify
+  dialog or a rotation. States: `Loading` / `Empty` (not enough cards) / `Question`
+  (per-answer reveal: chosen-wrong tints `error_text`, the actual correct option
+  always tints `success_text` so the right answer is visible either way — labelled
+  with a `✓`/`✗` prefix, **not colour alone**, per the accessibility conventions) /
+  `Done` (score + percentage, "Retry" reshuffles a fresh question set, "Back to deck").
+  Long-pressing an answer opens a themed `MaterialAlertDialogBuilder` with the full
+  text — flashcard text can be long, and options are capped to `maxLines=3` in the
+  button itself.
+
+## Peer deck sharing (1.2)
+
+Send a deck's cards to someone else's device — **no server, no account linking**,
+just a CSV round-trip through whatever share target the OS offers (Messages, email,
+etc.).
+
+- **Export (`util/CsvCardExporter.kt`):** the inverse of `util/CsvCardParser.kt` —
+  serialises a deck's cards back into the exact same `front,back` CSV shape the
+  parser already reads (RFC-4180-ish quoting reused), unit-tested by round-tripping
+  through `CsvCardParser` itself.
+- **Share mechanism:** deliberately **plain text**, not a file — `DeckCardsViewModel.exportDeckCsv()`
+  builds the CSV, the Activity fires `Intent.ACTION_SEND` with `type = "text/plain"`
+  and the CSV in `EXTRA_TEXT`. No `FileProvider`, no `res/xml/file_paths.xml`, no new
+  manifest `<provider>` — the recipient's own **"Paste cards"** button (0.9F) consumes
+  the shared text directly, so sharing and importing use the exact same code path on
+  both ends. An empty deck shows a toast instead of sharing an empty CSV.
+- **Entry point:** the "Export & share deck" row inside the deck screen's **Manage
+  deck** bottom sheet (see "Deck detail + manage cards" in the screen checklist).
+
+## Trophy Room (1.2)
+
+A gamification screen — **nine trophies**, each with 5 tiers (Bronze → Silver → Gold →
+Platinum → Diamond) — reached from a new **top-left** icon on Home (`trophyRoomBtn`,
+mirrors the top-right settings icon; both anchor to `homeCard`'s corners). Redesigned
+once after an initial 3-trophy single-column pass read as too plain and too sparse —
+Jamie's feedback was: match the app's actual wood-glass style (not a full-bleed dark
+box), keep unearned trophies **visible but greyed out** rather than hiding them, and
+ship "a bunch" of them, not just three.
+
+- **Compute, don't store.** Every trophy value reads from tables that already exist —
+  no new table, no migration, and only **one** new DAO method total
+  (`FocusSessionDao.countAll`). `util/TrophyProgress.kt` (pure Kotlin, unit-tested)
+  holds the 9 shipped trophy definitions (`ROSTER`) and their thresholds, plus
+  `tierFor`/`progressToNext`. `TrophyRoomViewModel` supplies the live numbers, reusing
+  an existing query wherever one already gave the right number rather than adding new
+  ones:
+  - **The Architect** (cards authored) — `FlashCardDao.countAll`. 8/16/32/64/128.
+  - **The Sprinter** (focus sessions) — `FocusSessionDao.countAll` (the one new query
+    — counts every `Focus_Sessions` row for the user, unlike `sumFocusedSecondsSince`
+    which only sums a time window). 1/5/25/50/100.
+  - **The Unbroken** (study streak) — `util/StreakCalculator.kt`, the streak algorithm
+    **extracted from `StatisticsViewModel`** in this milestone so Statistics and the
+    Trophy Room can never disagree about the current streak. 3/7/14/30/100.
+  - **The Scholar** (assignments completed) — `AssignmentDao.getAssignments` filtered
+    by the same `AssignmentDateTimeUtils.isComplete` rule used everywhere else. 3/7/15/30/60.
+  - **The Reviewer** (flashcards reviewed) — the `.size` of the same review-timestamp
+    list already fetched for the streak calculation. 50/200/500/1500/5000.
+  - **The Marathoner** (hours focused, lifetime) — `sumFocusedSecondsSince` called with
+    an epoch (`1970-01-01T00:00:00Z`) cutoff rather than a new "sum all" query. 5/20/50/100/250.
+  - **The Collector** (decks created) — `.size` of `FlashcardDeckDao.getDecks`. 3/6/12/24/50.
+  - **The Organizer** (checklist items completed) — sum of `done` across
+    `AssignmentTaskDao.progressForUser` (the same per-assignment counts the Assignments
+    list already shows). 5/15/40/100/250.
+  - **The Ace** (cards mastered) — `FlashCardDao.countMature` (same "mature" definition
+    Statistics uses: `interval_days >= SpacedRepetition.MATURE_INTERVAL_DAYS`). 5/15/40/100/250.
+  - "Cards authored", "streak", and "assignments completed" are **live snapshots** —
+    deleting cards, breaking a streak, or un-completing an assignment can lower the tier
+    shown. This is an intentional trade-off (trophies reflect current state, not a
+    permanently-locked achievement), not a gap.
+- **`ui/TrophyRoomActivity.kt`:** a two-panel **panel-swap** screen (`activity_trophy_room.xml`
+  — `gridPanel` ⇄ `detailPanel` inside a `FrameLayout`, same slide choreography as
+  `DeckCardsActivity`/`AssignmentsActivity`: staggered element exit/entry,
+  `AccelerateInterpolator(1.3f)`/`DecelerateInterpolator(1.3f)`, system back and the
+  top-right icon both route through the same `handleBack()`), styled to reuse the
+  app's own idioms rather than a generic gamification look (an earlier pass with
+  circular medal rings + progress bars read as "belongs in another app" — neither
+  shape exists anywhere else in StudyMate, so both were dropped):
+  - **Grid panel** — a **2-column grid of centred tiles**, built programmatically from
+    the ViewModel's summary (paired into rows of 2, same "build views from a summary
+    object" spirit as `StatisticsActivity`'s stat rows, just grid-shaped instead of a
+    single column). Icon, name, tier pill, and progress text are all centred within
+    the tile.
+  - **Icon badge** — a distinct **per-category icon** (`ic_cards`/`ic_bolt`/`ic_flame`/
+    `ic_school`/`ic_open_book`/`ic_clock`/`ic_folders`/`ic_checklist`/`ic_crown` — one
+    trophy no longer looks like another) sits on `@drawable/bg_icon_badge`, **filled
+    solid with the current rank's colour** at runtime
+    (`(badge.background as GradientDrawable).setColor(...)`) — the exact same
+    rounded-rect tinted-badge treatment the assignment icons already use, not an
+    invented circle. `buildIconBadge(...)` is shared by the grid tile, the detail
+    header, and each rank row, so the same trophy always renders the same badge shape
+    at three different sizes.
+  - **Tier label** — a small pill using `@drawable/bg_text_pill_subtle`, the same pill
+    already used for the deck "N due" badge and every other short status label.
+  - **Progress** — plain text ("40 of 64 to Platinum" / "142 — Diamond, maxed"),
+    matching the checklist's existing "N of M done" phrasing. No bar graphic — no
+    screen in the app uses one, so this doesn't add a first.
+  - Every tile and rank row sits on `@drawable/bg_trophy_tile` — 35% black fill
+    (`#59000000`, the same tone as the Home dashboard's outlined nav buttons) with
+    the same 1dp gold stroke and 12dp corners as `bg_subject_row`. Deliberately
+    darker than the standard 20%-black `bg_subject_row` mini-glass-card treatment
+    used elsewhere (task rows, the deck list) — Jamie wanted the trophy tiles to
+    read as solidly as the Home screen's own chrome.
+  - Tier colours: `trophy_bronze`/`trophy_silver`/`trophy_gold_tier`/`trophy_platinum`/
+    `trophy_diamond`/`trophy_locked` in `colors.xml` (`trophy_gold_tier` is deliberately
+    a different shade from the app's brand `gold` so "you earned Gold" doesn't just
+    read as the app's usual accent colour).
+  - **Locked trophies stay visible, not hidden** — the whole tile drops to `alpha = 0.55f`
+    (the same value `DeckListAdapter` already uses for completed decks), showing its
+    icon, name, and progress toward Bronze in the locked grey. Nothing in the room is
+    ever hidden; everything the user could earn is always in view.
+  - **Detail panel** — tapping a tile panel-swaps (not a dialog) to a screen showing
+    the trophy's large icon badge + name, an **"ABOUT" section with a real one-to-two
+    sentence description** of what the trophy tracks and how tiers can drop back down
+    (`TrophyDefinition.description` — this used to be a terse metric label like
+    "Flashcards authored" that didn't actually explain anything; rewritten in cream
+    body text under its own pill label so it's unmistakably present, not just a repeat
+    of the name), and a **"RANKS" list of all 5 tiers** (`buildRankRow`): each row
+    shows that tier's badge, name, and either "Achieved" or "N needed"
+    (`ic_check_circle` tinted `success_text` vs `ic_circle_outline` tinted
+    `gold_light`, plus the row itself dims to `alpha = 0.6f` when not yet reached) —
+    so a trophy's whole ladder, not just the current tier, is visible at a glance.
+    "Back to trophies" (button or system back) slides back to the grid.
+- **Card still respects the wood-glass template** — `activity_trophy_room.xml` uses the
+  same `bgImage`/`bg_wood_overlay`/`headerGuide` (0.16)/capped-card structure as every
+  other screen; the glass card does **not** cover the full screen, so the wood band and
+  orbs are visible above it like everywhere else.
+- **Placeholder background:** reuses `bg_dashboard.jpg` (Jamie will supply a dedicated
+  `bg_trophy.jpg` later — remember to downsize it to ~1600px before adding it to
+  `res/drawable/`, per the 1.1 perf fix).
+
 ## First-run onboarding (0.9E)
 
 A brand-new account no longer lands on an empty Home. On account creation the app
@@ -628,6 +789,29 @@ space-appropriate scatter:
 - For nested sub-panels (e.g. ADD → ICON, ADD → DATE → TIME in Assignments), track which panel the user came from (`iconPickerOrigin`, `duePickerOrigin`). Cancel and system back return to that origin. Treat any "deeper" move as forward; anything that unwinds is backward. The Assignments flow is the reference: LIST → ADD/EDIT → ICON; ADD/EDIT → DATE → TIME → ADD/EDIT (forward chain), with system back unwinding TIME → DATE → form → list.
 - Always call `message.visibility = View.GONE` on the outgoing panel's error TextView before animating so stale error text doesn't bleed through.
 - After the swap, **reset each outgoing element's `translationX` to `0f`** once it's hidden. Otherwise the next swap pre-snaps relative to a stale offset and the dance breaks.
+
+### One back button per screen
+The top icon (back arrow / home icon, outside the card, top-right) is the **only**
+back-navigation control on a screen — no separate "Back to X" button anywhere else on
+that screen, including inside sub-panels. It must always step back **exactly one
+panel** (never jump straight to the dashboard from a nested panel), by delegating to
+the same panel-aware logic the system back gesture already uses:
+```kotlin
+findViewById<MaterialButton>(R.id.homeBtn).setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+```
+— not a hardcoded `finish()` / `openHome()`. `CalendarActivity` and
+`FlashcardDecksActivity` were always wired this way; `AssignmentsActivity` and
+`DeckCardsActivity` were fixed to match in 1.2 (both previously skipped straight past
+an in-progress ADD/EDIT/DATE/TIME panel to the screen below when the top icon was
+tapped, even though system back correctly unwound one panel at a time — a real
+inconsistency, not just a cosmetic one). Per-panel "Back to date" / "Back to month" /
+"Back to trophies" style buttons (`AssignmentsActivity`'s old `timeBackBtn`/
+`checklistBackBtn`, `CalendarActivity`'s old `dayBackBtn`, `TrophyRoomActivity`'s old
+`detailBackBtn`, `ExamActivity`'s old `examEmptyBackBtn`/`examDoneBackBtn`) were
+removed as pure duplicates of the top icon once it was fixed/confirmed to already do
+the same thing. This does **not** apply to `Cancel` buttons on add/edit forms
+(`addCancelBtn`/`editCancelBtn`/`dateCancelBtn` etc.) — those discard an in-progress
+edit, a different action from navigation, and stay.
 
 ### Embedded date / time pickers (no dialogs)
 Use a `DatePicker` and `TimePicker` as inline panels, not as `DatePickerDialog` / `TimePickerDialog`. Reasons: the dialog scrim showed the form underneath through it, which looked cheap; and the dialog buttons clashed with the panel-swap flow.
@@ -902,7 +1086,8 @@ The login screen is the established reference. Every other screen should be brou
   - **Scoped entry (0.9C):** opening this screen with intent extras `scoped_assignment_id` / `scoped_assignment_name` (from a calendar day row) filters the list to that one assignment via `loadScreen(filterAssignmentId)`, retitles the header, and pre-picks that assignment when creating a deck.
 - [x] **Flashcard study / flip view** — `ReviewDeckActivity` (backed by `ReviewDeckViewModel`) runs an **SM-2 review session**: walks the deck's *due* cards one at a time, "Show answer" flips to the back, then **three grade buttons — Again / Wrong / Correct**. **Correct** schedules the card further out (SM-2 Good) and it leaves the session. **Wrong** also **leaves the session** (you've graded it; it won't reappear this session) but is a lapse for the schedule — reset, due again tomorrow. **Again** is the same lapse scheduling as Wrong but re-shows the card immediately (front of the queue) for another go right now. (0.9C changed Wrong from "re-show later this session" to "leave now"; only Again re-queues.) Both Wrong and Correct count toward the session's reviewed total; the session runs on an `ArrayDeque`. Each grade writes a `Review_Logs` row via `CardRepo.reviewCard`. "All caught up" state when nothing is due, with a "Review all cards anyway" fallback. (Replaced the old Prev/Next browse flow.)
   - **Completed/finished decks are read-only practice (0.9I).** If the deck's assignment is complete (marked done **or** past-due — `AssignmentDateTimeUtils.isComplete`), `ReviewDeckViewModel` caches `currentDeckCompleted` when the queue loads and **skips `CardRepo.reviewCard` entirely** on every grade — no SM-2 reschedule, no `Review_Logs` row. The session still flips/advances so the deck stays usable for revision, but grading "Wrong" can't pull a finished deck's cards back into rotation. (Deck → assignment is resolved via the new `FlashcardDeckDao.getDeck(deckId)` → `AssignmentDao.getById`.) This complements 0.9C, which already excluded finished decks from the *automatic* review surfaces.
-- [x] **Deck detail + manage cards** — consolidated 7 old activities (`DeckOptions`, `AlterDeck`, `AddCard`, `EditCard`, `ModifyCards`, `RemoveCards`, `ReviewDeck`) into 3: `DeckDetailActivity` (Review + Manage Cards), `DeckCardsActivity` (RecyclerView of cards with inline add/edit panel-swap), `ReviewDeckActivity` (restyled). Delete-deck stays on the main Flashcards list only.
+- [x] **Deck detail + manage cards** — consolidated 7 old activities (`DeckOptions`, `AlterDeck`, `AddCard`, `EditCard`, `ModifyCards`, `RemoveCards`, `ReviewDeck`) down to 2: `DeckCardsActivity` (RecyclerView of cards with inline add/edit panel-swap; also the deck's "detail" screen — there is no separate `DeckDetailActivity`) and `ReviewDeckActivity` (restyled). Delete-deck stays on the main Flashcards list only.
+  - **Button layout (1.2):** the deck screen shows exactly 4 buttons in a 2×2 grid — Row 1 is **Start review** + **Mock Exam** (gated `isEnabled` on ≥8 cards, same disabled-alpha pattern as Start review's empty-deck gating); Row 2 is **Add card** + **Manage deck**. "Manage deck" opens a `BottomSheetDialog` (`bottom_sheet_manage_deck.xml`, `Theme.StudyMate.BottomSheet`) holding the rarer actions — **Import CSV**, **Paste cards** (both pre-1.2, unchanged logic, just relocated) and **Export & share deck** (new). This keeps the visible row count at 4 despite adding two new features. See "Mock Exam Simulator" and "Peer deck sharing".
 - [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), and assignment completed/pending/due-this-week. (The per-subject breakdown was **dropped at v11** — there are no subjects to group by any more.) Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
   - **No "overdue" concept (centralised in 0.9I).** An assignment counts as **complete** when `completedAt != null` **OR its due date has passed**. This single rule lives in **`AssignmentDateTimeUtils.isComplete(completedAt, dueDate, now)`** and is reused by `StatisticsViewModel`, `AssignmentsViewModel`, `HomeViewModel`, `ReviewDeckViewModel`, and `BaseCalendarWidgetProvider` (widget's "Next Assignment") — do not re-inline it. A passed deadline is treated as **done**, not overdue: there is no overdue row/state/wording anywhere. Consequences enforced in 0.9I: the **Assignments list shows past-due items as completed** (dimmed + struck-through, still **deletable**) rather than hiding them (`AssignmentsViewModel.buildAssignmentItems` no longer filters out `dueAt < now`); the **dashboard** "next due" only ever shows an *upcoming, not-yet-complete* assignment and never says "Overdue" (`HomeViewModel.findNextDueAssignment` / `buildCountdownText`). "Completed this week" covers both manual completion (within 7d of `completedAt`) and auto-completion (due date within the last 7d).
 - [x] **Calendar** — wood bg, glass card with month grid + day-detail panel-swaps (Month ⇄ Day ⇄ Edit ⇄ Time); always 6-row grid (consistent height). Days with events show vertically stacked, coloured markers (up to 3) plus a "+N" count if more. Tapping a day swaps to the day list. Day rows for assignments are tappable → open that assignment's decks (`FlashcardDecksActivity` in scoped mode). Custom events can be added, edited (with a dedicated inline `TimePicker` panel), and deleted directly on the Calendar.
@@ -967,7 +1152,8 @@ one API level). Known gaps to close before widening the audience:
   flashcards due today). See "Home-screen widget (tall calendar)".
 - **Flashcard import — CSV/TSV shipped in 0.9F** (per-deck "Import cards from CSV";
   Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). CSV *export* /
-  per-deck Share was considered and **dropped** (low expected use, decided with Jamie).
+  per-deck Share was reconsidered and **shipped in 1.2** as peer deck sharing (plain-text
+  share, consumed by the recipient's own "Paste cards" button) — see "Peer deck sharing".
 - **Tablet / large-screen layouts — basic support shipped in 0.8.5** (centred
   column on full-bleed wood). A future pass could go further: true multi-pane
   layouts that *use* the extra width (e.g. list + detail) rather than centring a
@@ -977,3 +1163,19 @@ one API level). Known gaps to close before widening the audience:
 - Generate the upload keystore + `keystore.properties` (see `RELEASE.md`).
 - Host `PRIVACY_POLICY.md`, complete the Play Data Safety form, content rating.
 - Store listing assets (feature graphic, screenshots).
+
+### Post-1.0 (freeform branches, `1.x`-style patch labels — see version-branch scheme)
+- **1.1 — performance + reliability.** Downsized oversized background JPEGs (fixed a
+  main-thread jank bug — decoding 4700px+ photos was costing 60-90MB bitmaps),
+  cosmetic entrance/orb animation fixes (`util/Entrance.kt`, `util/OrbField.kt`), and
+  hardened `widget/WidgetUpdater.kt` (debounced + exception-safe, called from every
+  DB-mutating ViewModel so the home-screen widget can't go stale).
+- **1.2 — Exam Simulator, Trophy Room, peer deck sharing.** Three additions, **zero
+  schema changes** (every new value is computed live from tables that already exist):
+  a multiple-choice **Mock Exam Simulator** per deck (assessment only, never touches
+  SM-2/`Review_Logs`), **peer deck sharing** (plain-text CSV via the share sheet,
+  consumed by the recipient's own "Paste cards" button), and a **Trophy Room** (9
+  tiered achievements — a 2-column medal grid, locked ones visible-but-greyed rather
+  than hidden — reached from a new top-left Home icon). See "Mock Exam Simulator",
+  "Peer deck sharing", "Trophy Room", and the "Deck detail + manage cards"
+  screen-checklist entry above.

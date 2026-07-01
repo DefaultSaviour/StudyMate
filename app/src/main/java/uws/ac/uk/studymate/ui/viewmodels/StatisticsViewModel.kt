@@ -13,6 +13,7 @@ import uws.ac.uk.studymate.data.repositories.UserRepo
 import uws.ac.uk.studymate.util.AssignmentDateTimeUtils
 import uws.ac.uk.studymate.util.SessionUserResolver
 import uws.ac.uk.studymate.util.SpacedRepetition
+import uws.ac.uk.studymate.util.StreakCalculator
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -70,7 +71,7 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
             val matureCards = db.cardDao().countMature(userId, SpacedRepetition.MATURE_INTERVAL_DAYS)
             val reviewedToday = db.reviewLogDao().countReviewsSince(userId, startOfTodayIso)
             val reviewedThisWeek = db.reviewLogDao().countReviewsSince(userId, weekAgoIso)
-            val streak = computeStreak(db.reviewLogDao().getReviewTimestamps(userId), zone, today)
+            val streak = StreakCalculator.compute(db.reviewLogDao().getReviewTimestamps(userId), zone, today)
 
             // ── Focus time (0.9J) ──
             val focusedTodayMinutes =
@@ -125,22 +126,5 @@ class StatisticsViewModel(application: Application) : AndroidViewModel(applicati
             )
             _sessionExpired.postValue(false)
         }
-    }
-
-    // Consecutive days (ending today, or yesterday if today isn't studied yet)
-    // on which at least one review happened.
-    private fun computeStreak(timestamps: List<String>, zone: ZoneId, today: LocalDate): Int {
-        if (timestamps.isEmpty()) return 0
-        val days = timestamps
-            .mapNotNull { runCatching { Instant.parse(it).atZone(zone).toLocalDate() }.getOrNull() }
-            .toHashSet()
-        var cursor = today
-        if (!days.contains(cursor)) cursor = cursor.minusDays(1)
-        var streak = 0
-        while (days.contains(cursor)) {
-            streak++
-            cursor = cursor.minusDays(1)
-        }
-        return streak
     }
 }

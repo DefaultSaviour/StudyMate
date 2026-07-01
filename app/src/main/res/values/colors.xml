@@ -35,4 +35,14 @@
     <color name="error_text">#E8A48A</color>
     <color name="success_text">#16A34A</color>
     <color name="divider">#E7DED0</color>
+
+    <!-- Trophy Room tiers (1.2). trophy_gold_tier is deliberately distinct from the
+         app's brand `gold` so "you earned Gold" doesn't just look like the app's
+         usual gold accent. -->
+    <color name="trophy_bronze">#CD7F32</color>
+    <color name="trophy_silver">#C7CBD1</color>
+    <color name="trophy_gold_tier">#E8C468</color>
+    <color name="trophy_platinum">#D9E5E8</color>
+    <color name="trophy_diamond">#9FDBEB</color>
+    <color name="trophy_locked">#4A5568</color>
 </resources>

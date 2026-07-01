@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/navy">
+
+    <!-- Placeholder background reused from the dashboard, per Jamie — a dedicated
+         bg_trophy.jpg can replace this later (downsize to ~1600px, see 1.1 perf note). -->
+    <ImageView
+        android:id="@+id/bgImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_dashboard"
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <View
+        android:id="@+id/bgOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_wood_overlay"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/headerGuide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.16" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/trophyCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="#59000000"
+        app:cardForegroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.StudyMate.LoginCard"
+        app:layout_constraintWidth_max="@dimen/card_max_width"
+        app:layout_constraintTop_toBottomOf="@id/headerGuide"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- ───────────── GRID PANEL (all trophies) ───────────── -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/gridPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:paddingTop="20dp">
+
+                    <TextView
+                        android:id="@+id/trophyTitleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/trophy_room_title"
+                        android:textColor="@color/surface"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:accessibilityHeading="true" />
+
+                    <TextView
+                        android:id="@+id/trophySubtitleText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp"
+                        android:text="@string/trophy_room_subtitle"
+                        android:textColor="@color/gold_light"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:id="@+id/trophyContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical" />
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- ───────────── DETAIL PANEL (one trophy, all 5 ranks) ───────────── -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/detailPanel"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:visibility="invisible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:paddingTop="20dp">
+
+                    <LinearLayout
+                        android:id="@+id/detailHeaderRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical" />
+
+                    <TextView
+                        android:id="@+id/detailAboutLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="@string/trophy_about_label"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp"
+                        android:accessibilityHeading="true" />
+
+                    <TextView
+                        android:id="@+id/detailDescriptionText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/surface"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="3dp" />
+
+                    <TextView
+                        android:id="@+id/detailRanksLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:background="@drawable/bg_text_pill_subtle"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
+                        android:letterSpacing="0.15"
+                        android:text="@string/trophy_ranks_label"
+                        android:textColor="@color/gold_light"
+                        android:textSize="12sp"
+                        android:accessibilityHeading="true" />
+
+                    <LinearLayout
+                        android:id="@+id/detailRanksContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="vertical" />
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+        </FrameLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Floating orbs are generated at runtime by OrbField. -->
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/trophyBackBtn"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:icon="@drawable/ic_arrow_back"
+        app:iconTint="@color/surface"
+        app:iconSize="26dp"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        android:backgroundTint="#59000000"
+        app:strokeColor="#99C4A24A"
+        app:strokeWidth="1dp"
+        app:cornerRadius="26dp"
+        app:rippleColor="#33D4BC7E"
+        android:contentDescription="@string/cd_back"
+        app:layout_constraintBottom_toTopOf="@id/trophyCard"
+        app:layout_constraintEnd_toEndOf="@id/trophyCard"
+        android:layout_marginBottom="12dp"
+        android:layout_marginEnd="16dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
