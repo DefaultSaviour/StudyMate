@@ -98,6 +98,8 @@ HomeActivity / AssignmentsActivity / ...  → HomeViewModel / AssignmentsViewMod
 | `util/FocusTimerEngine.kt` | Pure (Android-free) Pomodoro state machine (0.9G): `Phase`/`Config`/`TimerState`, `advance`/`phaseDurationSeconds`/`initial`. The rules only — the VM owns the clock. Unit-tested in `FocusTimerEngineTest`. See "Focus / Pomodoro timer" |
 | `notifications/FocusTimerScheduler.kt` / `FocusTimerWorker.kt` | One unique WorkManager one-shot that posts the focus-timer phase-complete notification (0.9G). Background fallback only — the screen chimes/buzzes itself at the exact boundary. See "Focus / Pomodoro timer" |
 | `ui/FocusTimerActivity.kt` + `ui/viewmodels/FocusTimerViewModel.kt` | Wood-glass focus-timer screen + its VM (timestamp-based countdown, survives rotation / leave-return via SharedPreferences). Reached from the Home "Focus timer" button. See "Focus / Pomodoro timer" |
+| `widget/TallCalendarWidgetProvider.kt` + `widget/BaseCalendarWidgetProvider.kt` | The 2×3 home-screen widget (week grid + next assignment + flashcards due today). `Base…` does the actual `RemoteViews` binding so a future second size/variant can subclass it. See "Home-screen widget" |
+| `widget/WidgetUpdater.kt` | `updateAllWidgets(context)` — the single call every DB-mutating ViewModel makes to refresh the widget. Debounced (400ms) and never throws into the caller (1.1). See "Home-screen widget" |
 
 ## Database Conventions
 
@@ -346,6 +348,56 @@ focused time is **logged per assignment** and shown in **Statistics**. One new c
   (always-create, FKs re-stamped). Focus sessions are **not** backed up.
 - **Onboarding demo.** `SampleContentSeeder` seeds a 3-item checklist on "Getting
   Started" so the feature is visible day one.
+
+## Home-screen widget (tall calendar)
+
+A **2×3** Android home-screen widget — the daily-return hook: glance at the week's
+assignments/events/reviews, the next due assignment, and today's flashcard due-count
+without opening the app. Built outside a Claude Code session (no dedicated milestone
+letter; shipped and hardened through several follow-up commits — a tap "blank window"
+bug and an `O(N×7)` → `O(N)` query fix), so treat this section, not memory, as the
+source of truth if it drifts.
+
+- **Provider (`widget/TallCalendarWidgetProvider.kt` extends `widget/BaseCalendarWidgetProvider.kt`).**
+  `Base…` does all the real work (`onUpdate` → `goAsync()` + a `Dispatchers.IO`
+  coroutine per widget id so Room queries never block the receiver); the concrete
+  subclass just supplies `layoutId` and a `showBottomSections` flag, so a second,
+  smaller widget variant (e.g. calendar-only, no assignment/flashcard footer) can be
+  added by subclassing `Base…` again rather than duplicating the query logic.
+  Registered in `AndroidManifest.xml` as an `exported="true"` `<receiver>` for
+  `android.appwidget.action.APPWIDGET_UPDATE`, pointing at
+  `res/xml/tall_calendar_widget_info.xml` (`updatePeriodMillis="1800000"` — a 30 min
+  background-fallback refresh only; see `WidgetUpdater` below for the real one).
+- **Layout (`res/layout/widget_tall_calendar.xml`).** Wood-glass themed
+  (`@drawable/bg_widget_glass`) card: a Mon–Sun week grid (today's date gets a gold
+  ring, `@drawable/shape_ring_gold`), up to 3 stacked event dots per day plus a "+N"
+  overflow (assignment / deck-review / custom-event, sorted in that order — reviews
+  use a dash-shaped indicator, `shape_indicator_dash`, so they read differently from a
+  dot at a glance), a "Next Assignment" title + due-date row, and a "Flashcards Due
+  Today" count. Data is grouped into per-date maps once per refresh rather than
+  scanned per day (the `O(N×7) → O(N)` fix). The whole widget is one tappable region
+  that resolves the session (`SessionManager.getLoggedInUserId() ?: getLastUserId()`)
+  and opens `HomeActivity` if logged in or cold-starts `LoginActivity` otherwise — this
+  state-aware check is itself a fix (an earlier version's tap intent could resolve to
+  a blank window). "Next Assignment" reuses `AssignmentDateTimeUtils.isComplete`
+  (same completed/past-due rule as every other screen — see "No overdue concept"
+  below), so a finished assignment never shows here either.
+- **Refresh (`widget/WidgetUpdater.kt`, hardened in 1.1).** `updateAllWidgets(context)`
+  is called from ~20 ViewModel mutation sites (assignment/deck/card/event CRUD, flash-
+  card grading, checklist edits, login/logout/signup/account-delete, backup import) —
+  every mutation that changes something the widget shows. It is **debounced** (400ms
+  trailing: a burst of calls, e.g. grading many cards back-to-back in a chained review
+  session, collapses into one broadcast instead of one full widget DB requery per
+  card) and **never throws into the caller** (the actual `Intent`/`AppWidgetManager`/
+  `sendBroadcast` work runs in a try/catch on a background dispatcher, fully decoupled
+  from the calling coroutine) — both properties matter because it's called right
+  before critical `postValue()`s (login/signup success, account deletion) and because
+  it must be safe to call from a JVM unit test with a mocked `Application` (this
+  project has no Robolectric; see `WidgetUpdaterTest`). New mutation sites should call
+  this the same way — no try/catch or dispatcher concern needed, the utility handles
+  both. **Known gap:** it's still a manually-remembered call per site, not enforced by
+  the repo layer — e.g. it's plumbed into the assignment/focus-timer checklist
+  mutators but nothing currently *requires* a new mutation to remember it.
 
 ## First-run onboarding (0.9E)
 
@@ -852,7 +904,7 @@ The login screen is the established reference. Every other screen should be brou
   - **Completed/finished decks are read-only practice (0.9I).** If the deck's assignment is complete (marked done **or** past-due — `AssignmentDateTimeUtils.isComplete`), `ReviewDeckViewModel` caches `currentDeckCompleted` when the queue loads and **skips `CardRepo.reviewCard` entirely** on every grade — no SM-2 reschedule, no `Review_Logs` row. The session still flips/advances so the deck stays usable for revision, but grading "Wrong" can't pull a finished deck's cards back into rotation. (Deck → assignment is resolved via the new `FlashcardDeckDao.getDeck(deckId)` → `AssignmentDao.getById`.) This complements 0.9C, which already excluded finished decks from the *automatic* review surfaces.
 - [x] **Deck detail + manage cards** — consolidated 7 old activities (`DeckOptions`, `AlterDeck`, `AddCard`, `EditCard`, `ModifyCards`, `RemoveCards`, `ReviewDeck`) into 3: `DeckDetailActivity` (Review + Manage Cards), `DeckCardsActivity` (RecyclerView of cards with inline add/edit panel-swap), `ReviewDeckActivity` (restyled). Delete-deck stays on the main Flashcards list only.
 - [x] **Statistics** — **restored** as a real screen (`StatisticsActivity` + `StatisticsViewModel`), reached from a Home "Statistics" button. Computes everything **live** (no `User_Stats` writes): flashcard cards due/reviewed today + this week, study streak (consecutive days with ≥1 review, from `Review_Logs`), mature cards (interval ≥ 21), and assignment completed/pending/due-this-week. (The per-subject breakdown was **dropped at v11** — there are no subjects to group by any more.) Rows are built programmatically from `StatsSummary` to keep the layout small. The small "AT A GLANCE" panel in `UserSettingsActivity` still exists as a quick glance.
-  - **No "overdue" concept (centralised in 0.9I).** An assignment counts as **complete** when `completedAt != null` **OR its due date has passed**. This single rule lives in **`AssignmentDateTimeUtils.isComplete(completedAt, dueDate, now)`** and is reused by `StatisticsViewModel`, `AssignmentsViewModel`, `HomeViewModel`, and `ReviewDeckViewModel` — do not re-inline it. A passed deadline is treated as **done**, not overdue: there is no overdue row/state/wording anywhere. Consequences enforced in 0.9I: the **Assignments list shows past-due items as completed** (dimmed + struck-through, still **deletable**) rather than hiding them (`AssignmentsViewModel.buildAssignmentItems` no longer filters out `dueAt < now`); the **dashboard** "next due" only ever shows an *upcoming, not-yet-complete* assignment and never says "Overdue" (`HomeViewModel.findNextDueAssignment` / `buildCountdownText`). "Completed this week" covers both manual completion (within 7d of `completedAt`) and auto-completion (due date within the last 7d).
+  - **No "overdue" concept (centralised in 0.9I).** An assignment counts as **complete** when `completedAt != null` **OR its due date has passed**. This single rule lives in **`AssignmentDateTimeUtils.isComplete(completedAt, dueDate, now)`** and is reused by `StatisticsViewModel`, `AssignmentsViewModel`, `HomeViewModel`, `ReviewDeckViewModel`, and `BaseCalendarWidgetProvider` (widget's "Next Assignment") — do not re-inline it. A passed deadline is treated as **done**, not overdue: there is no overdue row/state/wording anywhere. Consequences enforced in 0.9I: the **Assignments list shows past-due items as completed** (dimmed + struck-through, still **deletable**) rather than hiding them (`AssignmentsViewModel.buildAssignmentItems` no longer filters out `dueAt < now`); the **dashboard** "next due" only ever shows an *upcoming, not-yet-complete* assignment and never says "Overdue" (`HomeViewModel.findNextDueAssignment` / `buildCountdownText`). "Completed this week" covers both manual completion (within 7d of `completedAt`) and auto-completion (due date within the last 7d).
 - [x] **Calendar** — wood bg, glass card with month grid + day-detail panel-swaps (Month ⇄ Day ⇄ Edit ⇄ Time); always 6-row grid (consistent height). Days with events show vertically stacked, coloured markers (up to 3) plus a "+N" count if more. Tapping a day swaps to the day list. Day rows for assignments are tappable → open that assignment's decks (`FlashcardDecksActivity` in scoped mode). Custom events can be added, edited (with a dedicated inline `TimePicker` panel), and deleted directly on the Calendar.
 - [x] **Settings / Profile** — wood-glass card with three sections (ACCOUNT, AT A GLANCE, PREFERENCES) using mini glass-card rows; muted-red outlined "Sign out" button with themed confirm dialog; absorbed the small library/assignment counts that used to be on the Statistics screen
 
@@ -911,7 +963,8 @@ one API level). Known gaps to close before widening the audience:
   checklist off live; focused minutes are logged per assignment and shown in a new
   Statistics FOCUS section. DB v12 (additive), backup v3. See "Assignment checklists +
   focus fusion (0.9J)".
-- **Home-screen widget** — "N cards due / next assignment" for the daily-return loop.
+- **Home-screen widget — shipped** (2×3 tall calendar; week grid + next assignment +
+  flashcards due today). See "Home-screen widget (tall calendar)".
 - **Flashcard import — CSV/TSV shipped in 0.9F** (per-deck "Import cards from CSV";
   Quizlet/Anki/spreadsheet exports — see "Flashcard CSV import"). CSV *export* /
   per-deck Share was considered and **dropped** (low expected use, decided with Jamie).

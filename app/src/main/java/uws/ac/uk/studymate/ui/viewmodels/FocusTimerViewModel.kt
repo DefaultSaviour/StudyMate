@@ -207,6 +207,7 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
     fun toggleFocusTask(task: AssignmentTask) {
         viewModelScope.launch(Dispatchers.IO) {
             taskRepo.setDone(task.id, !task.isDone)
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _tasks.postValue(taskRepo.getForAssignment(task.assignmentId))
         }
     }
@@ -215,6 +216,7 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
     fun deleteFocusTask(task: AssignmentTask) {
         viewModelScope.launch(Dispatchers.IO) {
             taskRepo.delete(task)
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _tasks.postValue(taskRepo.getForAssignment(task.assignmentId))
         }
     }
@@ -229,6 +231,7 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch(Dispatchers.IO) {
             val session = sessionResolver.requireUser() ?: return@launch
             taskRepo.add(session.userId, assignmentId, text, Instant.now().toString())
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _tasks.postValue(taskRepo.getForAssignment(assignmentId))
         }
     }

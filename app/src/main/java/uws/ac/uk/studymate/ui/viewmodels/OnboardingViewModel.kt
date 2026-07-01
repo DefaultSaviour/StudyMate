@@ -66,6 +66,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                 .getByName(session.userId, SampleContentSeeder.ASSIGNMENT_TITLE) ?: return@launch
             if (assignment.completedAt == null) {
                 db.assignmentDao().setCompleted(assignment.id, Instant.now().toString())
+                uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             }
         }
     }

@@ -132,6 +132,10 @@ class ReviewDeckViewModel(application: Application) : AndroidViewModel(applicati
             if (!currentDeckCompleted) {
                 val quality = if (grade == Grade.CORRECT) SpacedRepetition.GOOD else SpacedRepetition.AGAIN
                 cardRepo.reviewCard(current, quality)
+                // Grading changes the due-card count (SM-2 reschedule) — push that to the
+                // home-screen widget immediately rather than waiting on its ~30min
+                // periodic refresh, which can lag for hours under Doze/battery optimization.
+                uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             }
 
             if (queue.isNotEmpty()) queue.removeFirst()

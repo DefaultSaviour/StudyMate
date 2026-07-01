@@ -57,6 +57,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             }
             sessionManager.login(authed.id)
             sessionManager.setLastUserId(authed.id)
+            // The widget shows the logged-in user's data — refresh now rather than
+            // leaving the previous (or "not logged in") state up for ~30min.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _errorMessage.postValue(null)
             _loginSuccess.postValue(true)
         }
@@ -72,6 +75,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             }
             sessionManager.login(authed.id)
             sessionManager.setLastUserId(authed.id)
+            // The widget shows the logged-in user's data — refresh now rather than
+            // leaving the previous (or "not logged in") state up for ~30min.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _errorMessage.postValue(null)
             _loginSuccess.postValue(true)
         }

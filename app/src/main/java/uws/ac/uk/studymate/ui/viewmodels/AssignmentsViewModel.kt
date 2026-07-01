@@ -255,6 +255,7 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
                 return@launch
             }
             taskRepo.add(session.userId, assignmentId, text, Instant.now().toString())
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _checklist.postValue(
                 ChecklistState(
                     db.assignmentDao().getById(assignmentId) ?: return@launch,
@@ -268,6 +269,7 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
     fun toggleTask(task: AssignmentTask) {
         viewModelScope.launch(Dispatchers.IO) {
             taskRepo.setDone(task.id, !task.isDone)
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _checklist.postValue(
                 ChecklistState(
                     db.assignmentDao().getById(task.assignmentId) ?: return@launch,
@@ -281,6 +283,7 @@ class AssignmentsViewModel(application: Application) : AndroidViewModel(applicat
     fun deleteTask(task: AssignmentTask) {
         viewModelScope.launch(Dispatchers.IO) {
             taskRepo.delete(task)
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _checklist.postValue(
                 ChecklistState(
                     db.assignmentDao().getById(task.assignmentId) ?: return@launch,
