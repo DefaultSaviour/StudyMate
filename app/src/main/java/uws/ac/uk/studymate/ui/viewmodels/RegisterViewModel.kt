@@ -81,6 +81,9 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             sessionManager.setLastUserId(newUserId)
             // Pre-load the first-run sample deck so the new account isn't empty (0.9E).
             sampleSeeder.seed(newUserId)
+            // New account + seeded sample assignment/cards is exactly what the widget
+            // would show — refresh now instead of waiting on its periodic cycle.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _errorMessage.postValue(null)
             _registrationSuccess.postValue(true)
         }
@@ -118,6 +121,9 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             sessionManager.setLastUserId(newUserId)
             // Pre-load the first-run sample deck so the new account isn't empty (0.9E).
             sampleSeeder.seed(newUserId)
+            // New account + seeded sample assignment/cards is exactly what the widget
+            // would show — refresh now instead of waiting on its periodic cycle.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _errorMessage.postValue(null)
             _biometricCredentials.postValue(BiometricCredentials(newUserId, email, password))
             _registrationSuccess.postValue(true)

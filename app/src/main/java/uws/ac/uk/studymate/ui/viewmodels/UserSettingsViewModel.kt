@@ -175,6 +175,8 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
 
     fun logout() {
         sessionResolver.logout()
+        // No user/lastUser left — the widget should show "Not logged in" right away.
+        uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
     }
 
     fun updateAccount(
@@ -243,6 +245,7 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
             val deletedUserId = current.id
             repo.deleteUser(current)
             sessionResolver.logout()
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             _accountDeleted.postValue(deletedUserId)
         }
     }
@@ -329,6 +332,9 @@ class UserSettingsViewModel(application: Application) : AndroidViewModel(applica
                 val data = BackupSerializer.fromJson(raw)
                 val summary = backupRepo.import(session.userId, data)
                 _dataOpResult.postValue(DataOpResult.ImportSuccess(summary))
+                // Restored assignments/decks/cards/tasks can change everything the
+                // widget shows (next due, due-card count, week dots).
+                uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
                 loadSettings()  // refresh the "at a glance" counts
             } catch (e: BackupSerializer.InvalidBackupException) {
                 _dataOpResult.postValue(DataOpResult.Error(e.message ?: "That file isn't a StudyMate backup."))

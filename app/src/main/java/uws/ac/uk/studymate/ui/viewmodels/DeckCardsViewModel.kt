@@ -97,6 +97,9 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             )
             _message.postValue("Card added")
+            // New cards default to dueAt=null (due now), so this changes the widget's
+            // due-card count immediately.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             reload()
         }
     }
@@ -164,6 +167,8 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
             if (result.skipped > 0) "$base · skipped ${result.skipped} bad row${if (result.skipped == 1) "" else "s"}"
             else base
         )
+        // Imported cards default to dueAt=null (due now) — refresh the widget's count.
+        uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
         reload()
     }
 
@@ -185,6 +190,8 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
                 _sessionExpired.postValue(true)
                 return@launch
             }
+            // Front/back text only — doesn't touch due_at, so no widget refresh needed
+            // (the widget shows due-card counts, not card content).
             cardRepo.updateCard(original.copy(front = cleanFront, back = cleanBack))
             _message.postValue("Card updated")
             reload()
@@ -200,6 +207,7 @@ class DeckCardsViewModel(application: Application) : AndroidViewModel(applicatio
             }
             cardRepo.deleteCard(card)
             _message.postValue("Card deleted")
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             reload()
         }
     }

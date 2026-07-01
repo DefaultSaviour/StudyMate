@@ -170,6 +170,8 @@ class FlashcardDecksViewModel(application: Application) : AndroidViewModel(appli
             }
             deckRepo.deleteDeck(deck)
             _message.postValue("Deck deleted")
+            // Deleting a deck cascades its cards — may change the widget's due count.
+            uws.ac.uk.studymate.widget.WidgetUpdater.updateAllWidgets(getApplication())
             loadScreen()
         }
     }
