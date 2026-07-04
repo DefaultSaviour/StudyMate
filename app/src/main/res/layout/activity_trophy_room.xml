@@ -6,14 +6,13 @@
     android:layout_height="match_parent"
     android:background="@color/navy">
 
-    <!-- Placeholder background reused from the dashboard, per Jamie — a dedicated
-         bg_trophy.jpg can replace this later (downsize to ~1600px, see 1.1 perf note). -->
+    <!-- Full screen background image. -->
     <ImageView
         android:id="@+id/bgImage"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/bg_dashboard"
+        android:src="@drawable/bg_trophies"
         android:contentDescription="@null"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
