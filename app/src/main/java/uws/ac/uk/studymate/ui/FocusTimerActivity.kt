@@ -515,6 +515,7 @@ class FocusTimerActivity : AppCompatActivity() {
                     .setUsage(android.media.AudioAttributes.USAGE_ALARM)
                     .build()
                 val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                @Suppress("DEPRECATION")
                 vibrator.vibrate(effect, audioAttrs)
             } else {
                 @Suppress("DEPRECATION")
