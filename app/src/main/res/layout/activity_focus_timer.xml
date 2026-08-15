@@ -521,4 +521,18 @@
         android:layout_marginBottom="12dp"
         android:layout_marginEnd="16dp" />
 
+    <!-- Screen edge gold glow flash overlay for phase transitions -->
+    <View
+        android:id="@+id/screenGlowOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_screen_gold_flash"
+        android:visibility="gone"
+        android:alpha="0"
+        android:importantForAccessibility="no"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
