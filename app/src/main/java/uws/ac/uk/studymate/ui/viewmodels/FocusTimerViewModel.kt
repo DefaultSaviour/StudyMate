@@ -299,7 +299,7 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
         }
         val next = FocusTimerEngine.advance(current, cfg)
         current = next
-        _phaseEvent.postValue(next.phase)
+        _phaseEvent.value = next.phase
         if (next.phase == Phase.DONE) {
             stopTicking()
             FocusTimerScheduler.cancel(getApplication())
