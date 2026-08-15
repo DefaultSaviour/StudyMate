@@ -58,6 +58,7 @@ class FocusTimerActivity : AppCompatActivity() {
     private lateinit var breakGlow: PulseRingView
     private lateinit var roundsGlow: PulseRingView
     private lateinit var circleBreakLabel: TextView
+    private lateinit var screenGlowOverlay: View
 
     // Study context (0.9J): assignment selector + checklist.
     private lateinit var assignmentSelector: LinearLayout
@@ -106,6 +107,7 @@ class FocusTimerActivity : AppCompatActivity() {
         vm.phaseEvent.observe(this) { phase ->
             if (phase == null) return@observe
             buzz()
+            flashScreenGlow()
             if (phase == Phase.DONE) {
                 Toast.makeText(this, R.string.focus_timer_session_done, Toast.LENGTH_LONG).show()
             }
@@ -130,6 +132,7 @@ class FocusTimerActivity : AppCompatActivity() {
         countdownText = findViewById(R.id.countdownText)
         countdownProgress = findViewById(R.id.countdownProgress)
         circleBreakLabel = findViewById(R.id.circleBreakLabel)
+        screenGlowOverlay = findViewById(R.id.screenGlowOverlay)
         startPauseBtn = findViewById(R.id.startPauseBtn)
         skipBtn = findViewById(R.id.skipBtn)
         endBtn = findViewById(R.id.endBtn)
@@ -468,6 +471,25 @@ class FocusTimerActivity : AppCompatActivity() {
         return "%02d:%02d".format(m, s)
     }
 
+    private fun flashScreenGlow() {
+        screenGlowOverlay.animate().cancel()
+        screenGlowOverlay.alpha = 0f
+        screenGlowOverlay.visibility = View.VISIBLE
+        screenGlowOverlay.animate()
+            .alpha(1f)
+            .setDuration(200)
+            .withEndAction {
+                screenGlowOverlay.animate()
+                    .alpha(0f)
+                    .setDuration(800)
+                    .withEndAction {
+                        screenGlowOverlay.visibility = View.GONE
+                    }
+                    .start()
+            }
+            .start()
+    }
+
     private fun buzz() {
         try {
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -478,26 +500,25 @@ class FocusTimerActivity : AppCompatActivity() {
             } ?: return
             if (!vibrator.hasVibrator()) return
 
+            val timings = longArrayOf(0, 350, 120, 500)
+            val amplitudes = intArrayOf(0, 255, 0, 255)
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val attrs = android.os.VibrationAttributes.Builder()
                     .setUsage(android.os.VibrationAttributes.USAGE_ALARM)
                     .build()
-                vibrator.vibrate(
-                    VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE),
-                    attrs
-                )
+                val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                vibrator.vibrate(effect, attrs)
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val audioAttrs = android.media.AudioAttributes.Builder()
                     .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .setUsage(android.media.AudioAttributes.USAGE_ALARM)
                     .build()
-                vibrator.vibrate(
-                    VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE),
-                    audioAttrs
-                )
+                val effect = VibrationEffect.createWaveform(timings, amplitudes, -1)
+                vibrator.vibrate(effect, audioAttrs)
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(500)
+                vibrator.vibrate(timings, -1)
             }
         } catch (e: Exception) {
             e.printStackTrace()
