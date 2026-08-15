@@ -78,6 +78,7 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - [x] Performance: BaseCalendarWidgetProvider optimized from $O(N \times 7)$ to $O(N)$ with pre-grouped map lookups.
 - [x] Performance: CalendarActivity swipe gesture optimized to use static XML drawables instead of re-allocating GradientDrawables.
 - [x] Bugfix: Widget tap intent made state-aware to safely resume HomeActivity or cold-start LoginActivity, fixing the "blank window" bug.
+- [x] V1.2 Update: Mock Exam Simulator, peer deck sharing (CSV), Trophy Room achievements, UI panel fixes, and 9 optimized wood backgrounds.
 
 # Git Branching Rules
 - **CRITICAL**: Treat `AntiGravity` as the root/default branch for all work on this project.
