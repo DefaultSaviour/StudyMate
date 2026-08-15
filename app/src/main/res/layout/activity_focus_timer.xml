@@ -157,18 +157,40 @@
                         android:layout_height="260dp"
                         android:layout_gravity="center" />
 
-                    <TextView
-                        android:id="@+id/countdownText"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
                         android:gravity="center"
-                        android:fontFamily="monospace"
-                        android:text="25:00"
-                        android:textColor="@color/surface"
-                        android:textSize="64sp"
-                        android:textStyle="bold"
-                        android:shadowColor="#99000000"
-                        android:shadowRadius="8" />
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/circleBreakLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="2dp"
+                            android:gravity="center"
+                            android:letterSpacing="0.2"
+                            android:text="BREAK"
+                            android:textColor="@color/gold"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/countdownText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:gravity="center"
+                            android:shadowColor="#99000000"
+                            android:shadowRadius="8"
+                            android:text="25:00"
+                            android:textColor="@color/surface"
+                            android:textSize="60sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
 
                 </FrameLayout>
 
@@ -178,6 +200,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="horizontal">
 
                     <LinearLayout
@@ -185,6 +209,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="5dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="vertical">
 
                         <TextView
@@ -196,19 +222,33 @@
                             android:textColor="@color/gold_light"
                             android:textSize="13sp" />
 
-                        <TextView
-                            android:id="@+id/studyBox"
+                        <FrameLayout
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
-                            android:background="@drawable/bg_focus_field"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:text="25"
-                            android:textColor="@color/surface"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:clipChildren="false"
+                            android:clipToPadding="false">
+
+                            <TextView
+                                android:id="@+id/studyBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_focus_field"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center"
+                                android:text="25"
+                                android:textColor="@color/surface"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <uws.ac.uk.studymate.ui.PulseRingView
+                                android:id="@+id/studyGlow"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:visibility="gone" />
+
+                        </FrameLayout>
 
                     </LinearLayout>
 
@@ -218,6 +258,8 @@
                         android:layout_weight="1"
                         android:layout_marginStart="5dp"
                         android:layout_marginEnd="5dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="vertical">
 
                         <TextView
@@ -229,19 +271,33 @@
                             android:textColor="@color/gold_light"
                             android:textSize="13sp" />
 
-                        <TextView
-                            android:id="@+id/breakBox"
+                        <FrameLayout
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
-                            android:background="@drawable/bg_focus_field"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:text="5"
-                            android:textColor="@color/surface"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:clipChildren="false"
+                            android:clipToPadding="false">
+
+                            <TextView
+                                android:id="@+id/breakBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_focus_field"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center"
+                                android:text="5"
+                                android:textColor="@color/surface"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <uws.ac.uk.studymate.ui.PulseRingView
+                                android:id="@+id/breakGlow"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:visibility="gone" />
+
+                        </FrameLayout>
 
                     </LinearLayout>
 
@@ -250,6 +306,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="5dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="vertical">
 
                         <TextView
@@ -261,19 +319,33 @@
                             android:textColor="@color/gold_light"
                             android:textSize="13sp" />
 
-                        <TextView
-                            android:id="@+id/roundsBox"
+                        <FrameLayout
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="4dp"
-                            android:background="@drawable/bg_focus_field"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:text="4"
-                            android:textColor="@color/surface"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:clipChildren="false"
+                            android:clipToPadding="false">
+
+                            <TextView
+                                android:id="@+id/roundsBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_focus_field"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center"
+                                android:text="3"
+                                android:textColor="@color/surface"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <uws.ac.uk.studymate.ui.PulseRingView
+                                android:id="@+id/roundsGlow"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:visibility="gone" />
+
+                        </FrameLayout>
 
                     </LinearLayout>
 

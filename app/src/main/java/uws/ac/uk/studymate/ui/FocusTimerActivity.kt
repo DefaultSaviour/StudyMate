@@ -54,6 +54,10 @@ class FocusTimerActivity : AppCompatActivity() {
     private lateinit var studyBox: TextView
     private lateinit var breakBox: TextView
     private lateinit var roundsBox: TextView
+    private lateinit var studyGlow: PulseRingView
+    private lateinit var breakGlow: PulseRingView
+    private lateinit var roundsGlow: PulseRingView
+    private lateinit var circleBreakLabel: TextView
 
     // Study context (0.9J): assignment selector + checklist.
     private lateinit var assignmentSelector: LinearLayout
@@ -125,12 +129,16 @@ class FocusTimerActivity : AppCompatActivity() {
         roundText = findViewById(R.id.roundText)
         countdownText = findViewById(R.id.countdownText)
         countdownProgress = findViewById(R.id.countdownProgress)
+        circleBreakLabel = findViewById(R.id.circleBreakLabel)
         startPauseBtn = findViewById(R.id.startPauseBtn)
         skipBtn = findViewById(R.id.skipBtn)
         endBtn = findViewById(R.id.endBtn)
         studyBox = findViewById(R.id.studyBox)
         breakBox = findViewById(R.id.breakBox)
         roundsBox = findViewById(R.id.roundsBox)
+        studyGlow = findViewById(R.id.studyGlow)
+        breakGlow = findViewById(R.id.breakGlow)
+        roundsGlow = findViewById(R.id.roundsGlow)
 
         assignmentSelector = findViewById(R.id.assignmentSelector)
         assignmentSelectorIcon = findViewById(R.id.assignmentSelectorIcon)
@@ -178,6 +186,8 @@ class FocusTimerActivity : AppCompatActivity() {
     private fun render(state: FocusTimerEngine.TimerState) {
         countdownText.text = formatTime(state.remainingSeconds)
 
+        circleBreakLabel.visibility = if (state.phase == Phase.BREAK) View.VISIBLE else View.GONE
+
         phaseLabel.text = when (state.phase) {
             Phase.FOCUS -> getString(R.string.focus_phase_focus)
             Phase.BREAK -> getString(R.string.focus_phase_break)
@@ -222,6 +232,24 @@ class FocusTimerActivity : AppCompatActivity() {
             it.isEnabled = configEnabled
             it.isClickable = configEnabled
             it.alpha = if (configEnabled) 1f else 0.45f
+        }
+
+        // Breathing golden glow around the three config boxes while idle before start
+        val showGlow = !started && state.phase != Phase.DONE
+        if (showGlow) {
+            studyGlow.visibility = View.VISIBLE
+            studyGlow.startAnimating()
+            breakGlow.visibility = View.VISIBLE
+            breakGlow.startAnimating()
+            roundsGlow.visibility = View.VISIBLE
+            roundsGlow.startAnimating()
+        } else {
+            studyGlow.stopAnimating()
+            studyGlow.visibility = View.GONE
+            breakGlow.stopAnimating()
+            breakGlow.visibility = View.GONE
+            roundsGlow.stopAnimating()
+            roundsGlow.visibility = View.GONE
         }
 
         // Drive the circular progress ring: full at the start of a phase, empty at the end.
@@ -318,38 +346,117 @@ class FocusTimerActivity : AppCompatActivity() {
         checklistRecycler.visibility = if (isEmpty) View.GONE else View.VISIBLE
     }
 
-    // Tap a config box → edit just that value, keeping the other two.
-    private fun editStudy() = showValueDialog(R.string.focus_edit_study, lastConfig.focusMinutes) { v ->
+    // Tap a config box → edit just that value with slider + centered number, keeping the other two.
+    private fun editStudy() = showValueDialog(
+        titleRes = R.string.focus_edit_study,
+        current = lastConfig.focusMinutes,
+        min = 1,
+        max = 180
+    ) { v ->
         vm.applyConfig(v, lastConfig.breakMinutes, lastConfig.rounds)
     }
 
-    private fun editBreak() = showValueDialog(R.string.focus_edit_break, lastConfig.breakMinutes) { v ->
+    private fun editBreak() = showValueDialog(
+        titleRes = R.string.focus_edit_break,
+        current = lastConfig.breakMinutes,
+        min = 1,
+        max = 60
+    ) { v ->
         vm.applyConfig(lastConfig.focusMinutes, v, lastConfig.rounds)
     }
 
-    private fun editRounds() = showValueDialog(R.string.focus_edit_rounds, lastConfig.rounds) { v ->
+    private fun editRounds() = showValueDialog(
+        titleRes = R.string.focus_edit_rounds,
+        current = lastConfig.rounds,
+        min = 1,
+        max = 12
+    ) { v ->
         vm.applyConfig(lastConfig.focusMinutes, lastConfig.breakMinutes, v)
     }
 
-    private fun showValueDialog(titleRes: Int, current: Int, onSet: (Int) -> Unit) {
-        val pad = (20 * resources.displayMetrics.density).toInt()
+    private fun showValueDialog(titleRes: Int, current: Int, min: Int, max: Int, onSet: (Int) -> Unit) {
+        val density = resources.displayMetrics.density
+        val padH = (24 * density).toInt()
+        val padV = (16 * density).toInt()
+
         val input = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
+            gravity = android.view.Gravity.CENTER
             setText(current.toString())
             setSelection(text.length)
             setTextColor(getColor(R.color.surface))
             setHintTextColor(getColor(R.color.gold_light))
+            textSize = 28f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            background = getDrawable(R.drawable.bg_focus_field)
+            val boxPad = (10 * density).toInt()
+            setPadding(boxPad, boxPad, boxPad, boxPad)
+            layoutParams = LinearLayout.LayoutParams(
+                (120 * density).toInt(),
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+            }
         }
+
+        val slider = com.google.android.material.slider.Slider(this).apply {
+            valueFrom = min.toFloat()
+            valueTo = max.toFloat()
+            stepSize = 1f
+            value = current.coerceIn(min, max).toFloat()
+            trackActiveTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.gold))
+            thumbTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.gold_light))
+            trackInactiveTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#44C4A24A"))
+            haloTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#33D4BC7E"))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = (16 * density).toInt()
+            }
+        }
+
+        var updatingFromSlider = false
+        var updatingFromText = false
+
+        slider.addOnChangeListener { _, value, fromUser ->
+            if (fromUser && !updatingFromText) {
+                updatingFromSlider = true
+                input.setText(value.toInt().toString())
+                input.setSelection(input.text.length)
+                updatingFromSlider = false
+            }
+        }
+
+        input.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (updatingFromSlider) return
+                val num = s?.toString()?.toIntOrNull()
+                if (num != null && num in min..max) {
+                    updatingFromText = true
+                    slider.value = num.toFloat()
+                    updatingFromText = false
+                }
+            }
+        })
+
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad / 2, pad, 0)
+            setPadding(padH, padV, padH, 0)
+            clipChildren = false
+            clipToPadding = false
             addView(input)
+            addView(slider)
         }
+
         MaterialAlertDialogBuilder(this, R.style.Theme_StudyMate_AlertDialog)
             .setTitle(titleRes)
             .setView(container)
             .setPositiveButton(R.string.focus_edit_apply) { _, _ ->
-                input.text.toString().toIntOrNull()?.let { onSet(it) }
+                val chosen = input.text.toString().toIntOrNull() ?: slider.value.toInt()
+                onSet(chosen.coerceIn(min, max))
             }
             .setNegativeButton(R.string.cancel_button, null)
             .show()

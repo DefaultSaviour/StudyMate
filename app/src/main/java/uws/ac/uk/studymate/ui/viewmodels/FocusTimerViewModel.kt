@@ -398,7 +398,7 @@ class FocusTimerViewModel(application: Application) : AndroidViewModel(applicati
 
         const val DEFAULT_FOCUS = 25
         const val DEFAULT_BREAK = 5
-        const val DEFAULT_ROUNDS = 4
+        const val DEFAULT_ROUNDS = 3
 
         private const val KEY_FOCUS_MIN = "focus_min"
         private const val KEY_BREAK_MIN = "break_min"

@@ -79,6 +79,7 @@ When making code or UI changes, always verify them efficiently to avoid repeated
 - [x] Performance: CalendarActivity swipe gesture optimized to use static XML drawables instead of re-allocating GradientDrawables.
 - [x] Bugfix: Widget tap intent made state-aware to safely resume HomeActivity or cold-start LoginActivity, fixing the "blank window" bug.
 - [x] V1.2 Update: Mock Exam Simulator, peer deck sharing (CSV), Trophy Room achievements, UI panel fixes, and 9 optimized wood backgrounds.
+- [x] Focus Timer UX: Golden breathing glow on idle config boxes, interactive slider & centered number edit dialog, inside-circle BREAK label, and haptic vibration on phase transitions.
 
 # Git Branching Rules
 - **CRITICAL**: Treat `AntiGravity` as the root/default branch for all work on this project.
