@@ -469,13 +469,38 @@ class FocusTimerActivity : AppCompatActivity() {
     }
 
     private fun buzz() {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        } ?: return
-        if (!vibrator.hasVibrator()) return
-        vibrator.vibrate(VibrationEffect.createOneShot(400, VibrationEffect.DEFAULT_AMPLITUDE))
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            } ?: return
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val attrs = android.os.VibrationAttributes.Builder()
+                    .setUsage(android.os.VibrationAttributes.USAGE_ALARM)
+                    .build()
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE),
+                    attrs
+                )
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val audioAttrs = android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .build()
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE),
+                    audioAttrs
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(500)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
