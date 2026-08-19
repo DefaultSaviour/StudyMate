@@ -1,63 +1,21 @@
-# StudyMate — Privacy Policy
+# Privacy Policy for StudyMate
 
-_Last updated: 14 June 2026_
+**Last Updated: August 2026**
 
-StudyMate is a study-companion app for students. This policy explains what data
-the app handles. **Short version: everything stays on your device. StudyMate has
-no servers, no analytics, no ads, and sends none of your data to the developer or
-any third party.**
+StudyMate ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your information is handled when you use the StudyMate Android application.
 
-## Who we are
-StudyMate is developed by Jamie Coleman. For privacy questions, contact
-**defaultsaviour@gmail.com**.
+## 1. Data Collection and Storage
+StudyMate is designed with privacy as a core principle. **We do not collect, transmit, or share any personal data.** 
+All data created within the app—including but not limited to accounts, passwords, assignments, flashcards, calendar events, and study statistics—is stored locally and securely on your device using an on-device SQLite (Room) database.
 
-## What data StudyMate stores (all on-device)
-- **Account:** a username and a password. The password is never stored in plain
-  text — only a salted PBKDF2 hash is kept, on your device.
-- **Your study content:** subjects, assignments (and their due dates / completion),
-  flashcard decks and cards, and your review history.
-- **Preferences:** notification, auto sign-in, and quick sign-in settings.
-- **Optional quick sign-in:** if you turn on fingerprint / face / screen-lock
-  sign-in, your credentials are kept in an encrypted store protected by a
-  device-bound Android Keystore key. This never leaves your device and is excluded
-  from backups.
+## 2. Internet Connectivity
+StudyMate operates entirely offline. The app does not communicate with any external servers, cloud databases, or third-party analytics services. 
 
-All of the above is stored locally in the app's private storage. None of it is
-transmitted to us or to any third party.
+## 3. Account and Security
+When you create an account within StudyMate, your credentials (including passwords or biometric login configurations) are salted, hashed, and stored exclusively on your device. We have no access to your credentials or your account data.
 
-## What we collect about you
-**Nothing.** StudyMate has no backend, performs no network requests for your data,
-and contains no analytics, tracking, advertising, or third-party data-collection
-SDKs.
+## 4. Changes to This Privacy Policy
+We may update our Privacy Policy from time to time. Since the app does not collect user data, any changes will likely reflect updates in features or regulatory requirements. We encourage you to review this page periodically for any changes.
 
-## Notifications
-Assignment and review reminders are scheduled and shown **locally on your device**
-(via Android WorkManager). There is no push server and no message is sent off the
-device.
-
-## Backups
-If you have **Google Backup** enabled in your Android settings, Android may back up
-the app's data to your own Google account (Android Auto Backup). The encrypted
-quick-sign-in credential store is explicitly **excluded** from backup. This backup
-is a feature of your device and Google account — it is governed by
-[Google's Privacy Policy](https://policies.google.com/privacy), and the developer
-never receives it. You can disable it in your device's backup settings.
-
-## Permissions
-- **Notifications (POST_NOTIFICATIONS):** to show your assignment and review
-  reminders. Optional — the app works without it.
-- **Biometric / device credential:** only used, with your consent, to unlock the
-  optional quick sign-in.
-
-## Deleting your data
-- **In-app:** Settings → Delete account permanently removes your account and all
-  associated subjects, assignments, decks, flashcards and history.
-- **Uninstalling** the app removes all of its local data from your device.
-
-## Children
-StudyMate is intended for students and is not directed at children under 13. We do
-not knowingly collect any personal information from anyone.
-
-## Changes to this policy
-If this policy changes, the "Last updated" date above will change and the new
-version will be published at the same location.
+## 5. Contact Us
+If you have any questions or suggestions about our Privacy Policy, please contact the developer via the app's official repository or support channels.
