@@ -53,10 +53,10 @@ cdraw.rounded_rectangle(
 bg.paste(card_layer, (0, 0), card_layer)
 
 # 4. Gold Book Icon
-icon_path = 'art/play-store/logo_gold.png'
+icon_path = 'art/play-store/book_icon_transparent.png'
 if os.path.exists(icon_path):
     icon = Image.open(icon_path).convert('RGBA')
-    icon_sz = 100
+    icon_sz = 130
     icon_resized = icon.resize((icon_sz, icon_sz), Image.Resampling.LANCZOS)
     
     # Glow behind icon
@@ -66,7 +66,7 @@ if os.path.exists(icon_path):
     glow = glow.filter(ImageFilter.GaussianBlur(12))
     
     icon_cx = 1024 // 2
-    icon_y = card_margin_y + 45
+    icon_y = card_margin_y + 35
     bg.paste(glow, (icon_cx - (icon_sz + 40) // 2, icon_y - 20), glow)
     bg.paste(icon_resized, (icon_cx - icon_sz // 2, icon_y), icon_resized)
 
