@@ -59,15 +59,8 @@ if os.path.exists(icon_path):
     icon_sz = 130
     icon_resized = icon.resize((icon_sz, icon_sz), Image.Resampling.LANCZOS)
     
-    # Glow behind icon
-    glow = Image.new('RGBA', (icon_sz + 40, icon_sz + 40), (0, 0, 0, 0))
-    gdraw = ImageDraw.Draw(glow)
-    gdraw.ellipse([10, 10, icon_sz + 30, icon_sz + 30], fill=(196, 162, 74, 45))
-    glow = glow.filter(ImageFilter.GaussianBlur(12))
-    
     icon_cx = 1024 // 2
     icon_y = card_margin_y + 35
-    bg.paste(glow, (icon_cx - (icon_sz + 40) // 2, icon_y - 20), glow)
     bg.paste(icon_resized, (icon_cx - icon_sz // 2, icon_y), icon_resized)
 
 # 5. Serif Typography (StudyMate branding)
