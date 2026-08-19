@@ -25,7 +25,7 @@ android {
         applicationId = "uws.ac.uk.studymate"
         minSdk = 30
         targetSdk = 35
-        versionCode = 2
+        versionCode = 3
         versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
