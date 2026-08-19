@@ -2,7 +2,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 out_path = 'art/play-store/feature_graphic_1024x500.png'
-bg_path = 'art/backgrounds-original/bg_login.png'
+bg_path = 'app/src/main/res/drawable/bg_dashboard.jpg'
 
 # 1. Base wood texture
 if os.path.exists(bg_path):
@@ -21,8 +21,9 @@ if os.path.exists(bg_path):
 else:
     bg = Image.new('RGB', (1024, 500), (15, 23, 42))
 
-# 2. Dark vignette / overlay (matches app's bg_wood_overlay)
-overlay = Image.new('RGBA', (1024, 500), (10, 16, 28, 140))
+# 2. Dark vignette / overlay (matches app's bg_wood_overlay: #D9000000 -> #80000000 -> #00000000 etc.)
+# We will just apply a dark translucent layer #50000000
+overlay = Image.new('RGBA', (1024, 500), (0, 0, 0, 120))
 bg.paste(overlay, (0, 0), overlay)
 
 # 3. Frosted Dark Glass Card (matches app's MaterialCardView #59000000 with #99C4A24A border)
@@ -31,8 +32,8 @@ cdraw = ImageDraw.Draw(card_layer)
 
 card_margin_x = 120
 card_margin_y = 45
-card_w = 1024 - (2 * card_margin_x) # 784 px wide
-card_h = 500 - (2 * card_margin_y)   # 410 px tall
+card_w = 1024 - (2 * card_margin_x)
+card_h = 500 - (2 * card_margin_y)
 
 # Soft outer shadow for depth
 shadow_layer = Image.new('RGBA', (1024, 500), (0, 0, 0, 0))
@@ -41,38 +42,38 @@ sdraw.rounded_rectangle([card_margin_x - 4, card_margin_y - 4, card_margin_x + c
 shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(16))
 bg.paste(shadow_layer, (0, 0), shadow_layer)
 
-# Glass card body and gold border
+# Glass card body (59000000 is 89 alpha) and gold border (99C4A24A is 153 alpha)
 cdraw.rounded_rectangle(
     [card_margin_x, card_margin_y, card_margin_x + card_w, card_margin_y + card_h],
     radius=24,
-    fill=(12, 18, 30, 215),
-    outline=(196, 162, 74, 200),
+    fill=(0, 0, 0, 89),
+    outline=(196, 162, 74, 153),
     width=2
 )
 bg.paste(card_layer, (0, 0), card_layer)
 
 # 4. Gold Book Icon
-icon_path = 'app/src/main/res/mipmap-xxxhdpi/ic_launcher.png'
+icon_path = 'art/play-store/logo_gold.png'
 if os.path.exists(icon_path):
     icon = Image.open(icon_path).convert('RGBA')
-    icon_sz = 130
+    icon_sz = 100
     icon_resized = icon.resize((icon_sz, icon_sz), Image.Resampling.LANCZOS)
     
     # Glow behind icon
     glow = Image.new('RGBA', (icon_sz + 40, icon_sz + 40), (0, 0, 0, 0))
     gdraw = ImageDraw.Draw(glow)
-    gdraw.ellipse([10, 10, icon_sz + 30, icon_sz + 30], fill=(212, 188, 126, 45))
+    gdraw.ellipse([10, 10, icon_sz + 30, icon_sz + 30], fill=(196, 162, 74, 45))
     glow = glow.filter(ImageFilter.GaussianBlur(12))
     
     icon_cx = 1024 // 2
-    icon_y = card_margin_y + 35
+    icon_y = card_margin_y + 45
     bg.paste(glow, (icon_cx - (icon_sz + 40) // 2, icon_y - 20), glow)
     bg.paste(icon_resized, (icon_cx - icon_sz // 2, icon_y), icon_resized)
 
 # 5. Serif Typography (StudyMate branding)
-font_title = ImageFont.truetype('C:/Windows/Fonts/georgiab.ttf', 62)
-font_sub = ImageFont.truetype('C:/Windows/Fonts/georgiab.ttf', 20)
-font_features = ImageFont.truetype('C:/Windows/Fonts/segoeuib.ttf', 17)
+font_title = ImageFont.truetype('C:/Windows/Fonts/georgiab.ttf', 56)
+font_sub = ImageFont.truetype('C:/Windows/Fonts/georgiab.ttf', 18)
+font_features = ImageFont.truetype('C:/Windows/Fonts/segoeuib.ttf', 16)
 
 draw = ImageDraw.Draw(bg)
 
@@ -104,4 +105,4 @@ f_w = f_bbox[2] - f_bbox[0]
 draw.text(((1024 - f_w) // 2, card_margin_y + 325), features_text, font=font_features, fill=(196, 162, 74)) # #C4A24A
 
 bg.save(out_path, 'PNG')
-print(f"Generated clean Feature Graphic at: {out_path} ({bg.size})")
+print(f"Generated transparent glass Feature Graphic at: {out_path} ({bg.size})")
