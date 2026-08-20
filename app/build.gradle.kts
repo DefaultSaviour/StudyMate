@@ -19,13 +19,13 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "uws.ac.uk.studymate"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "uws.ac.uk.studymate"
         minSdk = 30
-        targetSdk = 35
-        versionCode = 3
+        targetSdk = 36
+        versionCode = 4
         versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
