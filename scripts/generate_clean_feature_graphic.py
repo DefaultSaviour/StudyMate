@@ -91,11 +91,12 @@ s_bbox = draw.textbbox((0, 0), sub_text, font=font_sub)
 s_w = s_bbox[2] - s_bbox[0]
 draw.text(((1024 - s_w) // 2, card_margin_y + 278), sub_text, font=font_sub, fill=(250, 248, 245)) # #FAF8F5
 
-# Minimal feature bar
-features_text = "Spaced Repetition  •  Mock Exams  •  Pomodoro Focus  •  Widgets"
-f_bbox = draw.textbbox((0, 0), features_text, font=font_features)
+# Minimal feature bar: Zero AI, Zero Ads, 100% Free, You Keep All Your Data
+font_tagline = ImageFont.truetype('C:/Windows/Fonts/segoeuib.ttf', 17)
+features_text = "Zero AI   •   Zero Ads   •   100% Free   •   You Keep All Your Data"
+f_bbox = draw.textbbox((0, 0), features_text, font=font_tagline)
 f_w = f_bbox[2] - f_bbox[0]
-draw.text(((1024 - f_w) // 2, card_margin_y + 325), features_text, font=font_features, fill=(196, 162, 74)) # #C4A24A
+draw.text(((1024 - f_w) // 2, card_margin_y + 330), features_text, font=font_tagline, fill=(212, 188, 126)) # #D4BC7E gold accent
 
 bg.save(out_path, 'PNG')
 print(f"Generated transparent glass Feature Graphic at: {out_path} ({bg.size})")
