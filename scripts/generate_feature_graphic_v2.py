@@ -69,21 +69,21 @@ canvas = Image.alpha_composite(canvas, fall)
 
 # ---------------------------------------------------------------- device (right)
 shot = Image.open(SHOT).convert('RGB')          # 2076 x 2152, Pixel Fold inner screen
-dev_w = 400
-bezel = 9
+dev_w = 460
+bezel = 10
 scr_w = dev_w - 2 * bezel
 scr_h = int(scr_w * shot.size[1] / shot.size[0])
 dev_h = scr_h + 2 * bezel
-dev_x = 578
-dev_y = 62                                       # bleeds off the bottom edge on purpose
-dev_r = 30
+dev_x = 538
+dev_y = 20                                       # bleeds off the bottom edge on purpose
+dev_r = 34
 
 # Shadow
 sh = Image.new('RGBA', (CW, CH))
 ImageDraw.Draw(sh).rounded_rectangle(
-    [s(dev_x + 6), s(dev_y + 18), s(dev_x + dev_w + 6), s(dev_y + dev_h + 18)],
-    radius=s(dev_r), fill=(0, 0, 0, 200))
-sh = sh.filter(ImageFilter.GaussianBlur(s(22)))
+    [s(dev_x + 6), s(dev_y + 18), s(dev_x + dev_w + 10), s(dev_y + dev_h + 24)],
+    radius=s(dev_r), fill=(0, 0, 0, 220))
+sh = sh.filter(ImageFilter.GaussianBlur(s(26)))
 canvas = Image.alpha_composite(canvas, sh)
 
 # Body + hairline gold rim
@@ -115,7 +115,7 @@ canvas.alpha_composite(sheen_masked, (s(dev_x + bezel), s(dev_y + bezel)))
 # ---------------------------------------------------------------- copy (left)
 d = ImageDraw.Draw(canvas)
 LX = 64
-COL_MAX = dev_x - LX - 40                         # usable text width
+COL_MAX = dev_x - LX - 20                         # usable text width
 
 f_title = font('georgiab.ttf', 58)
 f_tag = font('seguisb.ttf', 23)
@@ -133,9 +133,11 @@ def text(x, y_top, t, f, fill, shadow=True):
     ox, oy, tw, th = bbox(t, f)
     px, py = s(x) - ox, s(y_top) - oy
     if shadow:
-        d.text((px + s(1), py + s(1.5)), t, font=f, fill=(0, 0, 0, 170))
+        # Stronger multi-layered text shadow for pop
+        d.text((px + s(2), py + s(2.5)), t, font=f, fill=(0, 0, 0, 240))
+        d.text((px + s(1), py + s(1)), t, font=f, fill=(0, 0, 0, 180))
     d.text((px, py), t, font=f, fill=fill)
-    assert tw / S <= COL_MAX + 60, f'text too wide: {t!r} {tw / S:.0f}px'
+    assert tw / S <= COL_MAX + 80, f'text too wide: {t!r} {tw / S:.0f}px vs {COL_MAX + 80}'
     return y_top + th / S, tw / S
 
 
