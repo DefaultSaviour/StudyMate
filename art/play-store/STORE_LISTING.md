@@ -22,27 +22,32 @@ StudyMate is your personal academic companion, designed to streamline your daily
 
 Key Features:
 
-📚 Spaced Repetition Flashcards & Mock Exams
-• Smart Leitner spaced repetition flashcards for efficient long-term memory retention
-• Mock Exam Simulator: test your knowledge under realistic conditions
-• Import & export flashcard decks via CSV to share with peers
+📚 Spaced Repetition Flashcards & Instant Import
+• Seamless Quizlet & Anki Import: Bring your existing decks over in seconds! Use the one-tap "Paste cards" button to instantly import Quizlet sets without downloading files.
+• Lecture Slides & Spreadsheet Support: Easily import questions, terms, and definitions directly from lecture slides, Excel, or Google Sheets (CSV/TSV).
+• Smart SM-2 Spaced Repetition: Scientifically scheduled reviews for maximum long-term memory retention.
+• Peer Deck Sharing: Export and share your custom decks with classmates via CSV.
+
+🎯 Mock Exam Simulator
+• Test your knowledge under realistic exam conditions with timed practice sessions.
+• Review score breakdowns to pinpoint exactly which areas need more revision.
 
 ⏱️ Pomodoro Focus Timer
-• Customizable study and break intervals with smooth visual cues
-• Haptic vibration alerts and gold screen bloom on phase transitions
-• Stay in the zone with zero distractions or intrusive notifications
+• Customizable study and break intervals with smooth visual cues.
+• Haptic vibration alerts and gold screen bloom on phase transitions.
+• Stay in the zone with zero distractions, no paywalls, and no ads.
 
 📅 Assignments & Schedule Tracker
-• Track upcoming assignments, homework, and deadlines with custom priorities
-• Dedicated checklist views with quick status toggles
-• Home screen calendar widgets (including tall 2x3 month view) for instant at-a-glance planning
+• Track upcoming assignments, homework, and deadlines with custom priorities.
+• Dedicated checklist views with quick status toggles.
+• Home screen calendar widgets (including tall 2x3 month view) for instant at-a-glance planning.
 
 🏆 Trophy Room & Statistics
-• Celebrate academic milestones with unlockable achievements
-• Review study streaks, session counts, and progress metrics
+• Celebrate academic milestones with unlockable achievements.
+• Review study streaks, session counts, and progress metrics.
 
 🔒 100% Offline & Private
-• No cloud logins, no tracking, and no external data collection. Your data stays entirely on your phone.
+• Zero AI gimmick subscriptions, zero ads, and zero cloud accounts. All your data stays strictly on your phone.
 ```
 
 ---
@@ -65,7 +70,7 @@ All required graphics are located in `art/play-store/`:
    - `art/play-store/screenshot_3_flashcards.png` (Spaced Repetition Decks)
    - `art/play-store/screenshot_4_calendar.png` (Academic Calendar)
    - `art/play-store/screenshot_5_trophies.png` (Trophy Room & Milestones)
-   - `art/play-store/screenshot_6_assignments.png` (Task & Assignment Manager)
+   - `art/play-store/screenshot_6_assignments.png` (Task & Checklist Manager)
 
 ---
 
