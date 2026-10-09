@@ -9,9 +9,9 @@
 
 ## Descriptions
 
-### Short Description (53 / 80 characters)
+### Short Description (67 / 80 characters)
 ```text
-Zero AI. Zero Ads. 100% Free. You keep all your data.
+Zero AI. Zero Ads. 100% Free. Private study companion & flashcards.
 ```
 
 ### Full Description (Markdown/Plain Text for Console)
